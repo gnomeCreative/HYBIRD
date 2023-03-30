@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="100">
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Release" type="1">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>3</platform>
+      </toolsSet>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_options>
+          <DebugOptions>
+            <option name="debug_command"
+                    value="&quot;${OUTPUT_PATH}&quot; -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time"/>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./manual/tutorials/incline_flow/incline_flow.cfg -d ./manual/tutorials/incline_flow/results -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/centrifugal.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/centrifugel.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/gravity.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/centrifuge.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/chi_debug/granular_column.cfg -d D:///hybirdResults/chi_debug -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/chi_debug/chi_debug.cfg -d D:///hybirdResults/chi_debug -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./manual/tutorials/granular_flow/granular_flow.cfg -d ./manual/tutorials/granular_flow/results -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./manual/tutorials/granular_column/granular_column.cfg -d ./manual/tutorials/granular_column/results -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}" -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time</runcommand>
+        <rundir></rundir>
+        <buildfirst>true</buildfirst>
+        <terminal-type>1</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+          <variable name="OMP_NUM_THREADS" value="8"/>
+        </environment>
+      </runprofile>
+    </conf>
+    <conf name="Debug" type="1">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>3</platform>
+      </toolsSet>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
+        <gdb_options>
+          <DebugOptions>
+            <option name="debug_command"
+                    value="&quot;${OUTPUT_PATH}&quot; -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time"/>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c lbmConfigDevis.cfg -d F:\simulation_data\hybird\devis -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c lbmConfigDevisFluid.cfg -d F:\simulation_data\hybird\devis -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c lbmConfigBarrier_tramoggia_tappo_n.cfg -d F:\simulation_data\hybird\maddalena -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c lbmConfigDevisFluid20161129.cfg -d F:\simulation_data\hybird\devis -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/lbmConfigBarrier_barrier_RIDOTTO.cfg -d F:\simulation_data\hybird\maddalena -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/hongkong/lbmConfigBarrier_hong_kong.cfg -d F:/simulation_data/hybird/hongkong -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/maddalenaProfile/lbmConfigBarrier_barrier_old.cfg -d /home/aleonard/hybirdResults/maddalenaProfile -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/hongkong/lbmConfigBarrier_hong_kong.cfg -d /home/aleonard/hybirdResults/hongkong -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/benchmark/test/benchmark_test.cfg -d D:/hybirdResults/benchmark -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}" -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time</runcommand>
+        <rundir></rundir>
+        <buildfirst>true</buildfirst>
+        <terminal-type>0</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+          <variable name="OMP_NUM_THREADS" value="2"/>
+        </environment>
+      </runprofile>
+    </conf>
+  </confs>
+</configurationDescriptor>
