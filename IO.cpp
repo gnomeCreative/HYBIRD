@@ -342,6 +342,11 @@ void IO::outputStep(LB& lb, DEM& dem) {
                 exportFront(lb);
                 break;
             }
+            case SHEAR_CELL_2022:
+			{
+				exportShearCell2022(lb, dem);
+				break;
+			}
 
 
         }

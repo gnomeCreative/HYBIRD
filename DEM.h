@@ -134,6 +134,8 @@ public:
     double pressureX,pressureY,pressureZ;
      // stuff for Usman
     bool depositArea;
+    // stuff for SHEAR_CELL_2022
+	double shearVelocity;
 public:
 
     DEM() {

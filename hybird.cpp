@@ -367,6 +367,11 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
             PARSE_CLASS_MEMBER(configFile, dem.triDefSpeed, "triDefSpeed", 0.0);
             break;
         }
+        case SHEAR_CELL_2022:
+		{
+			PARSE_CLASS_MEMBER(configFile, dem.shearVelocity, "shearVelocity", 0.0);
+			break;
+		}
 
     }
 
