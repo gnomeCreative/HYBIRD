@@ -567,17 +567,6 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
                 dummyWall.rotCenter.reset();
                 dummyWall.omega.reset();
                 dummyWall.vel = tVect(0.0, 0.0, 0.0);
-                if (problemName == SHEAR_CELL_2022)
-				    {
-					    // bottom
-					    if (i == 4) {
-						    dummyWall.vel = tVect(shearVelocity, 0.0, 0.0);
-					    }
-					    // top
-					    if (i == 5) {
-						    dummyWall.vel = tVect(-shearVelocity, 0.0, 0.0);
-					    }
-				    }
             }
             ++index;
             walls.push_back(dummyWall);
@@ -2635,12 +2624,6 @@ void DEM::particleParticleContacts() {
             particleParticleCollision(partI, partJ, vectorDistance, elongation_here_new);
 
         }
-                // lubrication calculation
-		else {
-			if (sqrt(distance2) < (sigij + 0.00005)) {
-				lubrication(partI, partJ, vectorDistance);
-			}
-		}
     }
 }
 
@@ -2701,14 +2684,8 @@ void DEM::wallParticleContacts() {
                 elongation_here_new = findSpring(1, indexI, partJ);
                 }
                 wallParticleCollision(wallI, partJ, overlap, elongation_here_new);
+
             }
-            		// lubrication calculation
-            else {
-			    if (distance < rj + 0.00005) {
-				    walllubrication(wallI, partJ, overlap);
-			    }
-            }
-            
         }
     }
 }
@@ -3545,167 +3522,4 @@ void DEM::updateEnergy(double& totalKineticEnergy) {
     particleEnergy.updateTotal();
     totalKineticEnergy=totalKineticEnergy+particleEnergy.rotKin+particleEnergy.trKin;
 
-}
-
-inline void DEM::lubrication(const particle *partI, const particle *partJ, const tVect& vectorDistance) {
-
-	// pointers to elements
-	elmt *elmtI = &elmts[partI->clusterIndex];
-	elmt *elmtJ = &elmts[partJ->clusterIndex];
-
-	// NORMAL FORCE ///////////////////////////////////////////////////////////////////
-
-	// geometry /////////////////////////////
-	const double radI = partI->r;
-	const double radJ = partJ->r;
-	// distance norm
-	const double distance = vectorDistance.norm();
-	// overlap
-	const double lag =std::max(-radI -radJ + distance,0.0000001);
-	// relative velocity
-	const tVect relVel = partJ->x1 - partI->x1;
-	// first local unit vector (normal)
-	const tVect en = vectorDistance / distance;
-	// relative normal velocity (modulus)
-	const double normRelVel = relVel.dot(en);
-	// relative normal velocity
-	const tVect normalRelVel = en * normRelVel;
-	// effective radius
-	const double effRad = radI * radJ / (radI + radJ);
-	double lubnormNormalForce = 0.0;
-	if (normRelVel < 0.0) {
-		// force computation /////////////////////////////////
-		lubnormNormalForce = lubnormalContact(lag, normRelVel, effRad);
-		// ASSERT(lubnormNormalForce >= 0.0);
-	}
-	// force application ///////////////////////////////////
-	// vectorial normal force
-	const tVect lubnormalForce = en * lubnormNormalForce;
-
-	if (!partI->isGhost) {
-		elmtI->FParticle = elmtI->FParticle - lubnormalForce;
-		// elmtI->solidIntensity += lubnormalForce.abs();
-	}
-	if (!partJ->isGhost) {
-		elmtJ->FParticle = elmtJ->FParticle + lubnormalForce;
-		// elmtJ->solidIntensity += lubnormalForce.abs();
-	}
-
-	// cluster geometry
-	// vectorized radii
-	const tVect vecRadI = radI * en;
-	const tVect vecRadj = -radJ * en;
-
-	// TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
-
-		// angular velocities (global reference frame)
-	const tVect wI = elmtI->wpGlobal; //2.0*quat2vec( elmtI->qp1.multiply( elmtI->qp0.adjoint() ) );
-	const tVect wJ = elmtJ->wpGlobal; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
-	// relative velocity at contact point
-	const tVect relVelContact = relVel - wI.cross(vecRadI) + wJ.cross(vecRadj);
-	// tangential component of relative velocity
-	const tVect tangRelVelContact = relVelContact - normalRelVel;
-	// norm of tangential velocity
-	const double normTangRelVelContact = tangRelVelContact.norm();
-	// checking if there is any tangential motion
-	const tVect lubtangForce = 0.001*tangRelVelContact;
-
-
-	// torque updating
-	if (!partI->isGhost) {
-		//elmtI->MParticle = elmtI->MParticle + centerDistI.cross(lubtangForce);
-		elmtI->FParticle = elmtI->FParticle + lubtangForce;
-		//elmtI->solidIntensity += tangForce.abs();
-	}
-	if (!partJ->isGhost) {
-		//elmtJ->MParticle = elmtJ->MParticle - centerDistJ.cross(lubtangForce);
-		elmtJ->FParticle = elmtJ->FParticle - lubtangForce;
-		//elmtJ->solidIntensity += tangForce.abs();
-	}
-
-}
-
-inline void DEM::walllubrication(wall *wallI, const particle *partJ, const double& overlap) {
-
-    const double lag=std::max(-overlap,0.0000001);
-
-    // pointers to element
-    elmt *elmtJ = &elmts[partJ->clusterIndex];
-
-    // NORMAL FORCE ///////////////////////////////////////////////////////////////////
-
-    // geometry ///////////////
-    // particle radius
-    const double radJ = partJ->r;
-    // first local unit vector (normal)
-    const tVect en = wallI->n;
-    // speed of the wall at contact point
-    const tVect contactPointVelocity = wallI->getSpeed(partJ->x0); // fix this, contact point not defined
-    // relative velocity
-    const tVect relVel = partJ->x1 - contactPointVelocity;
-    // relative normal velocity (modulus)
-    const double normRelVel = relVel.dot(en);
-    // relative normal velocity
-    const tVect normalRelVel = en*normRelVel;
-
-    // force computation /////////////////////////////////
-    double lubnormNormalForce = lubnormalContact(lag, normRelVel, radJ); // removed 2.0 *
-
-    // force application ///////////////////////////////////
-    // vectorial normal force
-    const tVect lubnormalForce = en*lubnormNormalForce;
-
-    // cluster geometry
-    // vectorized radius
-    const tVect vecRadJ = -radJ*en;
-    // vectorized distance contactPoint-center of cluster
-    tVect centerDistJ = vecRadJ;
-
-    // force updating
-    elmtJ->FWall = elmtJ->FWall + lubnormalForce;
-    wallI->FParticle = wallI->FParticle - lubnormalForce;
-    //elmtJ->solidIntensity +=  normalForce.abs();
-
-
-    // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
-
-    // angular velocities (global reference frame)
-    const tVect wJ = elmtJ->wpGlobal; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
-    // relative velocity at contact point
-    const tVect relVelContact = relVel + wJ.cross(vecRadJ);
-    // tangential component of relative velocity
-    const tVect tangRelVelContact = relVelContact - normalRelVel;
-    // norm of tangential velocity
-    const double normTangRelVelContact = tangRelVelContact.norm();
-    // checking if there is any tangential motion
-    const tVect lubtangForce = 0.001*tangRelVelContact;      
-    // torque updating
-    elmtJ->MWall = elmtJ->MWall - centerDistJ.cross(lubtangForce);
-    // force updating
-    //elmtJ->FSpringW = elmtJ->FSpringW - lubtangForce;
-    elmtJ->FWall = elmtJ->FWall - lubtangForce;
-    //elmtJ->solidIntensity +=  tangForce.abs();
-    wallI->FParticle = wallI->FParticle + lubtangForce;
-}
-
-double DEM::lubnormalContact(const double& lag, const double& vrelnnorm, const double& effRad) {
-
-	// total normal force
-	double lubfn = 0.0;
-
-	// lubrication
-	lubfn = -1.5*3.14159*4*effRad*effRad*0.001*(1/lag-20/0.001)*vrelnnorm;
-    return lubfn;
-
-}
-
-double DEM::lubtangentialContact(const double& lag, const tVect& tangRelVelContact, const double& effRad) {
-	// tangential force
-	double lubfs = 0.0;
-
-	// viscous force
-	const double lubviscousForce = -4/5*3.14159*0.001*2*effRad*1.25*log(0.00005/lag);
-	lubfs = lubviscousForce;
-
-	return lubfs;
 }

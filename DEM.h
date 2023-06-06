@@ -134,8 +134,6 @@ public:
     double pressureX,pressureY,pressureZ;
      // stuff for Usman
     bool depositArea;
-    // stuff for SHEAR_CELL_2022
-	double shearVelocity;
 public:
 
     DEM() {
@@ -234,10 +232,6 @@ private:
     tVect rollingContact(const tVect& wI, const tVect& wJ, const double& effRad, const double& fn, const double& rolling);
     void saveObjectForces();
     void lubrication(int i, int j, double ri, double rj, tVect x0ij);
-    inline void lubrication(const particle *partI, const particle *partJ, const tVect& vectorDistance);
-    inline void walllubrication(wall *wallI, const particle *partJ, const double& overlap);
-    double lubnormalContact(const double& lag, const double& vrelnnorm, const double& effRad);
-    double lubtangentialContact(const double& lag, const tVect& tangRelVelContact, const double& effRad);
     /// this are the (new) ones that save the contacts (Devis))
 };
 
