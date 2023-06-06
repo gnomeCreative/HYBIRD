@@ -2012,7 +2012,15 @@ void LB::initializeVariables() {
             // nodeHere->initialize(fluidMaterial.initDensity + 3.0 * fluidMaterial.initDensity * (deltah.dot(lbF+nodeHere->centrifugalForce) + 0.5 * lbF.norm()), initVelocity, fluidMaterial.initDensity, fluidMaterial.initDynVisc, lbF, 1.0, rotationSpeed);
             if (!solveCentrifugal) {
                 const double projection = position.dot(lbF);
-                nodeHere->initialize(fluidMaterial.initDensity + 3.0 * fluidMaterial.initDensity * (projection-minProjection), initVelocity, fluidMaterial.initDensity, fluidMaterial.initDynVisc, lbF, 1.0, Zero);
+                				if (problemName == SHEAR_CELL_2022) {
+					const unsigned int zHere = getPositionZ(indexHere);
+					initVelocity = tVect(-shearVelocity * (zHere-lbSize[2]*0.5) / (lbSize[2]*0.5), 0.0, 0.0);
+					initVelocity /= unit.Speed;
+					nodeHere->initialize(fluidMaterial.initDensity + 3.0 * fluidMaterial.initDensity * (projection - minProjection), initVelocity, fluidMaterial.initDensity, fluidMaterial.initDynVisc, lbF, 1.0, Zero);
+				}
+				else {
+					nodeHere->initialize(fluidMaterial.initDensity + 3.0 * fluidMaterial.initDensity * (projection - minProjection), initVelocity, fluidMaterial.initDensity, fluidMaterial.initDynVisc, lbF, 1.0, Zero);
+				}
             } else {
                 const double projection = position.dot(nodeHere->centrifugalForce);
                 nodeHere->initialize(fluidMaterial.initDensity + 3.0 * fluidMaterial.initDensity * (projection-minProjection), initVelocity, fluidMaterial.initDensity, fluidMaterial.initDynVisc, lbF, 1.0, rotationSpeed);
