@@ -179,6 +179,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     else if (problemNameString == "IERVOLINO_CYLINDERTEST") problemName = IERVOLINO_CYLINDERTEST;
     else if (problemNameString == "HEAP") problemName = HEAP;
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
+    else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2022;
     // else if (problemNameString=="SETT") problemName=SETT;
 
 
