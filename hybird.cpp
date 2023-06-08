@@ -181,6 +181,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
     // else if (problemNameString=="SETT") problemName=SETT;
 
+    
 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
