@@ -41,6 +41,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/elmt.o \
 	${OBJECTDIR}/hybird.o \
 	${OBJECTDIR}/myvector.o \
+	${OBJECTDIR}/newClass.o \
 	${OBJECTDIR}/node.o \
 	${OBJECTDIR}/utils.o
 
@@ -98,6 +99,11 @@ ${OBJECTDIR}/myvector.o: myvector.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/myvector.o myvector.cpp
+
+${OBJECTDIR}/newClass.o: newClass.cpp
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/newClass.o newClass.cpp
 
 ${OBJECTDIR}/node.o: node.cpp
 	${MKDIR} -p ${OBJECTDIR}
