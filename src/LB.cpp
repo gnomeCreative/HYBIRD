@@ -507,7 +507,7 @@ void LB::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
 
 }
 
-void LB::latticeBolzmannInit(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, const bool externalSolveCoriolis, const bool externalSolveCentrifugal) {
+void LB::latticeBolzmannInit(double shearVelocity, cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, const bool externalSolveCoriolis, const bool externalSolveCentrifugal) {
     //  Lattice Boltzmann initialization steps
     
     // switchers for apparent accelerations
@@ -543,7 +543,7 @@ void LB::latticeBolzmannInit(cylinderList& cylinders, wallList& walls, particleL
         // initialize interface
         initializeInterface(particles.size());
         // initialize variables for active nodes
-        initializeVariables();
+        initializeVariables(shearVelocity);
     }
 
     // initialize variables for wall nodes
@@ -1939,7 +1939,7 @@ void LB::initializeLists() {
     cout << " done" << endl;
 }
 
-void LB::initializeVariables() {
+void LB::initializeVariables(double shearVelocity) {
 
     cout << "Initializing variables" << endl;
     // note that interface is not defined here. All fluid, interface and gas cells are uninitialized at the moment
