@@ -234,7 +234,10 @@ private:
     tVect FRtangentialContact(const tVect& tangRelVelContact, const double& fn, const double& overlap, const double& effRad, const double& effMass, Elongation* elongation_new, const double& friction, const double& tangStiff, const double& viscTang);
     tVect rollingContact(const tVect& wI, const tVect& wJ, const double& effRad, const double& fn, const double& rolling);
     void saveObjectForces();
-    void lubrication(int i, int j, double ri, double rj, tVect x0ij);
+    inline void lubrication(const particle *partI, const particle *partJ, const tVect& vectorDistance);
+    inline void walllubrication(wall *wallI, const particle *partJ, const double& overlap);
+    double lubnormalContact(const double& lag, const double& vrelnnorm, const double& effRad);
+    double lubtangentialContact(const double& lag, const tVect& tangRelVelContact, const double& effRad);
     /// this are the (new) ones that save the contacts (Devis))
 };
 
