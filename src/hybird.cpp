@@ -192,7 +192,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     else if (problemNameString == "IERVOLINO_CYLINDERTEST") problemName = IERVOLINO_CYLINDERTEST;
     else if (problemNameString == "HEAP") problemName = HEAP;
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
-    else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
+    else if (problemNameString == "SHEARCELL2022") problemName = SHEAR_CELL_2023;
     else if (problemNameString == "INTRUDER") problemName = INTRUDER;
     else if (problemNameString == "OBJMOVING") problemName = OBJMOVING;
 
@@ -413,6 +413,11 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
             PARSE_CLASS_MEMBER(configFile, dem.triDefSpeed, "triDefSpeed", 0.0);
             break;
         }
+        case SHEAR_CELL_2023:
+		{
+			PARSE_CLASS_MEMBER(configFile, dem.shearVelocity, "shearVelocity", 0.0);
+			break;
+		}
 
     }
 

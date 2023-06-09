@@ -583,6 +583,17 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
                 dummyWall.rotCenter.reset();
                 dummyWall.omega.reset();
                 dummyWall.vel = tVect(0.0, 0.0, 0.0);
+                if (problemName == SHEAR_CELL_2023)
+				{
+					// bottom
+					if (i == 4) {
+						dummyWall.vel = tVect(shearVelocity, 0.0, 0.0);
+					}
+					// top
+					if (i == 5) {
+						dummyWall.vel = tVect(-shearVelocity, 0.0, 0.0);
+					}
+				}
             }
             ++index;
             walls.push_back(dummyWall);
