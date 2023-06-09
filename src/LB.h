@@ -27,6 +27,7 @@
 #include "utils.h"
 #include "elmt.h"
 #include "getpot.h"
+#include "DEM.h"
 
 using namespace std;
 extern ProblemName problemName;
@@ -181,7 +182,7 @@ public:
     void LBShow() const;
     void latticeDefinition();
     void latticeBoltzmannGet(GetPot& lbmCfgFile, GetPot& command_line);
-    void latticeBolzmannInit(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, const bool externalSolveCoriolis, const bool externalSolveCentrifugal);
+    void latticeBolzmannInit(double shearVelocity, cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, const bool externalSolveCoriolis, const bool externalSolveCentrifugal);
     void latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects);
     void latticeBoltzmannCouplingStep(bool& newNeighborList, elmtList& eltms, particleList& particles);
     void latticeBoltzmannFreeSurfaceStep();
@@ -213,7 +214,7 @@ public:
     void restartInterface(ifstream& fluidFileID, unsigned int& totNodes);
     void initializeLists();
     void resetLists();
-    void initializeVariables();
+    void initializeVariables(double shearVelocity);
     void initializeWalls(wallList& walls, cylinderList& cylinders, objectList& objects);
     // integration functions
     void reconstruction();
