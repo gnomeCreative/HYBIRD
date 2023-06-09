@@ -2675,6 +2675,7 @@ void DEM::particleParticleContacts() {
 			if (sqrt(distance2) < (sigij + 0.00005)) {
 				lubrication(partI, partJ, vectorDistance);
 			}
+        }    
     }
 }
 
