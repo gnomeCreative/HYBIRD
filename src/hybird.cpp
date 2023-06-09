@@ -478,7 +478,7 @@ int main(int argc, char** argv) {
             externalRotation, externalRotationCenter, io.coriolisSolver, io.centrifugalSolver, lb.unit.Time);
 
     if (io.lbmSolver) {
-        lb.latticeBolzmannInit(dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
+        lb.latticeBolzmannInit(dem.shearVelocity, dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
     }
 
     // setting time
