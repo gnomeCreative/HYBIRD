@@ -3713,7 +3713,7 @@ inline void DEM::walllubrication(wall *wallI, const particle *partJ, const doubl
     // norm of tangential velocity
     const double normTangRelVelContact = tangRelVelContact.norm();
     // checking if there is any tangential motion
-    const tVect lubtangForce = *tangRelVelContact;      
+    const tVect lubtangForce = 0.001*tangRelVelContact;      
     // torque updating
     elmtJ->MWall = elmtJ->MWall - centerDistJ.cross(lubtangForce);
     // force updating
