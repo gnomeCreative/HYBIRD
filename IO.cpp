@@ -68,11 +68,6 @@ void IO::initialize() {
             topFileName = workDirectory + "/flowTop.dat";
             break;
         }
-        case SHEAR_CELL_2023:
-		{
-			exportShearCell2023(lb, dem);
-			break;
-		}
     }
 
 
