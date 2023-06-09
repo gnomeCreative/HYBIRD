@@ -68,6 +68,11 @@ void IO::initialize() {
             topFileName = workDirectory + "/flowTop.dat";
             break;
         }
+        case SHEAR_CELL_2023:
+		{
+			exportShearCell2023(lb, dem);
+			break;
+		}
     }
 
 
@@ -1878,6 +1883,20 @@ void IO::exportShearCell(const LB& lb, const DEM& dem) {
     cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
 }
 
+void IO::exportShearCell2023(const LB& lb, const DEM& dem) {
+	// apparent viscosity from shear cell
+	double appVisc = 0.0;
+	double externalShear = 0.0;
+	double wallStress = 0.0;
+	apparentViscosity2023(lb, dem, dem.walls, externalShear, wallStress, appVisc);
+	cout << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
+	exportFile << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
+
+	tVect xDirec = tVect(1.0, 0.0, 0.0);
+	cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FHydro.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FHydro.dot(xDirec) << " ";
+	cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
+}
+
 void IO::exportEnergy(const DEM& dem, const LB& lb) {
 
     if (dem.elmts.size()) {
@@ -2011,6 +2030,23 @@ void IO::apparentViscosity(const LB& lb, const wallList& walls, double& external
     wallStress = -0.5 * (walls[1].FHydro.dot(xDirec) + walls[1].FParticle.dot(xDirec) - walls[0].FHydro.dot(xDirec) - walls[0].FParticle.dot(xDirec)) / plateSize;
 
     appVisc = 0.5 * wallStress / externalShear;
+}
+
+void IO::apparentViscosity2023(const LB& lb, const DEM& dem, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const {
+	// computes the apparent viscosity of a shear cell, as the ratio between shear at the wall and imposed shear rate
+	// the cell is sheared in direction x and has moving wall in z
+	appVisc = 0.0;
+	tVect xDirec = tVect(1.0, 0.0, 0.0);
+
+	double cellSize = double(lb.lbSize[2] - 2) * lb.unit.Length;
+
+	externalShear = 2.0 * dem.shearVelocity / cellSize;
+
+	double plateSize = double(lb.lbSize[0] - 2) * double(lb.lbSize[1] - 2) * lb.unit.Length * lb.unit.Length;
+
+	wallStress = 0.5 * (walls[1].FHydro.dot(xDirec) + walls[1].FParticle.dot(xDirec) - walls[0].FHydro.dot(xDirec) - walls[0].FParticle.dot(xDirec)) / plateSize;
+
+	appVisc = wallStress / externalShear;
 }
 
 tVect IO::fluidCenterOfMass(const LB& lb) const {

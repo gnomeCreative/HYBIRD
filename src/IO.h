@@ -239,7 +239,9 @@ private:
     void initViscFile();
     void writeViscFile(const LB& lb, const wallList& walls, const elmtList& elmts);
     void exportShearCell(const LB& lb, const DEM& dem);
+    void exportShearCell2023(const LB& lb, const DEM& dem);
     void apparentViscosity(const LB& lb, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
+    void apparentViscosity2023(const LB& lb, const DEM& dem, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
 
     // AVALANCHE /////
     string obstacleFileName;
