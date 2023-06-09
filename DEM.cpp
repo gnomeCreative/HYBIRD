@@ -2707,6 +2707,7 @@ void DEM::wallParticleContacts() {
 			if (distance < rj + 0.00005) {
 				walllubrication(wallI, partJ, overlap);
 			}
+            }
         }
     }
 }
