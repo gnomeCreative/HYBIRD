@@ -47,8 +47,7 @@ void goCycle(IO& io, DEM& dem, LB& lb) {
     ++lb.time;
 
     dem.evolveBoundaries();
-    dem.evolveCylinders();
-    dem.evolveObj();
+//    dem.evolveObj();
     //cout<<"1"<<endl;
     if (io.demSolver) {
 

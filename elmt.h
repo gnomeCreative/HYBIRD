@@ -264,9 +264,9 @@ public:
     // force on the object, saved when necessary
     tVect savedFParticle;
 //     is it translating?
-//    bool translating;
+    bool translating;
 //     translation vector
-//    tVect trans;
+    tVect trans;
     object() {
         index=ElID=0;
         originalIndex=0;
@@ -277,7 +277,7 @@ public:
         maxFParticle=Zero;
         savedFParticle=Zero;
         timeMaxFParticle=0.0;
-//        translating = false;
+        translating = true;
 //        trans = tVect(0.0,0.0,0.0);
     }
     void updateMax(const tVect& direction, const double& time);
