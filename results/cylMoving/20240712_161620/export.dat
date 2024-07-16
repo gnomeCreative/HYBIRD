@@ -1,8 +1,0 @@
-0 time=0.00e+00 MaxPSpeed= 1.01e-03 MaxPSpin= 1.99e-02 Energy (DEM): eKin = 3.65e-09 eGrav = 3.41e-02 eTot = 3.41e-02 
-201 time=1.00e-02 MaxPSpeed= 1.43e+01 MaxPSpin= 2.40e+01 Energy (DEM): eKin = 2.31e-01 eGrav = 3.99e-02 eTot = 2.71e-01 
-400 time=2.00e-02 MaxPSpeed= 6.94e+00 MaxPSpin= 1.59e+01 Energy (DEM): eKin = 6.18e-02 eGrav = 4.48e-02 eTot = 1.07e-01 
-600 time=3.00e-02 MaxPSpeed= 3.12e+00 MaxPSpin= 1.72e+01 Energy (DEM): eKin = 1.94e-02 eGrav = 4.71e-02 eTot = 6.65e-02 
-800 time=4.00e-02 MaxPSpeed= 2.01e+00 MaxPSpin= 1.16e+01 Energy (DEM): eKin = 7.67e-03 eGrav = 4.79e-02 eTot = 5.55e-02 
-1000 time=5.00e-02 MaxPSpeed= 1.40e+00 MaxPSpin= 1.05e+01 Energy (DEM): eKin = 4.11e-03 eGrav = 4.78e-02 eTot = 5.19e-02 
-1200 time=6.00e-02 MaxPSpeed= 1.58e+00 MaxPSpin= 1.03e+01 Energy (DEM): eKin = 3.69e-03 eGrav = 4.70e-02 eTot = 5.07e-02 
-1400 time=7.00e-02 MaxPSpeed= 1.22e+00 MaxPSpin= 1.01e+01 Energy (DEM): eKin = 4.23e-03 eGrav = 4.58e-02 eTot = 5.00e-02 

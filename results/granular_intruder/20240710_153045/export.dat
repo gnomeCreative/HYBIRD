@@ -1,4 +1,0 @@
-0 time=0.00e+00 MaxPSpeed= 1.01e-03 MaxPSpin= 1.99e-02 Energy (DEM): eKin = 3.65e-09 eGrav = 3.41e-02 eTot = 3.41e-02 
-201 time=1.00e-02 MaxPSpeed= 8.01e+00 MaxPSpin= 7.33e+00 Energy (DEM): eKin = 4.35e-02 eGrav = 3.58e-02 eTot = 7.93e-02 
-400 time=2.00e-02 MaxPSpeed= 5.00e+00 MaxPSpin= 8.82e+00 Energy (DEM): eKin = 2.32e-02 eGrav = 3.86e-02 eTot = 6.18e-02 
-600 time=3.00e-02 MaxPSpeed= 4.24e+00 MaxPSpin= 8.13e+00 Energy (DEM): eKin = 1.48e-02 eGrav = 4.07e-02 eTot = 5.55e-02 
