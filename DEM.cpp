@@ -137,7 +137,7 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
         elmts.push_back(dummyElmt);
 
     }
-    cout<<" done"<<endl;
+    cout << " done" << endl;
 
     // objects initial state //////////////////////
     string objectFile;
@@ -183,8 +183,8 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
         dummyObject.originalIndex = dummyObject.index;
         objects.push_back(dummyObject);
     }
-    cout<<" done"<<endl;
-            
+    cout << " done" << endl;
+
     // numerical viscosity for stability
     PARSE_CLASS_MEMBER(configFile, numVisc, "numVisc", 0.0);
     // set multiplication number (sets the number of DEM steps between two fluid steps)
@@ -374,22 +374,22 @@ void DEM::discreteElementStep() {
         demTimeStep++;
         demTime += deltat;
         // neighbor management
-//        cout<<"1.0 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
+        //        cout<<"1.0 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         evalMaxDisp();
-//        cout<<"1.1 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
+        //        cout<<"1.1 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         if (maxDisp > neighListTrigger) {
             maxDisp = 0.0;
             //cout<<"new neighbor list"<<endl;
             evalNeighborTable();
         }
         //cout<<"1.2"<<endl;
-//        cout<<"1.2 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
+        //        cout<<"1.2 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // predictor step
         predictor();
-//        cout<<"1.3 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
+        //        cout<<"1.3 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // particles generation
         updateParticlesPredicted();
-        
+
         // force evaluation
         evaluateForces();
 
@@ -412,44 +412,44 @@ void DEM::evolveBoundaries() {
     switch (problemName) {
         case TRIAXIAL:
         {
-            const double reduceFactor=10.0/ (deltat * double(multiStep));
+            const double reduceFactor = 10.0 / (deltat * double(multiStep));
 
             // wall in X
             {
-            const double sideY = walls[7].p.dot(Yp) - walls[2].p.dot(Yp);
-            const double sideZ = walls[8].p.dot(Zp) - walls[4].p.dot(Zp);
-            const double area = sideY*sideZ;
+                const double sideY = walls[7].p.dot(Yp) - walls[2].p.dot(Yp);
+                const double sideZ = walls[8].p.dot(Zp) - walls[4].p.dot(Zp);
+                const double area = sideY*sideZ;
 
-            const double expectedForce = triIsopressure*area;
-            const double measuredForce = walls[6].FParticle.dot(-1.0 * walls[6].n);
-            pressureX=measuredForce/area;
-            const double deltaForce = expectedForce - measuredForce;
+                const double expectedForce = triIsopressure*area;
+                const double measuredForce = walls[6].FParticle.dot(-1.0 * walls[6].n);
+                pressureX = measuredForce / area;
+                const double deltaForce = expectedForce - measuredForce;
 
-            const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
+                const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
 
-            walls[6].p = walls[6].p + displacement * walls[6].n;
-            //cout << "X: deltaForce " << deltaForce << " displacement " << displacement << " position "<< walls[6].p.dot(Xp)<< endl;
+                walls[6].p = walls[6].p + displacement * walls[6].n;
+                //cout << "X: deltaForce " << deltaForce << " displacement " << displacement << " position "<< walls[6].p.dot(Xp)<< endl;
 
             }
             {
-             // wall in Y
-            const double sideZ = walls[8].p.dot(Zp) - walls[4].p.dot(Zp);
-            const double sideX = walls[6].p.dot(Xp) - walls[0].p.dot(Xp);
-            const double area = sideX*sideZ;
+                // wall in Y
+                const double sideZ = walls[8].p.dot(Zp) - walls[4].p.dot(Zp);
+                const double sideX = walls[6].p.dot(Xp) - walls[0].p.dot(Xp);
+                const double area = sideX*sideZ;
 
-            const double expectedForce = triIsopressure*area;
-            const double measuredForce = walls[7].FParticle.dot(-1.0 * walls[7].n);
-            pressureY=measuredForce/area;
-            const double deltaForce = expectedForce - measuredForce;
+                const double expectedForce = triIsopressure*area;
+                const double measuredForce = walls[7].FParticle.dot(-1.0 * walls[7].n);
+                pressureY = measuredForce / area;
+                const double deltaForce = expectedForce - measuredForce;
 
-            const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
+                const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
 
-            walls[7].p = walls[7].p + displacement * walls[7].n;
-            //cout << "Y: deltaForce " << deltaForce << " displacement " << displacement << endl;
+                walls[7].p = walls[7].p + displacement * walls[7].n;
+                //cout << "Y: deltaForce " << deltaForce << " displacement " << displacement << endl;
             }
             {
-             // wall in Z
-            const double sideX = walls[6].p.dot(Xp) - walls[0].p.dot(Xp);
+                // wall in Z
+                const double sideX = walls[6].p.dot(Xp) - walls[0].p.dot(Xp);
                 const double sideY = walls[7].p.dot(Yp) - walls[2].p.dot(Yp);
                 const double area = sideX*sideY;
 
@@ -473,8 +473,8 @@ void DEM::evolveBoundaries() {
     }
 
 
-    
-         for (int n = 0; n < walls.size(); ++n) {           
+    // update the position of the walls (rigid body)
+    for (int n = 0; n < walls.size(); ++n) {
         if (walls[n].translating) {
             walls[n].p = walls[n].p + frac * walls[n].trans;
 
@@ -484,10 +484,77 @@ void DEM::evolveBoundaries() {
             }
         }
     }
+    // update the position of the cylinders (rigid body)
+    for (int c = 0; c < cylinders.size(); c++) {
+        if (cylinders[c].translating == true) {
+            // update p1 and p2
+            cylinders[c].p1 = cylinders[c].p1 + deltat * cylinders[c].trans;
+            cylinders[c].p2 = cylinders[c].p2 + deltat * cylinders[c].trans;
+
+            // line for debug (uncomment to debug)
+            // cylinders[c].p1.show(); cout << " "; cylinders[c].p2.show();
+            // getchar();
+        }
+    }
+    
+    // update the position of the object (rigid body)
+    for (unsigned int o = 0; o < objects.size(); o++) {
+        // Check if the velocity vector is != 0
+        double objTrans = objects[o].x1.x + objects[o].x1.y + objects[o].x1.z;
+        // update object position
+        if (objects[o].translating == true && objTrans != 0.0) {
+            objects[o].x0 = objects[o].x0 + deltat * objects[o].x1;
+        }
+        // line for debug (uncomment to debug)
+//        objects[0].x0.show(); objects[1].x0.show();
+//        getchar();
+    }
+    objects[0].x0.show();
+    cout << endl;
+    objects[1].x0.show();
+    getchar();
 
     //evalNeighborTable();
 }
 
+//void DEM::evolveObj() {
+//
+//    double frac = 1.0 / demInitialRepeat / ((double) multiStep);
+//
+//    // updates the position of the cylinders in motion at a given speed
+//    switch (problemName) {
+//        case OBJMOVING:
+//        {
+//            //            const bool objTranslating = ;
+//            for (int o = 0; o < objects.size(); ++o) {
+//                // che if there is a velocity !=0
+//                double sumVelComp = objects[o].x0.x + objects[o].x0.y + objects[o].x0.z;
+//                if (sumVelComp != 0) {
+//                    // update object position
+//                    objects[o].x0.x = objects[o].x0.x + demTime * objects[o].x1.x;
+//                    objects[o].x0.y = objects[o].x0.y + demTime * objects[o].x1.y;
+//                    objects[o].x0.z = objects[o].x0.z + demTime * objects[o].x1.z;
+//
+//                    //                    objects[o].x0.show(); cout << " "; objects[o].x1.show();
+//                    //                   
+//                    //                    cout<<objects.size();
+//                    //                    getchar();
+//
+//                    //                    if (c == 0) {
+//                    //                        cylinders[c].p1.show();
+//                    //                        cout << demTimeStep << " " << demTime << endl;
+//                    //                        cout << demTimeStep * deltat << endl;
+//                    //                        getchar();
+//                    //                        cylinders[c].p2.show();
+//                    //                        getchar();
+//                    //                    }
+//                }
+//            }
+//            break;
+//        }
+//    }
+//    //evalNeighborTable();
+//}
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
  // PRIVATE FUNCTIONS
  //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -817,9 +884,9 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
         }
         case HOURGLASS:
         {
-            double a=0;
+            double a = 0;
 
-            const double outletCenter = demSize[0]/2.0;
+            const double outletCenter = demSize[0] / 2.0;
 
             wall dummyWall;
             dummyWall.p = tVect(0.0, 0.0, hourglassOutletHeight);
@@ -831,7 +898,7 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = outletCenter - hourglassOutletSize;
@@ -850,12 +917,12 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             const double reservoirX = 0.825;
             const double erodibleSizeX = 0.51;
             const double erodibleHeight = 0.02;
-            const double edgeRadius=0.005;
-         
+            const double edgeRadius = 0.005;
+
             wall dummyWall;
-            
+
             // obstacle
-            dummyWall.p = tVect(reservoirX+erodibleSizeX, 0.0, 0);
+            dummyWall.p = tVect(reservoirX + erodibleSizeX, 0.0, 0);
             dummyWall.n = tVect(-1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -864,7 +931,7 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
@@ -874,7 +941,7 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
+
             // bottom of reservoir
             dummyWall.p = tVect(0.0, 0.0, erodibleHeight);
             dummyWall.n = tVect(0.0, 0.0, 1.0);
@@ -885,17 +952,17 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
-            dummyWall.xMax = reservoirX-edgeRadius;
+            dummyWall.xMax = reservoirX - edgeRadius;
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
+
             dummyWall.p = tVect(reservoirX, 0.0, 0);
             dummyWall.n = tVect(1.0, 0.0, 0.0);
             dummyWall.index = index;
@@ -905,14 +972,14 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
-            dummyWall.zMax = erodibleHeight-edgeRadius;
+            dummyWall.zMax = erodibleHeight - edgeRadius;
             ++index;
             walls.push_back(dummyWall);
             break;
@@ -927,8 +994,8 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             const double obstacleSizeY = 0.3;
             const double erodibleSizeX = 0.51;
             const double erodibleHeight = 0.02;
-            const double edgeRadius=0.005;
-            
+            const double edgeRadius = 0.005;
+
             // reservoir left wall
             wall dummyWall;
             dummyWall.p = tVect(reservoirX, 0.0, 0);
@@ -940,18 +1007,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
             dummyWall.yMin = -numeric_limits<double>::max();
-            dummyWall.yMax = centerY - outletSizeY/2.0 - edgeRadius;
+            dummyWall.yMax = centerY - outletSizeY / 2.0 - edgeRadius;
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX, 0.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX, 0.0, 0);
             dummyWall.n = tVect(+1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -960,18 +1027,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
             dummyWall.yMin = -numeric_limits<double>::max();
-            dummyWall.yMax = centerY - outletSizeY/2.0- edgeRadius;
+            dummyWall.yMax = centerY - outletSizeY / 2.0 - edgeRadius;
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX/2, centerY - outletSizeY/2.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX / 2, centerY - outletSizeY / 2.0, 0);
             dummyWall.n = tVect(0.0, +1.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -980,10 +1047,10 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
-            dummyWall.xMin = reservoirX+ edgeRadius;
-            dummyWall.xMax = reservoirX+wallSizeX- edgeRadius;
+            dummyWall.xMin = reservoirX + edgeRadius;
+            dummyWall.xMax = reservoirX + wallSizeX - edgeRadius;
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
@@ -991,7 +1058,7 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             ++index;
             walls.push_back(dummyWall);
 
-            
+
             // reservoir right wall
             dummyWall.p = tVect(reservoirX, 0.0, 0);
             dummyWall.n = tVect(-1.0, 0.0, 0.0);
@@ -1002,18 +1069,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
-            dummyWall.yMin = centerY + outletSizeY/2.0+ edgeRadius;
+            dummyWall.yMin = centerY + outletSizeY / 2.0 + edgeRadius;
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX, 0.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX, 0.0, 0);
             dummyWall.n = tVect(+1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1022,18 +1089,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
-            dummyWall.yMin = centerY + outletSizeY/2.0+edgeRadius;
+            dummyWall.yMin = centerY + outletSizeY / 2.0 + edgeRadius;
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX/2, centerY + outletSizeY/2.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX / 2, centerY + outletSizeY / 2.0, 0);
             dummyWall.n = tVect(0.0, -1.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1042,10 +1109,10 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
-            dummyWall.xMin = reservoirX+ edgeRadius;
-            dummyWall.xMax = reservoirX+wallSizeX- edgeRadius;
+            dummyWall.xMin = reservoirX + edgeRadius;
+            dummyWall.xMax = reservoirX + wallSizeX - edgeRadius;
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
@@ -1053,9 +1120,9 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             ++index;
             walls.push_back(dummyWall);
 
-            
+
             // obstacle
-            dummyWall.p = tVect(reservoirX+wallSizeX+erodibleSizeX, 0.0, 0);
+            dummyWall.p = tVect(reservoirX + wallSizeX + erodibleSizeX, 0.0, 0);
             dummyWall.n = tVect(-1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1064,18 +1131,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
-            dummyWall.yMin = centerY - obstacleSizeY/2.0+edgeRadius;
-            dummyWall.yMax = centerY + obstacleSizeY/2.0-edgeRadius;
+            dummyWall.yMin = centerY - obstacleSizeY / 2.0 + edgeRadius;
+            dummyWall.yMax = centerY + obstacleSizeY / 2.0 - edgeRadius;
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX, 0.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX, 0.0, 0);
             dummyWall.n = tVect(1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1084,18 +1151,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
-            dummyWall.yMin = centerY - obstacleSizeY/2.0+edgeRadius;
-            dummyWall.yMax = centerY + obstacleSizeY/2.0-edgeRadius;
+            dummyWall.yMin = centerY - obstacleSizeY / 2.0 + edgeRadius;
+            dummyWall.yMax = centerY + obstacleSizeY / 2.0 - edgeRadius;
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(0.0, centerY + obstacleSizeY/2.0, 0);
+
+            dummyWall.p = tVect(0.0, centerY + obstacleSizeY / 2.0, 0);
             dummyWall.n = tVect(0.0, 1.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1104,18 +1171,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
-            dummyWall.xMin = reservoirX+wallSizeX+erodibleSizeX+edgeRadius;
-            dummyWall.xMax = reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX-edgeRadius;
+            dummyWall.xMin = reservoirX + wallSizeX + erodibleSizeX + edgeRadius;
+            dummyWall.xMax = reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius;
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(0.0, centerY - obstacleSizeY/2.0, 0);
+
+            dummyWall.p = tVect(0.0, centerY - obstacleSizeY / 2.0, 0);
             dummyWall.n = tVect(0.0, -1.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1124,10 +1191,10 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
-            dummyWall.xMin = reservoirX+wallSizeX+erodibleSizeX+edgeRadius;
-            dummyWall.xMax = reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX-edgeRadius;
+            dummyWall.xMin = reservoirX + wallSizeX + erodibleSizeX + edgeRadius;
+            dummyWall.xMax = reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius;
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
@@ -1145,18 +1212,18 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
-            dummyWall.xMax = reservoirX+wallSizeX-edgeRadius;
+            dummyWall.xMax = reservoirX + wallSizeX - edgeRadius;
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX, 0.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX, 0.0, 0);
             dummyWall.n = tVect(1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1165,17 +1232,17 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
-            dummyWall.zMax = erodibleHeight-edgeRadius;
+            dummyWall.zMax = erodibleHeight - edgeRadius;
             ++index;
             walls.push_back(dummyWall);
-            
+
             // bottom of non-erodible floodplain
             dummyWall.p = tVect(0.0, 0.0, erodibleHeight);
             dummyWall.n = tVect(0.0, 0.0, 1.0);
@@ -1186,9 +1253,9 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
-            dummyWall.xMin = reservoirX+wallSizeX+erodibleSizeX+edgeRadius;
+            dummyWall.xMin = reservoirX + wallSizeX + erodibleSizeX + edgeRadius;
             dummyWall.xMax = numeric_limits<double>::max();
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
@@ -1196,8 +1263,8 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.zMax = +numeric_limits<double>::max();
             ++index;
             walls.push_back(dummyWall);
-            
-            dummyWall.p = tVect(reservoirX+wallSizeX+erodibleSizeX, 0.0, 0);
+
+            dummyWall.p = tVect(reservoirX + wallSizeX + erodibleSizeX, 0.0, 0);
             dummyWall.n = tVect(-1.0, 0.0, 0.0);
             dummyWall.index = index;
             dummyWall.moving = false;
@@ -1206,23 +1273,23 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = -numeric_limits<double>::max();
             dummyWall.xMax = +numeric_limits<double>::max();
             dummyWall.yMin = -numeric_limits<double>::max();
             dummyWall.yMax = +numeric_limits<double>::max();
             dummyWall.zMin = -numeric_limits<double>::max();
-            dummyWall.zMax = erodibleHeight-edgeRadius;
+            dummyWall.zMax = erodibleHeight - edgeRadius;
             ++index;
             walls.push_back(dummyWall);
-            
+
             break;
         }
         case HEAP:
         {
 
-            const double outletSize = demSize[0]/4.0;
+            const double outletSize = demSize[0] / 4.0;
 
             wall dummyWall;
             dummyWall.p = tVect(0.0, 0.0, heapBaseLevel);
@@ -1234,7 +1301,7 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = true;
             dummyWall.xMin = outletSize;
             dummyWall.xMax = demSize[0] - outletSize;
@@ -1256,11 +1323,11 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.vel.reset();
             dummyWall.translating = false;
             dummyWall.slip = false;
-            dummyWall.moving = false;            
+            dummyWall.moving = false;
             dummyWall.limited = false;
             ++index;
             walls.push_back(dummyWall);
-            
+
             dummyWall.p = tVect(0.0, triBeginY, 0.0);
             dummyWall.n = tVect(0.0, -1.0, 0.0);
             dummyWall.index = index;
@@ -1272,7 +1339,7 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
             dummyWall.index = index;
             ++index;
             walls.push_back(dummyWall);
-            
+
             break;
         }
     }
@@ -1290,36 +1357,36 @@ void DEM::initializeCylinders() {
         case HK_LARGE:
         {
             if (depositArea) {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(21.0858, 13.3466, 0.0);
-            dummyCylinder.p2 = tVect(21.0858, 13.3466, 100.0);
-            dummyCylinder.R = 13.513015;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = true;
-            dummyCylinder.xMin = 23.2;
-            dummyCylinder.xMax = 25.2795;
-            dummyCylinder.yMin = 0.0;
-            dummyCylinder.yMax = 0.5008;
-            dummyCylinder.zMin = -1.0;
-            dummyCylinder.zMax = 2.0*demSize[2];
-            cylinders.push_back(dummyCylinder);
-            ++index;
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(21.0858, 13.3466, 0.0);
+                dummyCylinder.p2 = tVect(21.0858, 13.3466, 100.0);
+                dummyCylinder.R = 13.513015;
+                dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                dummyCylinder.initAxes();
+                dummyCylinder.type = EMPTY;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = true;
+                dummyCylinder.xMin = 23.2;
+                dummyCylinder.xMax = 25.2795;
+                dummyCylinder.yMin = 0.0;
+                dummyCylinder.yMax = 0.5008;
+                dummyCylinder.zMin = -1.0;
+                dummyCylinder.zMax = 2.0 * demSize[2];
+                cylinders.push_back(dummyCylinder);
+                ++index;
             }
             break;
         }
-                case IERVOLINO_2D:
+        case IERVOLINO_2D:
         {
 
             const double reservoirX = 0.8;
             const double wallSizeX = 0.025;
             const double erodibleSizeX = 0.51;
             const double erodibleHeight = 0.02;
-            const double edgeRadius=0.005;
+            const double edgeRadius = 0.005;
 
             cylinder dummyCylinder;
             dummyCylinder.R = edgeRadius;
@@ -1328,18 +1395,18 @@ void DEM::initializeCylinders() {
             dummyCylinder.moving = false;
             dummyCylinder.slip = false;
             dummyCylinder.limited = false;
-            
-           
+
+
             // erodible part borders
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX-edgeRadius, 0.0, erodibleHeight-edgeRadius);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX-edgeRadius, 1.0, erodibleHeight-edgeRadius);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             break;
-     }
+        }
         case IERVOLINO:
         {
 
@@ -1351,13 +1418,13 @@ void DEM::initializeCylinders() {
             const double obstacleSizeY = 0.3;
             const double erodibleSizeX = 0.51;
             const double erodibleHeight = 0.02;
-            const double edgeRadius=0.005;
+            const double edgeRadius = 0.005;
 
             // left wall borders
             cylinder dummyCylinder;
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+edgeRadius, centerY-outletSizeY/2.0-edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+edgeRadius, centerY-outletSizeY/2.0-edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 1.0);
             dummyCylinder.R = edgeRadius;
             dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
             dummyCylinder.initAxes();
@@ -1367,75 +1434,75 @@ void DEM::initializeCylinders() {
             dummyCylinder.limited = false;
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX-edgeRadius, centerY-outletSizeY/2.0-edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX-edgeRadius, centerY-outletSizeY/2.0-edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             // right wall borders
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+edgeRadius, centerY+outletSizeY/2.0+edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+edgeRadius, centerY+outletSizeY/2.0+edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX-edgeRadius, centerY+outletSizeY/2.0+edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX-edgeRadius, centerY+outletSizeY/2.0+edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             // obstacle corners
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX+erodibleSizeX+edgeRadius, centerY-obstacleSizeY/2.0+edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX+erodibleSizeX+edgeRadius, centerY-obstacleSizeY/2.0+edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX-edgeRadius, centerY-obstacleSizeY/2.0+edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX-edgeRadius, centerY-obstacleSizeY/2.0+edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX+erodibleSizeX+edgeRadius, centerY+obstacleSizeY/2.0-edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX+erodibleSizeX+edgeRadius, centerY+obstacleSizeY/2.0-edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX-edgeRadius, centerY+obstacleSizeY/2.0-edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX+erodibleSizeX+obstacleSizeX-edgeRadius, centerY+obstacleSizeY/2.0-edgeRadius, 1.0);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 0.0);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 1.0);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             // erodible part borders
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX-edgeRadius, 0.0, erodibleHeight-edgeRadius);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX-edgeRadius, 1.0, erodibleHeight-edgeRadius);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX+wallSizeX+erodibleSizeX+edgeRadius, 0.0, erodibleHeight-edgeRadius);
-            dummyCylinder.p2 = tVect(reservoirX+wallSizeX+erodibleSizeX+edgeRadius, 1.0, erodibleHeight-edgeRadius);
+            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, 0.0, erodibleHeight - edgeRadius);
+            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, 1.0, erodibleHeight - edgeRadius);
             dummyCylinder.initAxes();
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             break;
-     }
+        }
         case IERVOLINO_CYLINDERTEST:
         {
             cylinder dummyCylinder;
@@ -1451,7 +1518,7 @@ void DEM::initializeCylinders() {
             dummyCylinder.limited = false;
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             dummyCylinder.index = index;
             dummyCylinder.p1 = tVect(1.5, 0, 1.5);
             dummyCylinder.p2 = tVect(1.5, 1.0, 1.5);
@@ -1464,17 +1531,17 @@ void DEM::initializeCylinders() {
             dummyCylinder.limited = false;
             cylinders.push_back(dummyCylinder);
             ++index;
-            
+
             break;
-            
+
         }
-                case WILL_SETTLING:
+        case WILL_SETTLING:
         {
             cylinder dummyCylinder;
             dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(0,0,0);
-            dummyCylinder.p2 = tVect(0,0,1);
-            dummyCylinder.R = 0.108/2.0;
+            dummyCylinder.p1 = tVect(0, 0, 0);
+            dummyCylinder.p2 = tVect(0, 0, 1);
+            dummyCylinder.R = 0.108 / 2.0;
             dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
             dummyCylinder.initAxes();
             dummyCylinder.type = EMPTY;
@@ -1485,7 +1552,7 @@ void DEM::initializeCylinders() {
             ++index;
 
             break;
-            
+
         }
         case KELVIN:
         {
@@ -1522,7 +1589,7 @@ void DEM::initializeCylinders() {
             dummyCylinder.type = EMPTY;
             dummyCylinder.moving = true;
             dummyCylinder.slip = false;
-            dummyCylinder.limited=false;
+            dummyCylinder.limited = false;
             cylinders.push_back(dummyCylinder);
             ++index;
             break;
@@ -1539,7 +1606,7 @@ void DEM::initializeCylinders() {
             dummyCylinder.type = EMPTY;
             dummyCylinder.moving = false;
             dummyCylinder.slip = false;
-            dummyCylinder.limited=false;
+            dummyCylinder.limited = false;
             cylinders.push_back(dummyCylinder);
             ++index;
             break;
@@ -1556,8 +1623,30 @@ void DEM::initializeCylinders() {
             dummyCylinder.type = EMPTY;
             dummyCylinder.moving = false;
             dummyCylinder.slip = false;
-            dummyCylinder.limited=false;
+            dummyCylinder.limited = false;
             cylinders.push_back(dummyCylinder);
+            ++index;
+            break;
+        }
+        case INTRUDER:
+        {
+            const double intruderX = 0.02; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+            const double intruderZ = 0.0675;
+            const double intruderd = 16e-3; // diameter of the intruder
+            cylinder intruder;
+            intruder.index = index;
+            intruder.p1 = tVect(intruderX, 0.0, intruderZ);
+            intruder.p2 = tVect(intruderX, 100.0, intruderZ);
+            intruder.R = intruderd / 2.0;
+            intruder.omega = tVect(0.0, 0.0, 0.0);
+            intruder.initAxes();
+            intruder.moving = false;
+            intruder.slip = false;
+            intruder.limited = false;
+            intruder.type = FULL;
+            intruder.translating = true;
+            intruder.trans = tVect(7.5, 0.0, 0.0);
+            cylinders.push_back(intruder);
             ++index;
             break;
         }
@@ -1685,10 +1774,10 @@ void DEM::predictor() {
     //    c[3] = c[2] * deltat / 4.0;
     //    c[4] = c[3] * deltat / 5.0;
 
-//#pragma omp parallel for
-    for (int a=0; a<activeElmts.size(); ++a) {
+    //#pragma omp parallel for
+    for (int a = 0; a < activeElmts.size(); ++a) {
         //cout<<"pr a= "<<a<<endl;
-        unsigned int n=activeElmts[a];
+        unsigned int n = activeElmts[a];
         //cout<<"pr n= "<<n<<endl;
         elmts[n].predict(c1, c2);
         //cout<<"pr end"<<endl;
@@ -1722,15 +1811,15 @@ void DEM::corrector() {
     //    coeff[5]=gear[5]*c[1]/c[4];
 
 #pragma omp parallel for
-    for (int a=0; a<activeElmts.size(); ++a) {
-        unsigned int n=activeElmts[a];
+    for (int a = 0; a < activeElmts.size(); ++a) {
+        unsigned int n = activeElmts[a];
         elmts[n].correct(coeff1ord, coeff2ord);
     }
 }
 
 void DEM::evaluateForces() {
-    for (int a=0; a<activeElmts.size(); ++a) {
-        unsigned int n=activeElmts[a];
+    for (int a = 0; a < activeElmts.size(); ++a) {
+        unsigned int n = activeElmts[a];
         elmts[n].FParticle.reset();
         elmts[n].FWall.reset();
         elmts[n].MParticle.reset();
@@ -1749,7 +1838,7 @@ void DEM::evaluateForces() {
         elmts[n].slippingCase = 0;
         // information about phase change and connectivity
         elmts[n].solidIntensity.reset();
-        elmts[n].coordination=0;
+        elmts[n].coordination = 0;
     }
 
     for (int w = 0; w < walls.size(); ++w) {
@@ -1761,15 +1850,15 @@ void DEM::evaluateForces() {
     }
 
     if (staticFrictionSolve) {
-    // set tentatively all springs to inactive
-    for (int a = 0; a < activeParticles.size(); ++a) {
-        unsigned int p = activeParticles[a];
-        for (int t = 0; t < 4; ++t) {
-            for (int s = 0; s < particles[p].springs[t].size(); ++s) {
-                particles[p].springs[t][s].active = false;
+        // set tentatively all springs to inactive
+        for (int a = 0; a < activeParticles.size(); ++a) {
+            unsigned int p = activeParticles[a];
+            for (int t = 0; t < 4; ++t) {
+                for (int s = 0; s < particles[p].springs[t].size(); ++s) {
+                    particles[p].springs[t][s].active = false;
+                }
             }
         }
-    }
     }
 
     // forces due to particle overlap and lubrication
@@ -1786,32 +1875,32 @@ void DEM::evaluateForces() {
 
     totSprings = 0;
     if (staticFrictionSolve) {
-    // erase springs that are still inactive
-    for (int a = 0; a < activeParticles.size(); ++a) {
-        unsigned int p = activeParticles[a];
-        for (int t = 0; t < 4; ++t) {
-            for (int s = 0; s < particles[p].springs[t].size(); ++s) {
-                if (particles[p].springs[t][s].active == false) {
-                    particles[p].springs[t].erase(particles[p].springs[t].begin() + s);
-                    --s;
-                } else {
-                    ++totSprings;
+        // erase springs that are still inactive
+        for (int a = 0; a < activeParticles.size(); ++a) {
+            unsigned int p = activeParticles[a];
+            for (int t = 0; t < 4; ++t) {
+                for (int s = 0; s < particles[p].springs[t].size(); ++s) {
+                    if (particles[p].springs[t][s].active == false) {
+                        particles[p].springs[t].erase(particles[p].springs[t].begin() + s);
+                        --s;
+                    } else {
+                        ++totSprings;
+                    }
                 }
             }
         }
-    }
     }
 
     // compute apparent accelerations
     if (solveCentrifugal || solveCoriolis) {
         computeApparentForces();
     }
-    
+
     // save info on maximum local force on the particles
     saveObjectForces();
 
     //  Newton equations solution
-    for (int a=0; a < activeElmts.size(); ++a) {
+    for (int a = 0; a < activeElmts.size(); ++a) {
         unsigned int n = activeElmts[a];
 
         // numerical viscosity for stability
@@ -1950,33 +2039,33 @@ double DEM::criticalTimeStep() const {
 // neighbor list functions
 
 void DEM::saveObjectForces() {
-    
-    const tVect direction=Xp;
-    
+
+    const tVect direction = Xp;
+
     // save maximum local force
     for (int o = 0; o < objects.size(); ++o) {
         objects[o].updateMax(direction, demTime);
     }
-    
-    // compute total force on objects
-    tVect totalForce=Zero;
-    for (int o = 0; o < objects.size(); ++o) {
-        totalForce+=objects[o].FHydro+objects[o].FParticle;
-    }
-    
 
-    if (objMaxTotalForce.dot(direction)<totalForce.dot(direction)) {
-        objMaxTotalForce=totalForce;
+    // compute total force on objects
+    tVect totalForce = Zero;
+    for (int o = 0; o < objects.size(); ++o) {
+        totalForce += objects[o].FHydro + objects[o].FParticle;
+    }
+
+
+    if (objMaxTotalForce.dot(direction) < totalForce.dot(direction)) {
+        objMaxTotalForce = totalForce;
         // save forces in this instant
         for (int o = 0; o < objects.size(); ++o) {
-            
+
             objects[o].saveForces();
         }
     }
-    
-    
-    
-    
+
+
+
+
 }
 
 void DEM::initNeighborParameters() {
@@ -2042,8 +2131,8 @@ void DEM::initNeighborParameters() {
 void DEM::evalMaxDisp() {
 
     double maxVel = 0.0;
-    for (int a=0; a<elmts.size(); ++a) {
-        unsigned int n=activeElmts[a];
+    for (int a = 0; a < elmts.size(); ++a) {
+        unsigned int n = activeElmts[a];
         //if (n==elmts.size()-1) {
         //cout<<"a="<<a<<" ("<<activeElmts.size()<<")"<<endl;
         //cout<<"n="<<n<<" ("<<elmts.size()<<")"<<endl;
@@ -2053,7 +2142,7 @@ void DEM::evalMaxDisp() {
         //    }
         //}
         //}
-        const double velNorm2=elmts[n].x1.norm2();
+        const double velNorm2 = elmts[n].x1.norm2();
         //cout<<"end"<<endl;
         if (velNorm2 > maxVel) {
             maxVel = velNorm2;
@@ -2115,18 +2204,16 @@ void DEM::destroyElements() {
 
 
     if (problemName == HONGKONG || problemName == STVINCENT || problemName == ESERCITAZIONE) {
-        
+
         double destroyWallPosition = 0.0;
         if (problemName == HONGKONG) {
-            destroyWallPosition=2.0;
+            destroyWallPosition = 2.0;
+        } else if (problemName == STVINCENT) {
+            destroyWallPosition = 7.0;
+        } else if (problemName == ESERCITAZIONE) {
+            destroyWallPosition = 30.0;
         }
-        else if (problemName == STVINCENT) {
-            destroyWallPosition=7.0;
-        }
-        else if (problemName == ESERCITAZIONE) {
-            destroyWallPosition=30.0;
-        }
-        
+
         for (int n = 0; n < elmts.size(); ++n) {
             if (elmts[n].active == true && elmts[n].x0.dot(Xp) > destroyWallPosition) {
                 elmts[n].active = false;
@@ -2155,9 +2242,8 @@ void DEM::destroyElements() {
                 }
             }
         }
-    }
-    else if (problemName == FILIPPO_SILOS) {
-        
+    } else if (problemName == FILIPPO_SILOS) {
+
         double destroyWallPosition = 0.3;
         for (int n = 0; n < elmts.size(); ++n) {
             if (elmts[n].active == true && elmts[n].x0.dot(Zp) < destroyWallPosition) {
@@ -2188,7 +2274,7 @@ void DEM::destroyElements() {
             }
         }
     }
-    
+
 
 }
 
@@ -2246,7 +2332,7 @@ void DEM::evalNeighborTable() {
         // update signal for LBM
         newNeighborList = true;
     }
-    
+
 
     activeParticles.clear();
     for (int p = 0; p < particles.size(); ++p) {
@@ -2565,7 +2651,7 @@ Elongation* DEM::findSpring(const unsigned int& t, const unsigned int& indexI, p
     Elongation dummyElongation;
     dummyElongation.reset();
     Elongation* elongation_here_new = &dummyElongation;
-    
+
     // check if spring already exists
     for (int i = 0; i < partJ->springs[t].size(); ++i) {
         const unsigned int springIndexI = partJ->springs[t][i].indexI;
@@ -2577,7 +2663,7 @@ Elongation* DEM::findSpring(const unsigned int& t, const unsigned int& indexI, p
             break;
         }
     }
-       
+
     // if no spring has been found,
     if (elongation_here_new->active == false) {
         dummyElongation.active = true;
@@ -2617,8 +2703,8 @@ void DEM::particleParticleContacts() {
             // pointer to elongation, initially pointing to an empty spring
             Elongation* elongation_here_new;
             if (staticFrictionSolve) {
-            const unsigned int indexI=partI->particleIndex;
-            elongation_here_new = findSpring(0, indexI, partJ);
+                const unsigned int indexI = partI->particleIndex;
+                elongation_here_new = findSpring(0, indexI, partJ);
             }
 
             particleParticleCollision(partI, partJ, vectorDistance, elongation_here_new);
@@ -2630,7 +2716,7 @@ void DEM::particleParticleContacts() {
 void DEM::wallParticleContacts() {
 
     // to keep conventions, the index i refers to the wall, and j the particle
-//    unsigned int elongIndex = 0;
+    //    unsigned int elongIndex = 0;
 
     for (unsIntList::iterator ip = nearWallTable.begin(); ip != nearWallTable.end(); ip = ip + 2) {
         // couple of contact candidates
@@ -2681,7 +2767,7 @@ void DEM::wallParticleContacts() {
                 Elongation* elongation_here_new;
                 if (staticFrictionSolve) {
                     const unsigned int indexI = wallI->index;
-                elongation_here_new = findSpring(1, indexI, partJ);
+                    elongation_here_new = findSpring(1, indexI, partJ);
                 }
                 wallParticleCollision(wallI, partJ, overlap, elongation_here_new);
 
@@ -2691,7 +2777,7 @@ void DEM::wallParticleContacts() {
 }
 
 void DEM::cylinderParticelContacts() {
-//    unsigned int elongIndex = 0;
+    //    unsigned int elongIndex = 0;
     // to keep conventions, the index i refers to the cylinder, and j the particle
     // cycling through the cylinders
     for (unsIntList::iterator ip = nearCylinderTable.begin(); ip != nearCylinderTable.end(); ip = ip + 2) {
@@ -2721,8 +2807,8 @@ void DEM::cylinderParticelContacts() {
             // pointer to elongation, initially pointing to an empty spring
             Elongation* elongation_here_new;
             if (staticFrictionSolve) {
-            const unsigned int indexI = cylinderI->index;
-            elongation_here_new = findSpring(2, indexI, partJ);
+                const unsigned int indexI = cylinderI->index;
+                elongation_here_new = findSpring(2, indexI, partJ);
             }
             cylinderParticleCollision(cylinderI, partJ, overlap, elongation_here_new);
 
@@ -2731,7 +2817,7 @@ void DEM::cylinderParticelContacts() {
 }
 
 void DEM::objectParticleContacts() {
-//    unsigned int elongIndex = 0;
+    //    unsigned int elongIndex = 0;
     // to keep conventions, the index i refers to the object, and j the particle
     for (unsIntList::iterator ip = nearObjectTable.begin(); ip != nearObjectTable.end(); ip = ip + 2) {
         // couple of contact candidates
@@ -2755,7 +2841,7 @@ void DEM::objectParticleContacts() {
             Elongation* elongation_here_new;
             if (staticFrictionSolve) {
                 const unsigned int indexI = objectI->index;
-            elongation_here_new = findSpring(3, indexI, partJ);
+                elongation_here_new = findSpring(3, indexI, partJ);
             }
             objectParticleCollision(objectI, partJ, vectorDistance, elongation_here_new);
         }
@@ -2816,7 +2902,7 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
 
     if (!partI->isGhost) {
         elmtI->FParticle = elmtI->FParticle - normalForce;
-        elmtI->solidIntensity +=  normalForce.abs();
+        elmtI->solidIntensity += normalForce.abs();
         //  moment generated in non-spherical particles
         if (elmtI->size > 1) {
             elmtI->MParticle = elmtI->MParticle - centerDistI.cross(normalForce);
@@ -2824,7 +2910,7 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
     }
     if (!partJ->isGhost) {
         elmtJ->FParticle = elmtJ->FParticle + normalForce;
-        elmtJ->solidIntensity +=  normalForce.abs();
+        elmtJ->solidIntensity += normalForce.abs();
         //  moment generated in non-spherical particles
         if (elmtJ->size > 1) {
             elmtJ->MParticle = elmtJ->MParticle + centerDistJ.cross(normalForce);
@@ -2867,15 +2953,15 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
         //elongation.e.show();
         tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, effRad, effMass, elongation_new, sphereMat.frictionCoefPart,
                 sphereMat.linearStiff, sphereMat.viscTang);
-        
+
         // torque updating
         if (!partI->isGhost) {
             elmtI->MParticle = elmtI->MParticle + centerDistI.cross(tangForce);
             elmtI->FSpringP = elmtI->FSpringP + tangForce;
             elmtI->FParticle = elmtI->FParticle + tangForce;
-            elmtI->solidIntensity +=  tangForce.abs();
+            elmtI->solidIntensity += tangForce.abs();
             if (staticFrictionSolve) {
-            elmtI->slippingCase = elongation_new->slippingCase;
+                elmtI->slippingCase = elongation_new->slippingCase;
             }
 
         }
@@ -2883,9 +2969,9 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
             elmtJ->MParticle = elmtJ->MParticle - centerDistJ.cross(tangForce);
             elmtJ->FSpringP = elmtJ->FSpringP - tangForce;
             elmtJ->FParticle = elmtJ->FParticle - tangForce;
-            elmtJ->solidIntensity +=  tangForce.abs();
+            elmtJ->solidIntensity += tangForce.abs();
             if (staticFrictionSolve) {
-            elmtJ->slippingCase = elongation_new->slippingCase;
+                elmtJ->slippingCase = elongation_new->slippingCase;
             }
         }
 
@@ -2915,8 +3001,8 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
     }
 
     // updating connectivity
-    elmtI->coordination+=1;
-    elmtJ->coordination+=1;
+    elmtI->coordination += 1;
+    elmtJ->coordination += 1;
 }
 
 inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const double& overlap, Elongation* elongation_new) {
@@ -2943,16 +3029,16 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
     // force computation /////////////////////////////////
     double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->m); // removed 2.0 *
 
-//    switch (problemName) {
-//        case TRIAXIAL:
-//        {
-//            if (wallI->index > 5) {
-//                normNormalForce /= 10;
-//            }
-//        }
-//    }
+    //    switch (problemName) {
+    //        case TRIAXIAL:
+    //        {
+    //            if (wallI->index > 5) {
+    //                normNormalForce /= 10;
+    //            }
+    //        }
+    //    }
 
-    
+
     // Overlap elastic potential energy
     //                    energy.elastic+=fn*xj/2.5;
 
@@ -2973,7 +3059,7 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
     // force updating
     elmtJ->FWall = elmtJ->FWall + normalForce;
     wallI->FParticle = wallI->FParticle - normalForce;
-    elmtJ->solidIntensity +=  normalForce.abs();
+    elmtJ->solidIntensity += normalForce.abs();
     // torque updating
     if (elmtJ->size > 1) {
         elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
@@ -3014,17 +3100,17 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
 
         tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->m, elongation_new, sphereMat.frictionCoefWall,
                 sphereMat.linearStiff, sphereMat.viscTang);
-        
+
         // torque updating
         elmtJ->MWall = elmtJ->MWall - centerDistJ.cross(tangForce);
         // force updating
         elmtJ->FSpringW = elmtJ->FSpringW - tangForce;
         elmtJ->FWall = elmtJ->FWall - tangForce;
-        elmtJ->solidIntensity +=  tangForce.abs();
+        elmtJ->solidIntensity += tangForce.abs();
         wallI->FParticle = wallI->FParticle + tangForce;
-        
+
         if (staticFrictionSolve) {
-        elmtJ->slippingCase = elongation_new->slippingCase;
+            elmtJ->slippingCase = elongation_new->slippingCase;
         }
 
     }
@@ -3043,8 +3129,8 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
     }
 
     // updating connectivity
-    elmtJ->coordination+=1;
-    
+    elmtJ->coordination += 1;
+
 }
 
 inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *partJ, const double& overlap, Elongation* elongation_new) {
@@ -3090,7 +3176,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
 
     // force updating
     elmtJ->FWall = elmtJ->FWall + normalForce;
-    elmtJ->solidIntensity +=  normalForce.abs();
+    elmtJ->solidIntensity += normalForce.abs();
     // wallI->FParticle=wallI->FParticle-fnv;
     // torque updating
     if (elmtJ->size > 1) {
@@ -3135,7 +3221,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
         elmtJ->MWall = elmtJ->MWall - centerDistJ.cross(tangForce);
         // force updating
         elmtJ->FWall = elmtJ->FWall - tangForce;
-        elmtJ->solidIntensity +=  tangForce.abs();
+        elmtJ->solidIntensity += tangForce.abs();
         //wallI->FParticle = wallI->FParticle+ftv;
     }
     //ROLLING
@@ -3153,9 +3239,9 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
     if (overlap > elmtJ->maxOverlap) {
         elmtJ->maxOverlap = overlap;
     }
-    
+
     // updating connectivity
-    elmtJ->coordination+=1;
+    elmtJ->coordination += 1;
 }
 
 inline void DEM::objectParticleCollision(object *objectI, const particle *partJ, const tVect& vectorDistance, Elongation* elongation_new) {
@@ -3202,8 +3288,8 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
     // force updating
     elmtJ->FWall = elmtJ->FWall + normalForce;
     objectI->FParticle = objectI->FParticle - normalForce;
-    elmtJ->solidIntensity +=  normalForce.abs();
-            
+    elmtJ->solidIntensity += normalForce.abs();
+
     // torque updating
     if (elmtJ->size > 1) {
         elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
@@ -3248,7 +3334,7 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
         // force updating
         elmtJ->FSpringW = elmtJ->FSpringW - tangForce;
         elmtJ->FWall = elmtJ->FWall - tangForce;
-        elmtJ->solidIntensity +=  tangForce.abs();
+        elmtJ->solidIntensity += tangForce.abs();
         objectI->FParticle = objectI->FParticle + tangForce;
 
     }
@@ -3266,9 +3352,9 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
     if (overlap > elmtJ->maxOverlap) {
         elmtJ->maxOverlap = overlap;
     }
-    
+
     // updating connectivity
-    elmtJ->coordination+=1;
+    elmtJ->coordination += 1;
 }
 
 double DEM::normalContact(const double& overlap, const double& vrelnnorm, const double& effRad, const double& effMass) const {
@@ -3337,7 +3423,7 @@ tVect DEM::FRtangentialContact(const tVect& tangRelVelContact, const double& fn,
             break;
         }
     }
-            
+
     // maximum force due to static friction
     const double fsMax = friction*fn;
     const double fdMax = 0.9 * friction*fn;
@@ -3398,7 +3484,7 @@ tVect DEM::FRtangentialContact(const tVect& tangRelVelContact, const double& fn,
         const double viscousForceReal = std::min(viscousForceNorm, fsMax);
         fs = viscousForce / viscousForceNorm*viscousForceReal;
     }
-    
+
 
 
     return fs;
@@ -3520,6 +3606,6 @@ void DEM::updateEnergy(double& totalKineticEnergy) {
 
     // total
     particleEnergy.updateTotal();
-    totalKineticEnergy=totalKineticEnergy+particleEnergy.rotKin+particleEnergy.trKin;
+    totalKineticEnergy = totalKineticEnergy + particleEnergy.rotKin + particleEnergy.trKin;
 
 }

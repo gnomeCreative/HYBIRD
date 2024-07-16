@@ -153,7 +153,11 @@ public:
     // limits for cylinders
     bool limited;
     double xMin,xMax,yMin,yMax,zMin,zMax;
-
+    // is it translating?
+    bool translating;
+    // translation vector
+    tVect trans;
+    
     // default constructor
     cylinder(){
         index=0;
@@ -166,6 +170,8 @@ public:
         moving=false;
         slip=false;
         type=EMPTY;
+        translating=false;
+        trans=tVect(0.0,0.0,0.0);
         }
     // constructor
     cylinder(tVect ip1, tVect ip2, double radius){

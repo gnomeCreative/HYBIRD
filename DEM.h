@@ -185,6 +185,7 @@ public:
     void discreteElementInit(const typeList& externalBoundary, const doubleList& externalSize, const vecList& externalBoundaryLocation,
             const tVect externalAccel, const tVect externalRotation, const tVect externalRotationCenter, const bool externalSolveCoriolis, const bool externalSolveCentrifugal, const double& externalTimeStep);
     void evolveBoundaries();
+//    void evolveObj();
     void determineTimeStep(const double& externalTimeStep);
     // energy functions
     void updateEnergy(double& totalKineticEnergy);

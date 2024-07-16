@@ -17,11 +17,15 @@
  *          
  *      author: Alessandro Leonardi
  *
- */ 
+ */
+
 
 enum ExitCode {
     UNFINISHED = -1, SUCCESS = 0, TIME_LIMIT_REACHED, SIGNAL_CAUGHT, ERROR
 };
+
+
+
 
 ExitCode exit_code = UNFINISHED;
 ProblemName problemName = NONE;
@@ -37,12 +41,13 @@ void print_help() {
 
 void goCycle(IO& io, DEM& dem, LB& lb) {
 
-     // advance one step in time
-    io.realTime+=lb.unit.Time;
+    // advance one step in time
+    io.realTime += lb.unit.Time;
     ++io.currentTimeStep;
     ++lb.time;
 
     dem.evolveBoundaries();
+//    dem.evolveObj();
     //cout<<"1"<<endl;
     if (io.demSolver) {
 
@@ -55,7 +60,7 @@ void goCycle(IO& io, DEM& dem, LB& lb) {
 
             lb.latticeBoltzmannCouplingStep(dem.newNeighborList, dem.elmts, dem.particles);
         }
-            
+
         lb.latticeBolzmannStep(dem.elmts, dem.particles, dem.walls, dem.objects);
 
         // Lattice Boltzmann core steps
@@ -74,7 +79,7 @@ void goCycle(IO& io, DEM& dem, LB& lb) {
 
     io.outputStep(lb, dem);
 
-    
+
 }
 
 void parseCommandLine(IO& io, GetPot& commandLine) {
@@ -141,7 +146,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
 
 void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& commandLine) {
 
-    cout<<"Parsing input file"<<endl;
+    cout << "Parsing input file" << endl;
     // PROBLEM NAME //////////////
     // necessary for hard coded sections of the code
     string problemNameString;
@@ -180,9 +185,10 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     else if (problemNameString == "HEAP") problemName = HEAP;
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
     else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
-    // else if (problemNameString=="SETT") problemName=SETT;
+    else if (problemNameString == "INTRUDER") problemName = INTRUDER;
+    else if (problemNameString == "OBJMOVING") problemName = OBJMOVING;
 
-    
+
 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
@@ -217,10 +223,12 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     ASSERT(io.partRecycleExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.objectExpTime, "objectExpTime", 0.0);
     ASSERT(io.objectExpTime >= 0);
+    PARSE_CLASS_MEMBER(configFile, io.cylinderExpTime, "cylinderExpTime", 0.0);
+    ASSERT(io.cylinderExpTime >= 0);
     // single objects
     unsigned int totSingleObjects = configFile.vector_variable_size("singleObjects");
-    if (commandLine.vector_variable_size("-singleObjects")>0)
-            totSingleObjects=commandLine.vector_variable_size("-singleObjects");
+    if (commandLine.vector_variable_size("-singleObjects") > 0)
+        totSingleObjects = commandLine.vector_variable_size("-singleObjects");
     cout << "Single objects (" << totSingleObjects << "): ";
     for (int index = 0; index < totSingleObjects; index++) {
         int singleObjectHere = 0;
@@ -233,7 +241,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     ASSERT(io.singleObjects.size() == totSingleObjects);
 
 
-        // flow level sensors
+    // flow level sensors
     unsigned int totFlowLevelBegin = configFile.vector_variable_size("flowLevelSensorBegin");
     unsigned int totFlowLevelEnd = configFile.vector_variable_size("flowLevelSensorEnd");
     if (commandLine.vector_variable_size("-flowLevelSensorBegin") > 0)
@@ -263,10 +271,10 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     // object groups
     unsigned int totObjectGroupBegin = configFile.vector_variable_size("objectGroupBegin");
     unsigned int totObjectGroupEnd = configFile.vector_variable_size("objectGroupEnd");
-    if (commandLine.vector_variable_size("-objectGroupBegin")>0)
-        totObjectGroupBegin=commandLine.vector_variable_size("-objectGroupBegin");
-    if (commandLine.vector_variable_size("-objectGroupEnd")>0)
-        totObjectGroupEnd=commandLine.vector_variable_size("-objectGroupEnd");
+    if (commandLine.vector_variable_size("-objectGroupBegin") > 0)
+        totObjectGroupBegin = commandLine.vector_variable_size("-objectGroupBegin");
+    if (commandLine.vector_variable_size("-objectGroupEnd") > 0)
+        totObjectGroupEnd = commandLine.vector_variable_size("-objectGroupEnd");
     ASSERT(totObjectGroupBegin == totObjectGroupEnd);
     const unsigned int totObjectGroups = totObjectGroupBegin;
     if (totObjectGroups) {
@@ -350,13 +358,13 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
         {
             PARSE_CLASS_MEMBER(configFile, dem.hourglassOutletSize, "hourglassOutletSize", 0.0);
             PARSE_CLASS_MEMBER(configFile, dem.hourglassOutletHeight, "hourglassOutletHeight", 0.0);
-            lb.hourglassOutletHeight=dem.hourglassOutletHeight;
+            lb.hourglassOutletHeight = dem.hourglassOutletHeight;
             break;
         }
         case HEAP:
         {
             PARSE_CLASS_MEMBER(configFile, dem.heapBaseLevel, "heapBaseLevel", 0.0);
-            lb.heapBaseLevel=dem.heapBaseLevel;
+            lb.heapBaseLevel = dem.heapBaseLevel;
             break;
         }
         case TRIAXIAL:
@@ -403,7 +411,7 @@ int main(int argc, char** argv) {
         cout << " X ";
     }
     cout << "\n";
-    
+
     // DECLARATION OF VARIABLES - Input-Output ///////////////
     IO io;
 
@@ -429,17 +437,17 @@ int main(int argc, char** argv) {
     GetPot commandLine(argc, argv);
     commandLine.print();
     parseCommandLine(io, commandLine);
-    
+
     // parsing LBM input file
     GetPot configFile(io.configFileName);
     parseConfigFile(io, dem, lb, configFile, commandLine);
 
     printUfo(commandLine, configFile);
 
-//    // bind signal handlers
-//    signal(SIGHUP, SIG_IGN); // for easy running through ssh
-//    signal(SIGQUIT, catchSignal);
-//    signal(SIGTERM, catchSignal); // important for job killing on a cluster
+    //    // bind signal handlers
+    //    signal(SIGHUP, SIG_IGN); // for easy running through ssh
+    //    signal(SIGQUIT, catchSignal);
+    //    signal(SIGTERM, catchSignal); // important for job killing on a cluster
 
     io.currentTimeStep = 0;
 
@@ -471,9 +479,9 @@ int main(int argc, char** argv) {
     // setting time
     lb.time = 0;
     dem.demTime = 0.0;
-    io.realTime=0.0;
+    io.realTime = 0.0;
     dem.demTimeStep = 0;
-    
+
     // initial output
     io.outputStep(lb, dem);
 
@@ -483,13 +491,12 @@ int main(int argc, char** argv) {
 
         if (io.realTime != 0.0 && io.realTime > io.maxTime) {
             exit_code = SUCCESS;
-        }            // exit normally if the maximum simulation time has been reached
+        }// exit normally if the maximum simulation time has been reached
         else if (io.maximumTimeSteps && io.currentTimeStep >= io.maximumTimeSteps) {
             exit_code = SUCCESS;
-        }
-        else if (io.energyExit) {
+        } else if (io.energyExit) {
             exit_code = SUCCESS;
-        }else {
+        } else {
             // core of the code, performs time steps
             goCycle(io, dem, lb);
 

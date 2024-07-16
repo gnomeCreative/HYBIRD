@@ -26,18 +26,24 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/centrifugel.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/gravity.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/centrifugeTest/centrifuge.cfg -d D:///hybirdResults/centrifugeTest -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/chi_debug/granular_column.cfg -d D:///hybirdResults/chi_debug -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./input/chi_debug/chi_debug.cfg -d D:///hybirdResults/chi_debug -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./manual/tutorials/granular_flow/granular_flow.cfg -d ./manual/tutorials/granular_flow/results -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c ./manual/tutorials/granular_column/granular_column.cfg -d ./manual/tutorials/granular_column/results -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\will_d8_r54_H50_14_03g_100_p.cfg -d C:\Users\ci1alx\Dropbox\SHEFFIELD\04.students\05.Will\test_fail_20220821\results -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c G:\My Drive\04.students\05.William_Webb\20230606/collapse\Settling_d8_r54_H50_1_104.cfg -d G:\My Drive\04.students\05.William_Webb\20230606\collapse/results -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c C:\simulations\20230806_will_collapse\Settling_d8_r54_H50_1_104.cfg -d C:\simulations\20230806_will_collapse/results -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" 
+-c ./input/config_intruder.cfg 
+-d ./results/granular_intruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" 
+-c ./input/config_intruder_createDense.cfg 
+-d ./results/granular_intruder  -n column</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" 
+-c ./input/config_intruder_createDense.cfg 
+-d ./results/granular_intruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_intruder_motion.cfg  -d ./results/granular_intruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_intruder_createDense.cfg  -d ./results/granular_intruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testIntruderMoving.cfg  -d ./results/granular_intruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testObjMoving.cfg  -d ./results/objIntruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testCylinderMoving.cfg  -d ./results/cylMoving  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testCylinderMoving.cfg  -d ../results/cylMoving  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testObjMoving.cfg  -d ../results/objIntruder  -n time</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -c C:\simulations\20230806_will_collapse\Settling_d8_r54_H50_1_104.cfg -d C:\simulations\20230806_will_collapse/results -n time</runcommand>
+        <runcommand>"${OUTPUT_PATH}"  -c ./input/config_testObjMoving.cfg  -d ../results/objIntruder  -n time</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>1</terminal-type>
