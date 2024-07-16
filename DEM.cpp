@@ -405,13 +405,13 @@ void DEM::discreteElementStep() {
 
 void DEM::evolveBoundaries() {
 
-    double frac = 1.0 / demInitialRepeat / ((double) multiStep);
-    //    cout<<"frac="<<frac<<"\n";
-
+    
 
     switch (problemName) {
+        
         case TRIAXIAL:
         {
+            double frac = 1.0 / demInitialRepeat / ((double) multiStep);
             const double reduceFactor = 10.0 / (deltat * double(multiStep));
 
             // wall in X
@@ -476,12 +476,7 @@ void DEM::evolveBoundaries() {
     // update the position of the walls (rigid body)
     for (int n = 0; n < walls.size(); ++n) {
         if (walls[n].translating) {
-            walls[n].p = walls[n].p + frac * walls[n].trans;
-
-            if (n == 1) {
-                //            walls[n].p.show();
-                //            cout<<"\n";
-            }
+            walls[n].p = walls[n].p + deltat * walls[n].trans;
         }
     }
     // update the position of the cylinders (rigid body)
@@ -491,9 +486,6 @@ void DEM::evolveBoundaries() {
             cylinders[c].p1 = cylinders[c].p1 + deltat * cylinders[c].trans;
             cylinders[c].p2 = cylinders[c].p2 + deltat * cylinders[c].trans;
 
-            // line for debug (uncomment to debug)
-            // cylinders[c].p1.show(); cout << " "; cylinders[c].p2.show();
-            // getchar();
         }
     }
     
@@ -505,56 +497,12 @@ void DEM::evolveBoundaries() {
         if (objects[o].translating == true && objTrans != 0.0) {
             objects[o].x0 = objects[o].x0 + deltat * objects[o].x1;
         }
-        // line for debug (uncomment to debug)
-//        objects[0].x0.show(); objects[1].x0.show();
-//        getchar();
+
     }
-    objects[0].x0.show();
-    cout << endl;
-    objects[1].x0.show();
-    getchar();
 
     //evalNeighborTable();
 }
 
-//void DEM::evolveObj() {
-//
-//    double frac = 1.0 / demInitialRepeat / ((double) multiStep);
-//
-//    // updates the position of the cylinders in motion at a given speed
-//    switch (problemName) {
-//        case OBJMOVING:
-//        {
-//            //            const bool objTranslating = ;
-//            for (int o = 0; o < objects.size(); ++o) {
-//                // che if there is a velocity !=0
-//                double sumVelComp = objects[o].x0.x + objects[o].x0.y + objects[o].x0.z;
-//                if (sumVelComp != 0) {
-//                    // update object position
-//                    objects[o].x0.x = objects[o].x0.x + demTime * objects[o].x1.x;
-//                    objects[o].x0.y = objects[o].x0.y + demTime * objects[o].x1.y;
-//                    objects[o].x0.z = objects[o].x0.z + demTime * objects[o].x1.z;
-//
-//                    //                    objects[o].x0.show(); cout << " "; objects[o].x1.show();
-//                    //                   
-//                    //                    cout<<objects.size();
-//                    //                    getchar();
-//
-//                    //                    if (c == 0) {
-//                    //                        cylinders[c].p1.show();
-//                    //                        cout << demTimeStep << " " << demTime << endl;
-//                    //                        cout << demTimeStep * deltat << endl;
-//                    //                        getchar();
-//                    //                        cylinders[c].p2.show();
-//                    //                        getchar();
-//                    //                    }
-//                }
-//            }
-//            break;
-//        }
-//    }
-//    //evalNeighborTable();
-//}
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
  // PRIVATE FUNCTIONS
  //////////////////////////////////////////////////////////////////////////////////////////////////////*/
