@@ -79,6 +79,7 @@ void IO::initialize() {
     fluidRecycleFileFormat = fluidDirectory + "/fluidRecycle%010u.dat";
     partRecycleFileFormat = partDirectory + "/partRecycle%010u.dat";
     objectFileFormat = partDirectory + "/object%010u.vtu";
+    cylinderFileFormat = partDirectory + "/cylinder%010u.vtu";
 
     //  initializing output file
     exportFileName = workDirectory + "/export.dat";
@@ -186,6 +187,7 @@ void IO::initialize() {
     lastFluid2DExp = 0;
     lastPartExp = 0;
     lastObjectExp = 0;
+    lastCylinderExp =0;
     lastFluidRecycleExp = 0;
     lastPartRecycleExp = 0;
 
@@ -472,6 +474,19 @@ void IO::createFiles(const LB& lb, const DEM& dem) {
             exportParaviewObjects(dem.objects, filePathBuffer);
         }
     }
+    
+    if (dem.cylinders.size() > 0) {
+        
+        const unsigned int CylinderExpCounter = (cylinderExpTime > 0 ? static_cast<unsigned int> (realTime / cylinderExpTime) + 1 : 0);
+        if (CylinderExpCounter > lastCylinderExp) {
+            lastCylinderExp = CylinderExpCounter;
+            char filePathBuffer [1024];
+            sprintf(filePathBuffer, cylinderFileFormat.c_str(), currentTimeStep);
+            exportParaviewCylinders(dem.cylinders, filePathBuffer);
+        }
+        
+    }
+    
 }
 
 void IO::initialize2DFile(const LB& lb) {
@@ -987,6 +1002,97 @@ void IO::exportParaviewObjects(const objectList& objects, const string& objectFi
     paraviewObjectFile << "</VTKFile>";
     // header file closing
     paraviewObjectFile.close();
+}
+
+void IO::exportParaviewCylinders(const cylinderList& cylinders, const string& cylinderFile) {
+    
+    const int vtkLineType = 3; // vtk line type
+    const int Cnumber = cylinders.size(); // number of cylinders
+    
+    // file opening
+    ofstream paraviewCylinderFile;
+    paraviewCylinderFile.open(cylinderFile.c_str());
+    
+    // write the header of the file
+    paraviewCylinderFile << "<?xml version=\"1.0\"?>\n";
+    paraviewCylinderFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">\n";
+    paraviewCylinderFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
+    paraviewCylinderFile << "  <Piece NumberOfPoints=\"" << 2 * Cnumber << "\" NumberOfCells=\"" << Cnumber << "\">\n";
+    paraviewCylinderFile << "   <PointData>\n";
+    
+    // Write the radius of the cylinder
+    paraviewCylinderFile << "    <DataArray type=\"Float64\" Name=\"radius\" format=\"ascii\">\n";
+    for (int i = 0; i < Cnumber; ++i) {
+        paraviewCylinderFile << cylinders[i].R << "\n";
+        paraviewCylinderFile << cylinders[i].R << "\n"; // Each cylinder has two points with the same radius
+    }
+    paraviewCylinderFile << "    </DataArray>\n";
+
+    // Write the index
+    paraviewCylinderFile << "    <DataArray type=\"Float64\" Name=\"cylinderIndex\" format=\"ascii\">\n";
+    for (int i = 0; i < Cnumber; ++i) {
+        paraviewCylinderFile << cylinders[i].index << "\n";
+        paraviewCylinderFile << cylinders[i].index << "\n"; // Each cylinder has two points with the same index
+    }
+    paraviewCylinderFile << "    </DataArray>\n";
+
+    // Write velocity
+    paraviewCylinderFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    for (int i = 0; i < Cnumber; ++i) {
+        cylinders[i].trans.printLine(paraviewCylinderFile);
+        cylinders[i].trans.printLine(paraviewCylinderFile); // Each cylinder has two points with the same velocity
+    }
+    
+    // add the vtk data for the forces (needed algorithm to comoute forces)
+//        paraviewCylinderFile << "    <DataArray type=\"Float64\" Name=\"FParticle\" NumberOfComponents=\"3\"/>\n";
+//    for (int i = 0; i < Onumber; ++i) {
+//        cylinders[i].FParticle.printLine(paraviewObjectFile);
+//    }
+//    paraviewCylinderFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\"/>\n";
+//    for (int i = 0; i < Onumber; ++i) {
+//        cylinders[i].FHydro.printLine(paraviewObjectFile);
+//    }
+    
+    // Write the position 
+    paraviewCylinderFile << "    </DataArray>\n";
+
+    paraviewCylinderFile << "   </PointData>\n";
+    paraviewCylinderFile << "   <CellData>\n";
+    paraviewCylinderFile << "   </CellData>\n";
+    paraviewCylinderFile << "   <Points>\n";
+    paraviewCylinderFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    for (int i = 0; i < Cnumber; ++i) {
+        paraviewCylinderFile << cylinders[i].p1.x << " " << cylinders[i].p1.y << " " << cylinders[i].p1.z << "\n";
+        paraviewCylinderFile << cylinders[i].p2.x << " " << cylinders[i].p2.y << " " << cylinders[i].p2.z << "\n";
+    }
+    
+    // Write all the shit that Paraview needs for vtk files (connectivity matrix etc..)
+    paraviewCylinderFile << "    </DataArray>\n";
+    paraviewCylinderFile << "   </Points>\n";
+    paraviewCylinderFile << "   <Cells>\n";
+    paraviewCylinderFile << "    <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n";
+    for (int i = 0; i < Cnumber; ++i) {
+        paraviewCylinderFile << 2 * i << " " << 2 * i + 1 << "\n";
+    }
+    paraviewCylinderFile << "    </DataArray>\n";
+    paraviewCylinderFile << "    <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n";
+    for (int i = 1; i <= Cnumber; ++i) {
+        paraviewCylinderFile << 2 * i << "\n";
+    }
+    paraviewCylinderFile << "    </DataArray>\n";
+    paraviewCylinderFile << "    <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+    for (int i = 0; i < Cnumber; ++i) {
+        paraviewCylinderFile << vtkLineType << "\n"; // VTK_LINE type
+    }
+    paraviewCylinderFile << "    </DataArray>\n";
+    paraviewCylinderFile << "   </Cells>\n";
+    paraviewCylinderFile << "  </Piece>\n";
+    paraviewCylinderFile << " </UnstructuredGrid>\n";
+    paraviewCylinderFile << "</VTKFile>";
+    
+    // Close the file
+    paraviewCylinderFile.close();
+    
 }
 
 void IO::exportRecycleFluid(const LB& lb, const string& fluidRecycleFile) {

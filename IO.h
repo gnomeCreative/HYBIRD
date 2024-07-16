@@ -62,7 +62,7 @@ public:
     // time integration: maximum time
     double maxTime;
     // intervals for output
-    double screenExpTime, stateExpTime, fluidExpTime, fluidLagrangianExpTime, fluid2DExpTime, partExpTime, objectExpTime, singleObjectExpTime;
+    double screenExpTime, stateExpTime, fluidExpTime, fluidLagrangianExpTime, fluid2DExpTime, partExpTime, objectExpTime, singleObjectExpTime, cylinderExpTime;
     // recycle intervals
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
@@ -122,6 +122,11 @@ private:
     unsigned int lastObjectExp;
     string objectFileFormat;
     void exportParaviewObjects(const objectList& particles, const string& objectFile);
+    
+    // Cylinder paraview file
+    unsigned int lastCylinderExp;
+    string cylinderFileFormat;
+    void exportParaviewCylinders(const cylinderList& cylinders, const string& cylinderFile);
 
     // Eulerian fluid paraview file
     unsigned int lastFluidExp;

@@ -21,7 +21,7 @@ FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=Cygwin_1-Windows
+CND_PLATFORM=Cygwin-Windows
 CND_DLIB_EXT=dll
 CND_CONF=Release
 CND_DISTDIR=dist
@@ -73,47 +73,47 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/hybird.exe: ${OBJECTFILES}
 ${OBJECTDIR}/DEM.o: DEM.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DEM.o DEM.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DEM.o DEM.cpp
 
 ${OBJECTDIR}/IO.o: IO.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/IO.o IO.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/IO.o IO.cpp
 
 ${OBJECTDIR}/LB.o: LB.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/LB.o LB.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/LB.o LB.cpp
 
 ${OBJECTDIR}/elmt.o: elmt.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/elmt.o elmt.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/elmt.o elmt.cpp
 
 ${OBJECTDIR}/hybird.o: hybird.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/hybird.o hybird.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/hybird.o hybird.cpp
 
 ${OBJECTDIR}/myvector.o: myvector.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/myvector.o myvector.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/myvector.o myvector.cpp
 
 ${OBJECTDIR}/newClass.o: newClass.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/newClass.o newClass.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/newClass.o newClass.cpp
 
 ${OBJECTDIR}/node.o: node.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/node.o node.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/node.o node.cpp
 
 ${OBJECTDIR}/utils.o: utils.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/utils.o utils.cpp
+	$(COMPILE.cc) -O3 -w -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/utils.o utils.cpp
 
 # Subprojects
 .build-subprojects:

@@ -473,7 +473,7 @@ void DEM::evolveBoundaries() {
     }
 
 
-    
+    // update the position of the walls motorigido con questa velocità
          for (int n = 0; n < walls.size(); ++n) {           
         if (walls[n].translating) {
             walls[n].p = walls[n].p + frac * walls[n].trans;
@@ -488,6 +488,148 @@ void DEM::evolveBoundaries() {
     //evalNeighborTable();
 }
 
+void DEM::evolveCylinders() {
+
+    double frac = 1.0 / demInitialRepeat / ((double) multiStep);
+
+//    switch (problemName) {
+//        case TRIAXIAL:
+//        {
+//            const double reduceFactor = 10.0 / (deltat * double(multiStep));
+//
+//            // wall in X
+//            {
+//                const double sideY = walls[7].p.dot(Yp) - walls[2].p.dot(Yp);
+//                const double sideZ = walls[8].p.dot(Zp) - walls[4].p.dot(Zp);
+//                const double area = sideY*sideZ;
+//
+//                const double expectedForce = triIsopressure*area;
+//                const double measuredForce = walls[6].FParticle.dot(-1.0 * walls[6].n);
+//                pressureX = measuredForce / area;
+//                const double deltaForce = expectedForce - measuredForce;
+//
+//                const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
+//
+//                walls[6].p = walls[6].p + displacement * walls[6].n;
+//                //cout << "X: deltaForce " << deltaForce << " displacement " << displacement << " position "<< walls[6].p.dot(Xp)<< endl;
+//
+//            }
+//            {
+//                // wall in Y
+//                const double sideZ = walls[8].p.dot(Zp) - walls[4].p.dot(Zp);
+//                const double sideX = walls[6].p.dot(Xp) - walls[0].p.dot(Xp);
+//                const double area = sideX*sideZ;
+//
+//                const double expectedForce = triIsopressure*area;
+//                const double measuredForce = walls[7].FParticle.dot(-1.0 * walls[7].n);
+//                pressureY = measuredForce / area;
+//                const double deltaForce = expectedForce - measuredForce;
+//
+//                const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
+//
+//                walls[7].p = walls[7].p + displacement * walls[7].n;
+//                //cout << "Y: deltaForce " << deltaForce << " displacement " << displacement << endl;
+//            }
+//            {
+//                // wall in Z
+//                const double sideX = walls[6].p.dot(Xp) - walls[0].p.dot(Xp);
+//                const double sideY = walls[7].p.dot(Yp) - walls[2].p.dot(Yp);
+//                const double area = sideX*sideY;
+//
+//                const double expectedForce = triIsopressure*area;
+//                const double measuredForce = walls[8].FParticle.dot(-1.0 * walls[8].n);
+//                pressureZ = measuredForce / area;
+//
+//
+//                if (triDefSpeed == 0.0) {
+//                    const double deltaForce = expectedForce - measuredForce;
+//                    const double displacement = deltaForce / sphereMat.linearStiff / reduceFactor;
+//                    walls[8].p = walls[8].p + displacement * walls[8].n;
+//                } else {
+//                    walls[8].p = walls[8].p + triDefSpeed * deltat * double(multiStep) * walls[8].n;
+//                }
+//                //cout << "Z: deltaForce " << deltaForce << " displacement " << displacement << endl;
+//            }
+//
+//            break;
+//        }
+//    }
+
+
+    // updates the position of the cylinders in motion at a given speed
+    switch (problemName) {
+        case INTRUDER:
+        {
+            for (int c = 0; c < cylinders.size(); ++c) {
+                if (cylinders[c].translating) {
+                    // update p1
+                    cylinders[c].p1.x = cylinders[c].p1.x + demTime * cylinders[c].trans.x;// + frac * cylinders[c].trans;
+                    cylinders[c].p1.y = cylinders[c].p1.y + demTime * cylinders[c].trans.y;// + frac * cylinders[c].trans;
+                    cylinders[c].p1.z = cylinders[c].p1.z + demTime * cylinders[c].trans.z;// + frac * cylinders[c].trans;
+                    // update p2
+                    cylinders[c].p2.x = cylinders[c].p2.x + demTime * cylinders[c].trans.x;// + frac * cylinders[c].trans;
+                    cylinders[c].p2.y = cylinders[c].p2.y + demTime * cylinders[c].trans.y;// + frac * cylinders[c].trans;
+                    cylinders[c].p2.z = cylinders[c].p2.z + demTime * cylinders[c].trans.z;// + frac * cylinders[c].trans;
+
+//                    cylinders[c].p1.show(); cout << " "; cylinders[c].p2.show();
+//                   
+//                    cout<<cylinders[c].p1;
+//                    getchar();
+
+//                    if (c == 0) {
+//                        cylinders[c].p1.show();
+//                        cout << demTimeStep << " " << demTime << endl;
+//                        cout << demTimeStep * deltat << endl;
+//                        getchar();
+//                        cylinders[c].p2.show();
+//                        getchar();
+//                    }
+                }
+            }
+            break;
+        }
+    }
+    //evalNeighborTable();
+}
+
+void DEM::evolveObj() {
+
+    double frac = 1.0 / demInitialRepeat / ((double) multiStep);
+
+    // updates the position of the cylinders in motion at a given speed
+    switch (problemName) {
+        case OBJMOVING:
+        {
+//            const bool objTranslating = ;
+            for (int o = 0; o < objects.size(); ++o) {
+                // che if there is a velocity !=0
+                double sumVelComp = objects[o].x0.x + objects[o].x0.y + objects[o].x0.z;
+                if (sumVelComp != 0) {
+                    // update object position
+                    objects[o].x0.x = objects[o].x0.x + demTime * objects[o].x1.x;
+                    objects[o].x0.y = objects[o].x0.y + demTime * objects[o].x1.y;
+                    objects[o].x0.z = objects[o].x0.z + demTime * objects[o].x1.z;
+                    
+//                    objects[o].x0.show(); cout << " "; objects[o].x1.show();
+//                   
+//                    cout<<objects.size();
+//                    getchar();
+
+//                    if (c == 0) {
+//                        cylinders[c].p1.show();
+//                        cout << demTimeStep << " " << demTime << endl;
+//                        cout << demTimeStep * deltat << endl;
+//                        getchar();
+//                        cylinders[c].p2.show();
+//                        getchar();
+//                    }
+                }
+            }
+            break;
+        }
+    }
+    //evalNeighborTable();
+}
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
  // PRIVATE FUNCTIONS
  //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -1558,6 +1700,28 @@ void DEM::initializeCylinders() {
             dummyCylinder.slip = false;
             dummyCylinder.limited=false;
             cylinders.push_back(dummyCylinder);
+            ++index;
+            break;
+        }
+        case INTRUDER:
+        {
+            const double intruderX = 0.02; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+            const double intruderZ = 0.0675;
+            const double intruderd = 16e-3;     // diameter of the intruder
+            cylinder intruder;
+            intruder.index = index;
+            intruder.p1 = tVect(intruderX, 0.0, intruderZ);
+            intruder.p2 = tVect(intruderX, 100.0, intruderZ);
+            intruder.R = intruderd/2.0;
+            intruder.omega = tVect(0.0, 0.0, 0.0);
+            intruder.initAxes();
+            intruder.moving = false;
+            intruder.slip = false;
+            intruder.limited = false;
+            intruder.type = FULL;
+            intruder.translating = true;
+            intruder.trans = tVect(7.5, 0.0,0.0);
+            cylinders.push_back(intruder);
             ++index;
             break;
         }

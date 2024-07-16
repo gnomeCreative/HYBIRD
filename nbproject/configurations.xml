@@ -60,7 +60,7 @@
   <confs>
     <conf name="Release" type="1">
       <toolsSet>
-        <compilerSet>Cygwin_1|Cygwin</compilerSet>
+        <compilerSet>default</compilerSet>
         <dependencyChecking>true</dependencyChecking>
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
@@ -72,6 +72,7 @@
           <developmentMode>6</developmentMode>
           <commandlineTool>g++</commandlineTool>
           <commandLine>-fopenmp -w -O3 -std=c++11</commandLine>
+          <warningLevel>0</warningLevel>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -135,7 +136,7 @@
     </conf>
     <conf name="Debug" type="1">
       <toolsSet>
-        <compilerSet>Cygwin_1|Cygwin</compilerSet>
+        <compilerSet>Cygwin|Cygwin</compilerSet>
         <dependencyChecking>true</dependencyChecking>
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>

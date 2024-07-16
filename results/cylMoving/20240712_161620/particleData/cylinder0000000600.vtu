@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" compressor="vtkZLibDataCompressor">
+ <UnstructuredGrid GhostLevel="0">
+  <Piece NumberOfPoints="2" NumberOfCells="1">
+   <PointData>
+    <DataArray type="Float64" Name="radius" format="ascii">
+0.008
+0.008
+    <DataArray type="Float64" Name="cylinderIndex" format="ascii">
+0
+0
+    <DataArray type="Float64" Name="v" NumberOfComponents="3" format="ascii">
+7.5	0	0
+7.5	0	0
+   </PointData>
+   <CellData>
+   </CellData>
+   <Points>
+    <DataArray type="Float64" Name="Points" NumberOfComponents="3" format="ascii">
+67.4075 0 0.0675
+67.4075 100 0.0675
+   </Points>
+   <Cells>
+    <DataArray type="Int64" Name="connectivity" format="ascii">
+0 1
+    <DataArray type="Int64" Name="offsets" format="ascii">
+2
+    <DataArray type="UInt8" Name="types" format="ascii">
+3
+   </Cells>
+  </Piece>
+ </UnstructuredGrid>
+</VTKFile>
