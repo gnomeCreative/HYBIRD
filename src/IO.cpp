@@ -1,4 +1,3 @@
-
 #include "IO.h"
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,21 +16,21 @@ void IO::initialize() {
     cout << "Work directory created = " << partDirectory << ". Result: " << a << "\n";
     //    }
     //    if (lbmSolver) {
-    a = filesystem::create_directories(fluidDirectory);
+    a = filesystem::create_directories(fluidDirectory.c_str(), 0777);
     cout << "Work directory created = " << fluidDirectory << ". Result: " << a << "\n";
     //    }
 
     if (singleObjects.size() > 0) {
         // create directory
         singleObjectDirectory = workDirectory + "/singleObjectData";
-        int a = filesystem::create_directories(singleObjectDirectory);
+        int a = filesystem::create_directories(singleObjectDirectory.c_str(), 0777);
         cout << "Work directory created = " << singleObjectDirectory << ". Result: " << a << "\n";
     }
 
     //  initialising energy file
     energyFileName = workDirectory + "/energy.dat";
     //  initializing object force files
-    obstacleFileName = workDirectory + "/objectForce.dat";
+    obstacleFileName = workDirectory + "/objectForce.csv";
 
     switch (problemName) {
         case HONGKONG:
@@ -180,6 +179,12 @@ void IO::initialize() {
     wallForceFile.open(wallForceFileName.c_str(), ios::app);
     wallForceFile << "time n_walls x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
     wallForceFile.close();
+    
+    // initialising forces on cylinders file
+    cylinderForceFileName = workDirectory + "/cylinderForce.dat";
+    cylinderForceFile.open(cylinderForceFileName.c_str(), ios::app);
+    cylinderForceFile << "time n_cylinders x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
+    cylinderForceFile.close();
 
     lastScreenExp = 0;
     lastFluidExp = 0;
@@ -276,6 +281,9 @@ void IO::outputStep(LB& lb, DEM& dem) {
 
         if (dem.walls.size() > 0) {
             exportWallForce(dem);
+        }
+        if (dem.cylinders.size() > 0){
+            exportCylinderForces(dem);
         }
         //
         // update energies
@@ -2671,31 +2679,66 @@ void IO::exportParticleOverlap(DEM& dem) { // used to be passed as const
 
 void IO::exportWallForce(const DEM& dem) {
     // printing forces acting on all walls
-
+    const int NDIGITS = 6;
     // this specific time step
     wallForceFile.open(wallForceFileName.c_str(), ios::app);
-    wallForceFile << realTime;
+    wallForceFile << std::scientific << std::setprecision(NDIGITS) << realTime;
     wallForceFile << " " << dem.walls.size();
     for (int w = 0; w < dem.walls.size(); ++w) {
         const tVect partF = dem.walls[w].FParticle;
         const tVect hydroF = dem.walls[w].FHydro;
-        wallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
+        wallForceFile << " " 
+                << std::scientific << std::setprecision(NDIGITS) << partF.dot(Xp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << partF.dot(Yp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << partF.dot(Zp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Xp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Yp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Zp);
     }
     wallForceFile << endl;
     wallForceFile.close();
 
     // the maximum since last output
     maxWallForceFile.open(maxWallForceFileName.c_str(), ios::app);
-    maxWallForceFile << realTime;
+    maxWallForceFile << std::scientific << std::setprecision(NDIGITS) << realTime;
     wallForceFile << " " << dem.walls.size();
     for (int w = 0; w < dem.walls.size(); ++w) {
         const tVect partF = dem.walls[w].maxFParticle;
         const tVect hydroF = dem.walls[w].maxFHydro;
-        maxWallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
+        maxWallForceFile << " " 
+                << std::scientific << std::setprecision(NDIGITS) << partF.dot(Xp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << partF.dot(Yp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << partF.dot(Zp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Xp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Yp) << " " 
+                << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Zp);
     }
     maxWallForceFile << endl;
     maxWallForceFile.close();
 
+}
+
+void IO::exportCylinderForces(const DEM& dem){
+    // printing forces acting on all cylinders
+    const int NDIGITS = 6;
+
+    // this specific time step
+    cylinderForceFile.open(cylinderForceFileName.c_str(), ios::app);
+    cylinderForceFile << std::scientific << std::setprecision(NDIGITS) << realTime;
+    cylinderForceFile << " " << dem.cylinders.size();
+    for (int c = 0; c < dem.cylinders.size(); ++c) {
+        const tVect partF = dem.cylinders[c].FParticle;
+        const tVect hydroF = dem.cylinders[c].FHydro;
+        cylinderForceFile << " "
+                 << std::scientific << std::setprecision(NDIGITS) << partF.dot(Xp) << " "
+                 << std::scientific << std::setprecision(NDIGITS) << partF.dot(Yp) << " " 
+                 << std::scientific << std::setprecision(NDIGITS) << partF.dot(Zp) << " " 
+                 << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Xp) << " " 
+                 << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Yp) << " " 
+                 << std::scientific << std::setprecision(NDIGITS) << hydroF.dot(Zp);
+    }
+    cylinderForceFile << endl;
+    cylinderForceFile.close();
 }
 
 void IO::exportFluidMass(const LB& lb) {
@@ -2791,8 +2834,16 @@ void IO::exportForceObstacle(const objectList& objects) {
     ofstream obstacleFile;
     obstacleFile.open(obstacleFileName.c_str(), ios::app);
     tVect totObstacleForce = totForceObject(objects, 0, objects.size() - 1);
-    obstacleFile << realTime << " ";
-    totObstacleForce.printLine(obstacleFile);
+    if (realTime <=0) {
+        obstacleFile << "t" << "," << "fx" << "," << "fy" << "," << "fz" << endl;
+        obstacleFile << realTime << "," <<
+        totObstacleForce.x << "," << totObstacleForce.y << "," << totObstacleForce.z << endl;
+    } else {
+        obstacleFile << realTime << "," <<
+        totObstacleForce.x << "," << totObstacleForce.y << "," << totObstacleForce.z << endl;
+    }
+//    obstacleFile << realTime << " ";
+//    totObstacleForce.printLine(obstacleFile);
     obstacleFile.close();
 }
 
