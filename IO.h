@@ -225,6 +225,11 @@ private:
     void exportForces(const DEM& dem);
     void exportWallForce(const DEM& dem);
     
+    // cylinder forces files
+    string cylinderForceFileName;
+    ofstream cylinderForceFile;
+    void exportCylinderForces(const DEM& dem);
+       
     // particle energy file
     string energyFileName;
     void exportEnergy(const DEM& dem, const LB& lb);

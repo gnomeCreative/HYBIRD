@@ -191,6 +191,13 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
     PARSE_CLASS_MEMBER(configFile, multiStep, "multiStep", 1);
     // set ratio between time step and estimated duration of contacts (only if multiStep=0)
     PARSE_CLASS_MEMBER(configFile, criticalRatio, "criticalRatio", 0.1);
+    
+    // problem specific variables
+    // restart
+    PARSE_CLASS_MEMBER(configFile, movingCylinder, "movingCylinder", false);
+    PARSE_CLASS_MEMBER(configFile, velocityCylinderX, "velocityCylinderX", 0.0);
+    PARSE_CLASS_MEMBER(configFile, velocityCylinderY, "velocityCylinderY", 0.0);
+    PARSE_CLASS_MEMBER(configFile, velocityCylinderZ, "velocityCylinderZ", 0.0);
 
 }
 
@@ -226,7 +233,7 @@ void DEM::discreteElementInit(const typeList& externalBoundary, const doubleList
     unsigned int globalIndex = 0;
     for (int n = 0; n < elmts.size(); ++n) {
         // initialize element
-        elmts[n].initialize(partDensity, prototypes, demF);
+        elmts[n].initialize(partDensity, prototypes, demF, demSize);
         // generate particles
         elmts[n].generateParticles(globalIndex, particles, prototypes);
     }
@@ -364,6 +371,7 @@ void DEM::determineTimeStep(const double& externalTimeStep) {
     }
 }
 
+// solver DEM
 void DEM::discreteElementStep() {
 
     // set trigger for new neighbor list
@@ -386,6 +394,7 @@ void DEM::discreteElementStep() {
         //        cout<<"1.2 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // predictor step
         predictor();
+        // add Y fixing
         //        cout<<"1.3 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // particles generation
         updateParticlesPredicted();
@@ -395,6 +404,7 @@ void DEM::discreteElementStep() {
 
         // corrector step
         corrector();
+        // add Y fixing
 
         // particles re-generation
         updateParticlesCorrected();
@@ -485,6 +495,8 @@ void DEM::evolveBoundaries() {
             // update p1 and p2
             cylinders[c].p1 = cylinders[c].p1 + deltat * cylinders[c].trans;
             cylinders[c].p2 = cylinders[c].p2 + deltat * cylinders[c].trans;
+//            cylinders[c].cylinderShow();
+//            getchar();
 
         }
     }
@@ -1598,6 +1610,54 @@ void DEM::initializeCylinders() {
             ++index;
             break;
         }
+        case TBAR:
+        {
+            const double intruderX = 0.07; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+            const double intruderZ = 0.10; // to be determinated after column collpase (probelm name = none)
+            const double intruderd = 16e-3; // diameter of the intruder
+//            const double velocityIntruder = -30.0e-3;
+            
+            cylinder intruder;
+            intruder.index = index;
+            intruder.p1 = tVect(intruderX, -0.5, intruderZ);
+            intruder.p2 = tVect(intruderX, 0.5, intruderZ);
+            intruder.R = intruderd / 2.0;
+            intruder.omega = tVect(0.0, 0.0, 0.0);
+            intruder.initAxes();
+            intruder.moving = true;
+            intruder.slip = false;
+            intruder.limited = false;
+            intruder.type = FULL;
+            intruder.translating = true;
+            intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
+            cylinders.push_back(intruder);
+            ++index;
+            break;
+        }
+        
+        case SEGUIN: {
+            const double intruderX = 0.00; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+            const double intruderZ = 0.05; // to be determinated after column collpase (probelm name = none)
+            const double intruderd = 16e-3; // diameter of the intruder
+//            const double velocityIntruder = -30.0e-3;
+            
+            cylinder intruder;
+            intruder.index = index;
+            intruder.p1 = tVect(intruderX, -0.05, intruderZ);
+            intruder.p2 = tVect(intruderX, 0.05, intruderZ);
+            intruder.R = intruderd / 2.0;
+            intruder.omega = tVect(0.0, 0.0, 0.0);
+            intruder.initAxes();
+            intruder.moving = true;
+            intruder.slip = false;
+            intruder.limited = false;
+            intruder.type = FULL;
+            intruder.translating = true;
+            intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
+            cylinders.push_back(intruder);
+            ++index;
+            break;
+        }
     }
 
     for (int n = 0; n < cylinders.size(); ++n) {
@@ -1728,6 +1788,8 @@ void DEM::predictor() {
         unsigned int n = activeElmts[a];
         //cout<<"pr n= "<<n<<endl;
         elmts[n].predict(c1, c2);
+//        elmts[n].xp0[1]=0.004;
+//        elmts[n].xp1[1]=0.0;
         //cout<<"pr end"<<endl;
     }
 }
@@ -1796,6 +1858,10 @@ void DEM::evaluateForces() {
     for (int o = 0; o < objects.size(); ++o) {
         objects[o].FParticle.reset();
     }
+    
+    for (int c = 0; c < cylinders.size(); ++c) {
+        cylinders[c].FParticle.reset();
+    }
 
     if (staticFrictionSolve) {
         // set tentatively all springs to inactive
@@ -1859,7 +1925,17 @@ void DEM::evaluateForces() {
         // translational motion
         // acceleration (sum of forces / mass + sum of accelerations)
         elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
-
+        // problem name Y correction ( Y needs to be fixed to have spheres that acts like cylinders)
+        switch (problemName) {
+            case (TBAR): {
+                elmts[n].x2.y = 0.0;
+                break;
+            }
+            case (SEGUIN): {
+                elmts[n].x2.y = 0.0;
+                break;
+            }
+        }
         // rotational motion
         // adjoint of orientation quaternion
         //const tQuat q0adj=elmts[n].qp0.adjoint();
@@ -1875,6 +1951,19 @@ void DEM::evaluateForces() {
         const tVect waBf = newtonAcc(momentBf, elmts[n].I, elmts[n].wpLocal);
         // rotational acceleration (vector)
         elmts[n].w1 = project(waBf, elmts[n].qp0);
+        // problem name XZ correction ( XZ needs to be fixed to have spheres that acts like cylinders)
+        switch (problemName){
+            case (TBAR): {
+                elmts[n].w1.x = 0.0;
+                elmts[n].w1.z = 0.0;
+                break;
+            }
+            case (SEGUIN): {
+                elmts[n].w1.x = 0.0;
+                elmts[n].w1.z = 0.0;
+                break;
+            }
+        }
         // rotational acceleration (quaternion)
         if (elmts[n].size > 1) {
             const tQuat waQuat = quatAcc(waBf, elmts[n].qp1);
@@ -2669,10 +2758,14 @@ void DEM::wallParticleContacts() {
     for (unsIntList::iterator ip = nearWallTable.begin(); ip != nearWallTable.end(); ip = ip + 2) {
         // couple of contact candidates
         unsIntList::iterator iwall = ip + 1;
+        unsIntList::iterator icylinder = ip + 1;
         // particle
         particle *partJ = &particles[*ip];
         // wall
         wall *wallI = &walls[*iwall];
+        
+        // cylinder
+        cylinder *cylinderI = &cylinders[*icylinder];
 
         // distance from wall (norm)
         const double distance = wallI->dist(partJ->x0);

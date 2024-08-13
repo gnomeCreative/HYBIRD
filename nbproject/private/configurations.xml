@@ -26,24 +26,18 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" 
--c ./input/config_intruder.cfg 
--d ./results/granular_intruder  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" 
--c ./input/config_intruder_createDense.cfg 
--d ./results/granular_intruder  -n column</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" 
--c ./input/config_intruder_createDense.cfg 
--d ./results/granular_intruder  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_intruder_motion.cfg  -d ./results/granular_intruder  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_intruder_createDense.cfg  -d ./results/granular_intruder  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testIntruderMoving.cfg  -d ./results/granular_intruder  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testObjMoving.cfg  -d ./results/objIntruder  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testCylinderMoving.cfg  -d ./results/cylMoving  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testCylinderMoving.cfg  -d ../results/cylMoving  -n time</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/config_testObjMoving.cfg  -d ../results/objIntruder  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_ObjMoving3mms.cfg  -d ./results/seguin  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_ObjMoving1.50mms.cfg  -d ./results/seguin  -n vel1.50mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_ObjMoving0.01mms.cfg  -d ./results/seguin  -n vel1.50mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_ObjMoving0.01mms.cfg  -d ./results/seguin  -n vel0.01mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_ObjMoving3.00mms.cfg  -d ./results/seguin  -n vel3.00mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_seguin3.00mms.cfg  -d ./results/seguin  -n vel3.00mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_seguin0.01mms.cfg  -d ./results/seguin  -n vel0.01mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_seguin0.10mms.cfg  -d ./results/seguin  -n vel0.10mms</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_seguin0.10mms.cfg  -d ./results/seguin  -n time</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  -c ./input/seguin/config_seguin3.00mms.cfg  -d ./results/seguin  -n time</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"  -c ./input/config_testObjMoving.cfg  -d ../results/objIntruder  -n time</runcommand>
+        <runcommand>"${OUTPUT_PATH}"  -c ./input/seguin/config_seguin3.00mms.cfg  -d ./results/seguin  -n time</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>1</terminal-type>
