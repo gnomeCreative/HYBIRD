@@ -9,6 +9,7 @@
 #define	ELMT_H
 
 #include "myvector.h"
+#include "LB.h"
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // CLASS  DEFINITIONS
@@ -163,7 +164,7 @@ public:
         maxOverlap=0.0;
     }
     void elmtShow()const;
-    void initialize(const double& partDensity, std::vector <vecList>& prototypes, tVect& demF);
+    void initialize(const double& partDensity, std::vector <vecList>& prototypes, tVect& demF, doubleList& demSize);
     void resetVelocity();
     void generateParticles(unsigned int& globalIndex, particleList& particles,  const std::vector <vecList>& prototypes);
     void predict(const double c1[],const double c2[]);
