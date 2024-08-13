@@ -186,7 +186,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
     else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
     else if (problemNameString == "INTRUDER") problemName = INTRUDER;
-    else if (problemNameString == "OBJMOVING") problemName = OBJMOVING;
+    else if (problemNameString == "SEGUIN") problemName = SEGUIN;
 
 
 

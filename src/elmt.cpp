@@ -2,6 +2,7 @@
 #include "myvector.h"
 #include "macros.h"
 #include "elmt.h"
+//#include "LB.h"
 
 using namespace std;
 
@@ -14,7 +15,7 @@ void elmt::elmtShow() const {
     cout<<"Mass: "<<m<<";\n";
 }
 
-void elmt::initialize(const double& partDensity, std::vector <vecList>& prototypes, tVect& demF) {
+void elmt::initialize(const double& partDensity, std::vector <vecList>& prototypes, tVect& demF, doubleList& demSize) {
 
     // translational degrees of freedom
     xp0=x0;
@@ -61,11 +62,43 @@ void elmt::initialize(const double& partDensity, std::vector <vecList>& prototyp
 
     // calculated variables (the element is supposed to be a sphere for the moment)
     // mass
-    const double singleMass=4.0/3.0*partDensity*M_PI*radius*radius*radius;
+    // mass correction particles must behave like cylinders or whatever shape
+    double singleMass = 0.0;
+    switch (problemName){
+        case (TBAR): { // cylinders
+            singleMass = partDensity*radius*radius*M_PI* (demSize[1]);
+            break;
+        }
+        case (SEGUIN):{ // cylinders
+            singleMass = partDensity*radius*radius*M_PI* (demSize[1]);
+            break;
+        }
+        default:{ // spheres
+            singleMass=4.0/3.0*partDensity*M_PI*radius*radius*radius;
+            break;
+        }
+    }
+//    const double singleMass=4.0/3.0*partDensity*M_PI*radius*radius*radius;
     m=size*singleMass;
     // inertia moment (diagonal) - Huygens-Steiner theorem
     // inertia of single spheres
-    I=size*2.0/5.0*singleMass*radius*radius*tVect(1.0,1.0,1.0);
+    // Inertia correction particles must behave like cylinders or whatever shape
+    switch (problemName){
+        case (TBAR):{ // cylinders
+            I=size*0.5*singleMass*radius*radius*tVect(1.0,1.0,1.0);
+            break;
+            
+        }
+        case (SEGUIN): { // cylinders
+            I=size*0.5*singleMass*radius*radius*tVect(1.0,1.0,1.0);
+            break;
+        } 
+        default: { // spheres
+            I=size*2.0/5.0*singleMass*radius*radius*tVect(1.0,1.0,1.0);
+            break;
+        }
+    }
+//    I=size*2.0/5.0*singleMass*radius*radius*tVect(1.0,1.0,1.0);
     // transport components
     for (int n=0; n<size; ++n) {
         I+=singleMass*radius*radius*prototypes[size][n].transport();

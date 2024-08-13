@@ -132,6 +132,8 @@ class cylinder {
 public:
     //index
     unsigned int index;
+    // normal vector
+    tVect n;
     // two axes point
     tVect p1,p2;
     // radius
@@ -157,6 +159,8 @@ public:
     bool translating;
     // translation vector
     tVect trans;
+    // force on the object
+    tVect FParticle,FHydro;
     
     // default constructor
     cylinder(){
@@ -172,6 +176,8 @@ public:
         type=EMPTY;
         translating=false;
         trans=tVect(0.0,0.0,0.0);
+        FParticle=tVect(0.0,0.0,0.0);
+        FHydro=tVect(0.0,0.0,0.0);
         }
     // constructor
     cylinder(tVect ip1, tVect ip2, double radius){
