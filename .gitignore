@@ -5,6 +5,8 @@ input/
 
 dist/
 
+results/
+
 desktop.ini
 
 tutorials/*/data/

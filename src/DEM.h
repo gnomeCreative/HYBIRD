@@ -135,6 +135,15 @@ public:
     double pressureX,pressureY,pressureZ;
      // stuff for Usman
     bool depositArea;
+    
+    // Seguin problem
+    bool movingCylinder;
+    double coordinateCylinderX;
+    double coordinateCylinderY;
+    double coordinateCylinderZ;
+    double velocityCylinderX;
+    double velocityCylinderY;
+    double velocityCylinderZ;
 public:
 
     DEM() {
