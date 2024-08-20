@@ -82,7 +82,7 @@ public:
     double criticalRatio;
     // solid walls
     wallList walls;
-    // solid walls
+    // solid cylinders
     cylinderList cylinders;
     // periodic boundary conditions
     pbcList pbcs;

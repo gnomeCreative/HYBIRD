@@ -129,6 +129,11 @@ private:
     unsigned int lastCylinderExp;
     string cylinderFileFormat;
     void exportParaviewCylinders(const cylinderList& cylinders, const string& cylinderFile);
+    
+    // Force intensity paraview file
+    unsigned int lastForceIntensityExp;
+    string forceIntensityFileFormat;
+    void exportParaviewForceIntensity(const elmtList& elmts, const string& forceIntensityFile);
 
     // Eulerian fluid paraview file
     unsigned int lastFluidExp;
