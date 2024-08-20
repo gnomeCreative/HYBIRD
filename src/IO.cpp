@@ -30,7 +30,7 @@ void IO::initialize() {
     //  initialising energy file
     energyFileName = workDirectory + "/energy.dat";
     //  initializing object force files
-    obstacleFileName = workDirectory + "/objectForce.csv";
+    obstacleFileName = workDirectory + "/objectForce.dat";
 
     switch (problemName) {
         case HONGKONG:
@@ -494,7 +494,7 @@ void IO::createFiles(const LB& lb, const DEM& dem) {
         }
         
     }
-    
+          
 }
 
 void IO::initialize2DFile(const LB& lb) {
@@ -849,10 +849,22 @@ void IO::exportParaviewParticles(const elmtList& elmts, const particleList& part
             elmts[particles[i].clusterIndex].FWall.printFixedLine(paraviewParticleFile);
         }
     }
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FCylinder\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Pnumber; ++i) {
+        if (particles[i].active) {
+            elmts[particles[i].clusterIndex].FCylinder.printFixedLine(paraviewParticleFile);
+        }
+    }
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MWall\" NumberOfComponents=\"3\"/>\n";
     for (int i = 0; i < Pnumber; ++i) {
         if (particles[i].active) {
             elmts[particles[i].clusterIndex].MWall.printFixedLine(paraviewParticleFile);
+        }
+    }
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MCylinder\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Pnumber; ++i) {
+        if (particles[i].active) {
+            elmts[particles[i].clusterIndex].MCylinder.printFixedLine(paraviewParticleFile);
         }
     }
     if (lbmSolver) {
@@ -2032,7 +2044,6 @@ double IO::meanViscosity(const LB& lb) const {
         meanVisc = meanVisc / double(counter);
         return meanVisc;
     }
-    return 0;
 }
 
 double IO::totParticleMass(const elmtList& elmts) const {

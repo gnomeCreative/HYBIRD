@@ -109,8 +109,8 @@ public:
     // predicted angular velocity rates (global)
     tVect wp0,wp1,wp2,wp3,wp4,wp5;
     // forces and moments
-    tVect FHydro,FParticle,FWall,FGrav,FSpringP,FSpringW;
-    tVect MHydro,MParticle,MWall,MRolling;
+    tVect FHydro,FParticle,FWall,FGrav,FSpringP,FSpringW, FCylinder;
+    tVect MHydro,MParticle,MWall,MRolling, MCylinder;
     // force intensities
     tVect solidIntensity;
     // connectivity (coordination number)

@@ -63,6 +63,7 @@ public:
     double maxTime;
     // intervals for output
     double screenExpTime, stateExpTime, fluidExpTime, fluidLagrangianExpTime, fluid2DExpTime, partExpTime, objectExpTime, singleObjectExpTime, cylinderExpTime;
+    double forceIntensityExpTime;
     // recycle intervals
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
@@ -127,6 +128,11 @@ private:
     unsigned int lastCylinderExp;
     string cylinderFileFormat;
     void exportParaviewCylinders(const cylinderList& cylinders, const string& cylinderFile);
+    
+    // Force intensity paraview file
+    unsigned int lastForceIntensityExp;
+    string forceIntensityFileFormat;
+    void exportParaviewForceIntensity(const elmtList& elmts, const string& forceIntensityFile);
 
     // Eulerian fluid paraview file
     unsigned int lastFluidExp;
