@@ -395,7 +395,6 @@ void DEM::discreteElementStep() {
         //        cout<<"1.2 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // predictor step
         predictor();
-        // add Y fixing
         //        cout<<"1.3 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // particles generation
         updateParticlesPredicted();
@@ -405,7 +404,6 @@ void DEM::discreteElementStep() {
 
         // corrector step
         corrector();
-        // add Y fixing
 
         // particles re-generation
         updateParticlesCorrected();
@@ -496,8 +494,6 @@ void DEM::evolveBoundaries() {
             // update p1 and p2
             cylinders[c].p1 = cylinders[c].p1 + deltat * cylinders[c].trans;
             cylinders[c].p2 = cylinders[c].p2 + deltat * cylinders[c].trans;
-//            cylinders[c].cylinderShow();
-//            getchar();
 
         }
     }
@@ -1833,8 +1829,10 @@ void DEM::evaluateForces() {
         unsigned int n = activeElmts[a];
         elmts[n].FParticle.reset();
         elmts[n].FWall.reset();
+        elmts[n].FCylinder.reset();
         elmts[n].MParticle.reset();
         elmts[n].MWall.reset();
+        elmts[n].MCylinder.reset();
         elmts[n].FSpringP.reset();
         elmts[n].FSpringW.reset();
         elmts[n].MRolling.reset();
@@ -1925,7 +1923,7 @@ void DEM::evaluateForces() {
 
         // translational motion
         // acceleration (sum of forces / mass + sum of accelerations)
-        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
+        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall + elmts[n].FCylinder) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
         // problem name Y correction ( Y needs to be fixed to have spheres that acts like cylinders)
         switch (problemName) {
             case (TBAR): {
@@ -1943,7 +1941,7 @@ void DEM::evaluateForces() {
         // rotational velocity (body-fixed reference frame)
         //const tVect wBf=2.0*quat2vec( q0adj.multiply( elmts[n].qp1 ) );
         // moment in global reference frame
-        const tVect moment = MVisc + elmts[n].MHydro + elmts[n].MParticle + elmts[n].MWall + elmts[n].MRolling;
+        const tVect moment = MVisc + elmts[n].MHydro + elmts[n].MParticle + elmts[n].MWall + elmts[n].MRolling + elmts[n].MCylinder;
 
         // moment in body-fixed reference frame
         //if (elmts[n].size
@@ -2759,15 +2757,11 @@ void DEM::wallParticleContacts() {
     for (unsIntList::iterator ip = nearWallTable.begin(); ip != nearWallTable.end(); ip = ip + 2) {
         // couple of contact candidates
         unsIntList::iterator iwall = ip + 1;
-        unsIntList::iterator icylinder = ip + 1;
         // particle
         particle *partJ = &particles[*ip];
         // wall
         wall *wallI = &walls[*iwall];
         
-        // cylinder
-        cylinder *cylinderI = &cylinders[*icylinder];
-
         // distance from wall (norm)
         const double distance = wallI->dist(partJ->x0);
 
@@ -3217,12 +3211,13 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
     const tVect centerDistJ = vecRadJ + (partJ->x0 - elmtJ->xp0);
 
     // force updating
-    elmtJ->FWall = elmtJ->FWall + normalForce;
+    elmtJ->FCylinder = elmtJ->FCylinder + normalForce;
+    cylinderI->FParticle = cylinderI->FParticle-normalForce;
     elmtJ->solidIntensity += normalForce.abs();
     // wallI->FParticle=wallI->FParticle-fnv;
     // torque updating
     if (elmtJ->size > 1) {
-        elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
+        elmtJ->MCylinder = elmtJ->MCylinder + centerDistJ.cross(normalForce);
     }
 
     // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
@@ -3260,11 +3255,16 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
                 sphereMat.linearStiff, sphereMat.viscTang);
 
         // torque updating
-        elmtJ->MWall = elmtJ->MWall - centerDistJ.cross(tangForce);
+        elmtJ->MCylinder = elmtJ->MCylinder - centerDistJ.cross(tangForce);
         // force updating
-        elmtJ->FWall = elmtJ->FWall - tangForce;
+        elmtJ->FCylinder = elmtJ->FCylinder - tangForce;
         elmtJ->solidIntensity += tangForce.abs();
-        //wallI->FParticle = wallI->FParticle+ftv;
+        cylinderI->FParticle = cylinderI->FParticle + tangForce;
+        
+        if (staticFrictionSolve) {
+            elmtJ->slippingCase = elongation_new->slippingCase;
+        }
+        
     }
     //ROLLING
 
