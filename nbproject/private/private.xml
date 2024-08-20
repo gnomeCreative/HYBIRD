@@ -4,7 +4,7 @@
         <activeConfTypeElem>1</activeConfTypeElem>
         <activeConfIndexElem>0</activeConfIndexElem>
     </data>
-    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="10">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="15">
         <file>
             <url>elmt.cpp</url>
             <bookmark id="10">
@@ -31,32 +31,52 @@
         </file>
         <file>
             <url>DEM.cpp</url>
+            <bookmark id="11">
+                <name/>
+                <line>395</line>
+                <key/>
+            </bookmark>
             <bookmark id="8">
                 <name/>
-                <line>492</line>
+                <line>490</line>
                 <key/>
             </bookmark>
             <bookmark id="4">
                 <name/>
-                <line>529</line>
+                <line>525</line>
                 <key/>
             </bookmark>
             <bookmark id="9">
                 <name/>
-                <line>1612</line>
+                <line>1608</line>
                 <key/>
             </bookmark>
             <bookmark id="5">
                 <name/>
-                <line>1690</line>
+                <line>1686</line>
+                <key/>
+            </bookmark>
+            <bookmark id="14">
+                <name/>
+                <line>3212</line>
+                <key/>
+            </bookmark>
+            <bookmark id="15">
+                <name/>
+                <line>3258</line>
                 <key/>
             </bookmark>
         </file>
         <file>
             <url>DEM.h</url>
-            <bookmark id="7">
+            <bookmark id="12">
                 <name/>
-                <line>208</line>
+                <line>231</line>
+                <key/>
+            </bookmark>
+            <bookmark id="13">
+                <name/>
+                <line>235</line>
                 <key/>
             </bookmark>
         </file>
@@ -65,16 +85,19 @@
         <group>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/elmt.cpp</file>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/myvector.cpp</file>
-            <file>file:/C:/codes/hybird/submarine/HYBIRD/myvector.h</file>
-            <file>file:/C:/codes/hybird/submarine/HYBIRD/LB.h</file>
-            <file>file:/C:/codes/hybird/submarine/HYBIRD/elmt.h</file>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/IO.h</file>
-            <file>file:/C:/codes/hybird/submarine/HYBIRD/LB.cpp</file>
-            <file>file:/C:/codes/hybird/submarine/HYBIRD/utils.h</file>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/hybird.cpp</file>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/DEM.h</file>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/DEM.cpp</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/myvector.h</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/lattice.h</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/LB.h</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/elmt.h</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/utils.h</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/macros.h</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/newClass.h</file>
             <file>file:/C:/codes/hybird/submarine/HYBIRD/IO.cpp</file>
+            <file>file:/C:/codes/hybird/submarine/HYBIRD/node.h</file>
         </group>
     </open-files>
 </project-private>
