@@ -110,10 +110,12 @@ void elmt::initialize(const double& partDensity, std::vector <vecList>& prototyp
     FHydro.reset();
     FParticle.reset();
     FWall.reset();
+    FCylinder.reset();
     FGrav=demF*m;
     MHydro.reset();
     MParticle.reset();
     MWall.reset();
+    MCylinder.reset();
     
 }
 

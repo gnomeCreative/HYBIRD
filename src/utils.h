@@ -132,8 +132,6 @@ class cylinder {
 public:
     //index
     unsigned int index;
-    // normal vector
-    tVect n;
     // two axes point
     tVect p1,p2;
     // radius
