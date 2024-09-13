@@ -18,7 +18,6 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/LB.h
     ${PROJECT_SOURCE_DIR}/src/macros.h
     ${PROJECT_SOURCE_DIR}/src/myvector.h
-    ${PROJECT_SOURCE_DIR}/src/newClass.h
     ${PROJECT_SOURCE_DIR}/src/node.h
     ${PROJECT_SOURCE_DIR}/src/utils.h
     )
@@ -31,7 +30,6 @@ set(HYBIRD_SRC
     ${PROJECT_SOURCE_DIR}/src/IO.cpp
     ${PROJECT_SOURCE_DIR}/src/LB.cpp
     ${PROJECT_SOURCE_DIR}/src/myvector.cpp
-    ${PROJECT_SOURCE_DIR}/src/newClass.cpp
     ${PROJECT_SOURCE_DIR}/src/node.cpp
     ${PROJECT_SOURCE_DIR}/src/utils.cpp
     )
