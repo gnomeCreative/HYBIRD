@@ -130,7 +130,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
         cout << "Using " << io.configFileName << " for LBM and DEM parameters\n";
         // copy the lbm configuration file into the data folder for later reproducibility
         int a;
-        a = mkdir(io.workDirectory.c_str(), 0777);
+        a = filesystem::create_directories(io.workDirectory);
         cout << "Work directory created = " << io.workDirectory << ". Result: " << a << "\n";
 
         std::system(("cp '" + io.configFileName + "' '" + io.workDirectory + "'").c_str());
