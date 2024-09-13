@@ -1,6 +1,7 @@
 
 #include "DEM.h"
 #include "macros.h"
+#include <omp.h>
 
 #define USE_MATH_DEFINES
 
