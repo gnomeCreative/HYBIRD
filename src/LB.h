@@ -38,17 +38,17 @@ class LB {
 public: //private
     
     // link linearized index with nodes
-    nodeMap nodes;
+    nodeMap nodes = {};
     // model for the fluid
     FluidMaterial fluidMaterial;
     // slip coefficient
-    double slipCoefficient;
+    double slipCoefficient = 0.0;
     // hydrodynamic radius (see Kumnar et al., Mechanics of granular column collapse in fluid at varying slope angles)
     double hydrodynamicRadius;
     // initial velocity for the fluid
-    tVect initVelocity;
+    tVect initVelocity = {};
     // force field (if not constant need to be calculated inside cycle)
-    tVect lbF;
+    tVect lbF = {};
     // switchers for rotating local system
     bool solveCoriolis;
     bool solveCentrifugal;
@@ -57,13 +57,13 @@ public: //private
     // cebnter of rotation of the local coordinate system
     tVect rotationCenter;
     // total number of nodes
-    unsigned int totPossibleNodes;
+    unsigned int totPossibleNodes = 0;
     // total mass (initial)
     double totalMass;
     // standard neighbors shifting
     intList ne;
-    unsIntList shift;
-    intList domain;
+    unsIntList shift = {1,1,1};
+    intList domain = {1,1,1};
     // node types (boundary are located halfway between nodes)
     //typeList types;
     //vecList positions;
@@ -74,13 +74,13 @@ public: //private
     // list with nodes
     //nodeList nodes;
     // indices of active nodes
-    nodeList activeNodes;
+    nodeList activeNodes = {};
     // indices of fluid nodes
-    nodeList fluidNodes;
+    nodeList fluidNodes = {};
     // indices of interface nodes
-    nodeList interfaceNodes;
+    nodeList interfaceNodes = {};
     // indices of wall nodes (only those in potential contact with the fluid)
-    nodeList wallNodes;
+    nodeList wallNodes = {};
     // energy
     energy fluidEnergy, fluidImmersedEnergy;
     // for performance check
@@ -98,42 +98,42 @@ public: //private
     struct timeval startComputeNormalsStep, endComputeNormalsStep;
 public:
     // switcher for restart
-    bool lbRestart;
+    bool lbRestart = false;
     // restart file
-    string lbRestartFile;
+    string lbRestartFile = "";
     // switcher for imposed volume, and imposed volume
-    bool imposeFluidVolume;
-    double imposedFluidVolume;
+    bool imposeFluidVolume = false;
+    double imposedFluidVolume = 0.0;
     // switcher for increasing volume, and extra volume and time to add it
-    bool increaseVolume;
-    double deltaVolume;
-    double deltaTime;
+    bool increaseVolume = false;
+    double deltaVolume = 0.0;
+    double deltaTime = 0.0;
     // switcher for topography
-    bool lbTopography;
+    bool lbTopography = false;
     // switcher for topographic initial level
-    bool lbTopographySurface;
+    bool lbTopographySurface = false;
     // shifts for topography file
-    double translateTopographyX;
-    double translateTopographyY;
-    double translateTopographyZ;
+    double translateTopographyX = 0.0;
+    double translateTopographyY = 0.0;
+    double translateTopographyZ = 0.0;
     // topography file
-    string lbTopographyFile;
+    string lbTopographyFile = "";
     // topography container
-    topography lbTop;
+    topography lbTop = {};
     // switchers for force field, non-Newtonian and everything
-    bool freeSurface;
-    bool forceField;
-    bool TRTsolver;
-    double magicNumber;
+    bool freeSurface = false;
+    bool forceField = false;
+    bool TRTsolver = false;
+    double magicNumber = 0.25;
     // number of LBM step before activating the free surface
-    unsigned int lbmInitialRepeat;
+    unsigned int lbmInitialRepeat = 0;
     // absolute time
-    unsigned int time;
+    unsigned int time = 0;
     // lbm size in cell units
-    unsIntList lbSize;
-    // lbm size in physical units (with boundaries))
+    unsIntList lbSize = {1, 1, 1};
+    // lbm size in physical units (with boundaries)
     doubleList lbPhysicalSize;
-    // lbm size in physical units (without boundaries))
+    // lbm size in physical units (without boundaries)
     doubleList lbInnerPhysicalSize;
     // lbm box boundary locations
     vecList lbBoundaryLocation;
@@ -146,18 +146,22 @@ public:
     measureUnits unit;
     // problem-specific stuff ///////////////////////////////
     // stuff for shear cell
-    double maxVisc, maxPlasticVisc, maxYieldStress, maxShearRate;
-    unsigned int viscSteps, shearRateSteps;
+    double maxVisc = 0.0;
+    double maxPlasticVisc = 0.0;
+    double maxYieldStress = 0.0;
+    double maxShearRate = 0.0;
+    unsigned int viscSteps = 0;
+    unsigned int shearRateSteps = 0;
     // stuff for drum
-    double fluidMass;
+    double fluidMass = 0.0;
     // stuff for avalanches (net-like)
-    double avalanchePosit;
+    double avalanchePosit = 0.0;
     // stuff for hourglass (mirrors in DEM)
-    double hourglassOutletHeight;
+    double hourglassOutletHeight = 0.0;
     // stuff for continuum heap (mirrors in DEM)
-    double heapBaseLevel;
+    double heapBaseLevel = 0.0;
     // stuff for Usman
-    double largeFlumeFlowLevel;
+    double largeFlumeFlowLevel = 0.0;
     // lists for "mutant" nodes
     nodeList filledNodes, emptiedNodes;
     // interface nodes created due to interface evolution
@@ -169,51 +173,9 @@ public:
 public:
 
     LB() {
-        //
-        freeSurface = false;
-        forceField = false;
-        lbRestart = false;
-        //
-        time = 0;
-        lbSize.resize(3);
-        lbSize[0] = lbSize[1] = lbSize[2] = 1;
-        //
-        slipCoefficient = 0.0;
-        //
-        initVelocity.reset();
-        lbF.reset();
-        //
-        totPossibleNodes = 0;
-        //
-        shift.resize(3);
-        shift[0] = shift[1] = shift[2] = 1;
-        domain.resize(3);
-        domain[0] = domain[1] = domain[2] = 1;
-        //
         boundary.resize(6);
         ne.resize(lbmDirec);
-        // initialize variable containers
-        nodes.clear();
-        //types.clear();
-        // initialize lists
-        activeNodes.clear();
-        fluidNodes.clear();
-        interfaceNodes.clear();
-        wallNodes.clear();
-        //
-        lbmInitialRepeat = 0;
-        // stuff for shear cell
-        maxVisc = 0.0;
-        maxPlasticVisc = 0.0;
-        maxYieldStress = 0.0;
-        maxShearRate = 0.0;
-        viscSteps = 0;
-        shearRateSteps = 0;
-        // stuff for drum
-        fluidMass = 0.0;
-        // stuff for Usman
-        largeFlumeFlowLevel=0.0;
-        
+        // Everything else should be initialised at declaration
     }
     // showing Lattice characteristics
     void LBShow() const;

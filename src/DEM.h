@@ -170,8 +170,8 @@ public:
         // neighbor list variables
         maxDisp = 0.0;
         nebrRange = 0.0;
-        cellWidth[0] = cellWidth[0] = cellWidth[0] = 0.0;
-        nCells[0] = nCells[0] = nCells[0] = 0;
+        cellWidth[0] = cellWidth[1] = cellWidth[2] = 0.0;
+        nCells[0] = nCells[1] = nCells[2] = 0;
         prototypes.clear();
         //        energy.reset();
         criticalRatio = 0.1;
