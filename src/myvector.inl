@@ -10,38 +10,38 @@ using namespace std;
 
 // basic functions
 
-void tVect::show() const {
+inline void tVect::show() const {
     cout<<"("<<x<<", "<<y<<", "<<z<<")";
 }
 
-void tVect::printLine(std::ofstream& outputFile) const {
+inline void tVect::printLine(std::ofstream& outputFile) const {
     outputFile<<x<<"\t"<<y<<"\t"<<z<<"\n";
 }
 
-void tVect::print(std::ofstream& outputFile) const {
+inline void tVect::print(std::ofstream& outputFile) const {
     outputFile<<x<<"\t"<<y<<"\t"<<z<<"\t";
 }
 
-void tVect::printFixedLine(std::ofstream& outputFile) const {
+inline void tVect::printFixedLine(std::ofstream& outputFile) const {
     outputFile<<std::setprecision(8)<<std::fixed<<x<<" "<<y<<" "<<z<<"\n";
 }
 
-void tVect::printFixed(std::ofstream& outputFile) const {
+inline void tVect::printFixed(std::ofstream& outputFile) const {
     outputFile<<std::setprecision(8)<<std::fixed<<x<<" "<<y<<" "<<z<<" ";
 }
 
 
-void tVect::get(std::ifstream& inputFile) {
+inline void tVect::get(std::ifstream& inputFile) {
         inputFile>>x;
         inputFile>>y;
         inputFile>>z;
     }
 
-double tVect::max() const {
+inline double tVect::max() const {
     return std::max(std::abs(x),std::max(std::abs(y),std::abs(z)));
 }
 
-void tVect::reset() {
+inline void tVect::reset() {
     x=0.0;
     y=0.0;
     z=0.0;
@@ -49,63 +49,63 @@ void tVect::reset() {
 
 // overloaded operators
 
-tVect tVect::operator+(const tVect& vec) const {
+inline tVect tVect::operator+(const tVect& vec) const {
     return tVect(
         x+vec.x,
         y+vec.y,
         z+vec.z);
 }
 
-tVect& tVect::operator+=(const tVect& vec) {
+inline tVect& tVect::operator+=(const tVect& vec) {
     x+=vec.x;
     y+=vec.y;
     z+=vec.z;
     return *this;
 }
 
-tVect tVect::operator-(const tVect& vec) const {
+inline tVect tVect::operator-(const tVect& vec) const {
     return tVect(
         x-vec.x,
         y-vec.y,
         z-vec.z);
 }
 
-tVect& tVect::operator-=(const tVect& vec) {
+inline tVect& tVect::operator-=(const tVect& vec) {
     x-=vec.x;
     y-=vec.y;
     z-=vec.z;
     return *this;
 }
 
-tVect tVect::operator*(const double& scalar) const {
+inline tVect tVect::operator*(const double& scalar) const {
     return tVect(
         x*scalar,
         y*scalar,
         z*scalar);
 }
 
-tVect& tVect::operator*=(const double& scalar) {
+inline tVect& tVect::operator*=(const double& scalar) {
     x*=scalar;
     y*=scalar;
     z*=scalar;
     return *this;
 }
 
-tVect tVect::operator/(const double& scalar) const {
+inline tVect tVect::operator/(const double& scalar) const {
     return tVect(
         x/scalar,
         y/scalar,
         z/scalar);
 }
 
-tVect& tVect::operator/=(const double& scalar) {
+inline tVect& tVect::operator/=(const double& scalar) {
     x/=scalar;
     y/=scalar;
     z/=scalar;
     return *this;
 }
 
-tVect operator *(const double& scalar, const tVect& vec) {
+inline tVect operator *(const double& scalar, const tVect& vec) {
     return tVect(
         vec.x*scalar,
         vec.y*scalar,
@@ -114,49 +114,49 @@ tVect operator *(const double& scalar, const tVect& vec) {
 
 // mathematical functions
 
-tVect tVect::transport() const {
+inline tVect tVect::transport() const {
     return tVect(y*y+z*z,z*z+x*x,x*x+y*y);
 }
 
-tVect tVect::abs() const {
+inline tVect tVect::abs() const {
     return tVect(std::abs(x),std::abs(y),std::abs(z));
 }
 
-double tVect::dot(const tVect& vec) const {
+inline double tVect::dot(const tVect& vec) const {
     return x*vec.x+y*vec.y+z*vec.z;
 }
 
-double tVect::dot2(const tVect& vec) const {
+inline double tVect::dot2(const tVect& vec) const {
     return pow(this->dot(vec),2.0);
 }
 
-tVect tVect::cross(const tVect& vec) const {
+inline tVect tVect::cross(const tVect& vec) const {
     return tVect(
             y*vec.z-z*vec.y,
             z*vec.x-x*vec.z,
             x*vec.y-y*vec.x);
 }
 
-tVect tVect::compProd(const tVect& vec) const {
+inline tVect tVect::compProd(const tVect& vec) const {
     return tVect(
             x*vec.x,
             y*vec.y,
             z*vec.z);
 }
 
-tMat tVect::outer(const tVect& vec) const {
+inline tMat tVect::outer(const tVect& vec) const {
     return tMat(x*vec.x,x*vec.y,x*vec.z,y*vec.x,y*vec.y,y*vec.z,z*vec.x,z*vec.y,z*vec.z);
 }
 
-double tVect::norm() const {
+inline double tVect::norm() const {
     return sqrt(x*x+y*y+z*z);
 }
 
-double tVect::norm2() const {
+inline double tVect::norm2() const {
     return x*x+y*y+z*z;
 }
 
-int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) const  {
+inline int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) const  {
     const int xc=floor(x/cellWidth[0])+1;
     const int yc=floor(y/cellWidth[1])+1;
     const int zc=floor(z/cellWidth[2])+1;
@@ -175,14 +175,14 @@ int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) const  {
 
 // geometric position functions
 
-bool tVect::insideSphere(const tVect& center, const double& radius) const {
+inline bool tVect::insideSphere(const tVect& center, const double& radius) const {
     //distance between center of the sphere and point
     tVect dist=*this -center;
 //    return ((z-center.z)*(z-center.z)+(y-center.y)*(y-center.y)+(x-center.x)*(x-center.x)<radius*radius);
     return (dist.norm2()<radius*radius);
 }
 
-bool tVect::insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const {
+inline bool tVect::insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const {
     // distance to point 1 of axes
     const tVect p1dist=*this-p1;
     // same but projected on the axes
@@ -197,22 +197,22 @@ bool tVect::insideCylinder(const tVect& p1, const tVect& naxes, const double& R1
 
 
 
-bool tVect::insidePlane(const tVect& p, const tVect& n) const {
+inline bool tVect::insidePlane(const tVect& p, const tVect& n) const {
     tVect pdist=*this-p;
     return n.dot(pdist)<0.0;
 }
 
-bool tVect::close2Plane(const tVect& p, const tVect& n, const double& distance) const {
+inline bool tVect::close2Plane(const tVect& p, const tVect& n, const double& distance) const {
     const double distanceHere=this->distance2Plane(p,n);
     return distanceHere<distance;
 }
 
-double tVect::distance2Plane(const tVect& p, const tVect& n) const {
+inline double tVect::distance2Plane(const tVect& p, const tVect& n) const {
     tVect pdist=*this-p;
     return n.dot(pdist);
 }
 
-double tVect::isoparameterSphere(const tVect& center, const double& radius) const {
+inline double tVect::isoparameterSphere(const tVect& center, const double& radius) const {
     //distance between center of the sphere and point
     tVect dist=*this -center;
 //    return ((z-center.z)*(z-center.z)+(y-center.y)*(y-center.y)+(x-center.x)*(x-center.x)<radius*radius);
@@ -225,21 +225,21 @@ double tVect::isoparameterSphere(const tVect& center, const double& radius) cons
 
 // basic functions
 
-void quaternion::show() const {
+inline void quaternion::show() const {
     cout<<" ("<<q0<<", "<<q1<<", "<<q2<<", "<<q3<<")";
 }
 
-void quaternion::printLine(std::ofstream& outputFile) const {
+inline void quaternion::printLine(std::ofstream& outputFile) const {
     cout.precision(17);
     outputFile<<q0<<"\t"<<q1<<"\t"<<q2<<"\t"<<q3<<"\n";
 }
 
-void quaternion::print(std::ofstream& outputFile) const {
+inline void quaternion::print(std::ofstream& outputFile) const {
     cout.precision(17);
     outputFile<<q0<<"\t"<<q1<<"\t"<<q2<<"\t"<<q3<<"\t";
 }
 
-void quaternion::forceStability(tQuat& quat){
+inline void quaternion::forceStability(tQuat& quat){
     const static double relax=0.0;
     q0=q0;//-1.0*this->dot(quat)/quat.q0;
     q1=q1;//-relax*this->dot(quat)/quat.q1;
@@ -248,14 +248,14 @@ void quaternion::forceStability(tQuat& quat){
 
 }
 
-void quaternion::resetHard() {
+inline void quaternion::resetHard() {
     q0=0.0;
     q1=0.0;
     q2=0.0;
     q3=0.0;
 }
 
-void quaternion::resetSoft() {
+inline void quaternion::resetSoft() {
     q0=1.0;
     q1=0.0;
     q2=0.0;
@@ -264,7 +264,7 @@ void quaternion::resetSoft() {
 
 // overloaded operators
 
-tQuat quaternion::operator+(const tQuat& quat) const {
+inline tQuat quaternion::operator+(const tQuat& quat) const {
     return tQuat(
         q0+quat.q0,
         q1+quat.q1,
@@ -272,7 +272,7 @@ tQuat quaternion::operator+(const tQuat& quat) const {
         q3+quat.q3);
 }
 
-tQuat quaternion::operator-(const tQuat& quat) const {
+inline tQuat quaternion::operator-(const tQuat& quat) const {
     return tQuat(
         q0-quat.q0,
         q1-quat.q1,
@@ -280,7 +280,7 @@ tQuat quaternion::operator-(const tQuat& quat) const {
         q3-quat.q3);
 }
 
-tQuat quaternion::operator*(const double& scalar) const {
+inline tQuat quaternion::operator*(const double& scalar) const {
     return tQuat(
         q0*scalar,
         q1*scalar,
@@ -288,7 +288,7 @@ tQuat quaternion::operator*(const double& scalar) const {
         q3*scalar);
 }
 
-tQuat quaternion::operator/(const double& scalar) const {
+inline tQuat quaternion::operator/(const double& scalar) const {
     return tQuat(
         q0/scalar,
         q1/scalar,
@@ -296,7 +296,7 @@ tQuat quaternion::operator/(const double& scalar) const {
         q3/scalar);
 }
 
-tQuat operator *(const double& scalar, const tQuat& quat){
+inline tQuat operator *(const double& scalar, const tQuat& quat){
     return tQuat(
         quat.q0*scalar,
         quat.q1*scalar,
@@ -306,7 +306,7 @@ tQuat operator *(const double& scalar, const tQuat& quat){
 
 // mathematical functions
 
-void quaternion::normalize(){
+inline void quaternion::normalize(){
     double norm=this->norm();
     q0/=norm;
     q1/=norm;
@@ -314,15 +314,15 @@ void quaternion::normalize(){
     q3/=norm;
 }
 
-double quaternion::norm() const {
+inline double quaternion::norm() const {
     return sqrt(q0*q0+q1*q1+q2*q2+q3*q3);
 }
 
-double quaternion::norm2() const {
+inline double quaternion::norm2() const {
     return q0*q0+q1*q1+q2*q2+q3*q3;
 }
 
-tQuat quaternion::adjoint() const {
+inline tQuat quaternion::adjoint() const {
     return tQuat(
         q0,
         -q1,
@@ -330,7 +330,7 @@ tQuat quaternion::adjoint() const {
         -q3);
 }
 
-tQuat quaternion::inverse() const {
+inline tQuat quaternion::inverse() const {
     // hopefully this is not needed, since for a unit quaternion inverse and adjoint are equal
     tQuat dummyQ;
     dummyQ=dummyQ.adjoint();
@@ -338,7 +338,7 @@ tQuat quaternion::inverse() const {
     return dummyQ;
 }
 
-tQuat quaternion::multiply(quaternion quat) const {
+inline tQuat quaternion::multiply(quaternion quat) const {
     // note that quaternion multiplication is non-commutative
     // here the product q*r is solved, which in general is different from r*q
     // refer to the internet (mathworks page on quaternion multiplication) for documentation
@@ -349,7 +349,7 @@ tQuat quaternion::multiply(quaternion quat) const {
         quat.q0*q3-quat.q1*q2+quat.q2*q1+quat.q3*q0);
 }
 
-double quaternion::dot(quaternion quat) const {
+inline double quaternion::dot(quaternion quat) const {
     // note that quaternion multiplication is non-commutative
     // here the product q*r is solved, which in general is different from r*q
     // refer to the internet (mathworks page on quaternion multiplication) for documentation
@@ -362,7 +362,7 @@ double quaternion::dot(quaternion quat) const {
 
 // basic functions
 
-void tinyMatrix::show() const {
+inline void tinyMatrix::show() const {
     cout<<" (";
     cout<<m00<<", "<<m01<<", "<<m02<<"; ";
     cout<<m10<<", "<<m11<<", "<<m12<<"; ";
@@ -371,7 +371,7 @@ void tinyMatrix::show() const {
 
 // overloaded operators
 
-tMat tinyMatrix::operator+(const tMat& mat) const {
+inline tMat tinyMatrix::operator+(const tMat& mat) const {
     return tMat(
         m00+mat.m00,
         m01+mat.m01,
@@ -384,7 +384,7 @@ tMat tinyMatrix::operator+(const tMat& mat) const {
         m22+mat.m22);
 }
 
-tMat& tinyMatrix::operator+=(const tMat& mat){
+inline tMat& tinyMatrix::operator+=(const tMat& mat){
     m00+=mat.m00;
     m01+=mat.m01;
     m02+=mat.m02;
@@ -397,7 +397,7 @@ tMat& tinyMatrix::operator+=(const tMat& mat){
     return *this;
 }
 
-tMat tinyMatrix::operator-(const tMat& mat) const {
+inline tMat tinyMatrix::operator-(const tMat& mat) const {
     return tMat(
         m00-mat.m00,
         m01-mat.m01,
@@ -410,7 +410,7 @@ tMat tinyMatrix::operator-(const tMat& mat) const {
         m22-mat.m22);
 }
 
-tMat& tinyMatrix::operator-=(const tMat& mat){
+inline tMat& tinyMatrix::operator-=(const tMat& mat){
     m00-=mat.m00;
     m01-=mat.m01;
     m02-=mat.m02;
@@ -423,7 +423,7 @@ tMat& tinyMatrix::operator-=(const tMat& mat){
     return *this;
 }
 
-tMat tinyMatrix::operator*(const double& scalar) const {
+inline tMat tinyMatrix::operator*(const double& scalar) const {
     return tMat(
         m00*scalar,
         m01*scalar,
@@ -436,7 +436,7 @@ tMat tinyMatrix::operator*(const double& scalar) const {
         m22*scalar);
 }
 
-tMat& tinyMatrix::operator*=(const double& scalar){
+inline tMat& tinyMatrix::operator*=(const double& scalar){
     m00*=scalar;
     m01*=scalar;
     m02*=scalar;
@@ -449,7 +449,7 @@ tMat& tinyMatrix::operator*=(const double& scalar){
     return *this;
 }
 
-tMat tinyMatrix::operator/(const double& scalar) const {
+inline tMat tinyMatrix::operator/(const double& scalar) const {
     return tMat(
         m00/scalar,
         m01/scalar,
@@ -462,7 +462,7 @@ tMat tinyMatrix::operator/(const double& scalar) const {
         m22/scalar);
 }
 
-tMat& tinyMatrix::operator/=(const double& scalar){
+inline tMat& tinyMatrix::operator/=(const double& scalar){
     m00/=scalar;
     m01/=scalar;
     m02/=scalar;
@@ -475,7 +475,7 @@ tMat& tinyMatrix::operator/=(const double& scalar){
     return *this;
 }
 
-tMat operator *(const double& scalar, const tMat& mat){
+inline tMat operator *(const double& scalar, const tMat& mat){
     return tMat(
         mat.m00*scalar,
         mat.m01*scalar,
@@ -490,7 +490,7 @@ tMat operator *(const double& scalar, const tMat& mat){
 
 // mathematical functions
 
-double tinyMatrix::magnitude() const {
+inline double tinyMatrix::magnitude() const {
 //    return 2.0*sqrt((m01*m10+m20*m02+m12*m21-(m00*m11+m11*m22+m22*m00))); // this gives nan
     return sqrt(0.5*(m00*m00+m11*m11+m22*m22+2.0*(m01*m10+m20*m02+m12*m21))); // this WORKS
 //    return 2.0*sqrt(m00*m00+m11*m11+m22*m22+2.0*(m01*m10+m20*m02+m12*m21)); // this does not work
@@ -500,7 +500,7 @@ double tinyMatrix::magnitude() const {
 // INTER-CLASS
 /////////////////////////////////////////////////////////////////////////////////////////*/
 
-tVect quat2vec(tQuat quat) {
+inline tVect quat2vec(tQuat quat) {
     //if (abs(quat.q0)>0.001*abs(quat.q1)){
 //    cout<<"transform error="<<quat.q0<<"\n";
     //}
@@ -510,7 +510,7 @@ tVect quat2vec(tQuat quat) {
             quat.q3);
 }
 
-tQuat vec2quat(tVect vec){
+inline tQuat vec2quat(tVect vec){
     return tQuat(
             0.0,
             vec.x,
@@ -518,7 +518,7 @@ tQuat vec2quat(tVect vec){
             vec.z);
 }
 
-tVect project(tVect vec, tQuat quat){
+inline tVect project(tVect vec, tQuat quat){
     // projection of a vector  v from a reference frame to another.
     // the reference frame is identified by a quaternion q
     // v'=qvq*
@@ -530,20 +530,20 @@ tVect project(tVect vec, tQuat quat){
     return quat2vec(rotQuat);
 }
 
-tVect newtonAcc(tVect moment, tVect I, tVect wBf){
+inline tVect newtonAcc(tVect moment, tVect I, tVect wBf){
     const double xA=(moment.x+(I.y-I.z)*wBf.y*wBf.z)/I.x;
     const double yA=(moment.y+(I.z-I.x)*wBf.z*wBf.x)/I.y;
     const double zA=(moment.z+(I.x-I.y)*wBf.x*wBf.y)/I.z;
     return tVect(xA,yA,zA);
 }
 
-tQuat quatAcc(tVect waBf, tQuat Q1){
+inline tQuat quatAcc(tVect waBf, tQuat Q1){
     tQuat waQuat=vec2quat(waBf);
     waQuat.q0=-2.0*Q1.norm2();
     return waQuat;
 }
 
-tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed) {
+inline tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed) {
     
     // Calculate the centrifugal acceleration
     // vector from rotating center to the particle position
@@ -557,7 +557,7 @@ tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, con
 
 }
 
-tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed) {
+inline tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed) {
 
     // Calculate Coriolis acceleration
     // Get Coriolis acceleration: -2 w X v

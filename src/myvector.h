@@ -293,5 +293,7 @@ typedef std::vector<cylinder> cylinderList;
 class pbc;
 typedef std::vector<pbc> pbcList;
 
+#include "myvector.inl"
+
 #endif	/* VECTOR_H */
 
