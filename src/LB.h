@@ -18,7 +18,7 @@
 //#include <algorithm>
 #include <string.h>
 #include <valarray>
-#include <sys/time.h>
+#include <chrono>
 //
 #include "macros.h"
 #include "myvector.h"
@@ -84,18 +84,18 @@ public: //private
     // energy
     energy fluidEnergy, fluidImmersedEnergy;
     // for performance check
-    struct timeval startLBStep, endLBStep;
-    struct timeval startFreeSurfaceStep, endFreeSurfaceStep;
-    struct timeval startCouplingStep, endCouplingStep;
-    struct timeval startUpdateMassStep, endUpdateMassStep;
-    struct timeval startUpdateInterfaceStep, endUpdateInterfaceStep;
-    struct timeval startFindMutantsStep, endFindMutantsStep;
-    struct timeval startSmoothenInterfaceStep_1, endSmoothenInterfaceStep_1;
-    struct timeval startSmoothenInterfaceStep_2, endSmoothenInterfaceStep_2;
-    struct timeval startUpdateMutantsStep, endUpdateMutantsStep;
-    struct timeval startRemoveIsolatedStep, endRemoveIsolatedStep;
-    struct timeval startRedistributeMassStep, endRedistributeMassStep;
-    struct timeval startComputeNormalsStep, endComputeNormalsStep;
+    std::chrono::time_point<std::chrono::steady_clock> startLBStep, endLBStep;
+    std::chrono::time_point<std::chrono::steady_clock> startFreeSurfaceStep, endFreeSurfaceStep;
+    std::chrono::time_point<std::chrono::steady_clock> startCouplingStep, endCouplingStep;
+    std::chrono::time_point<std::chrono::steady_clock> startUpdateMassStep, endUpdateMassStep;
+    std::chrono::time_point<std::chrono::steady_clock> startUpdateInterfaceStep, endUpdateInterfaceStep;
+    std::chrono::time_point<std::chrono::steady_clock> startFindMutantsStep, endFindMutantsStep;
+    std::chrono::time_point<std::chrono::steady_clock> startSmoothenInterfaceStep_1, endSmoothenInterfaceStep_1;
+    std::chrono::time_point<std::chrono::steady_clock> startSmoothenInterfaceStep_2, endSmoothenInterfaceStep_2;
+    std::chrono::time_point<std::chrono::steady_clock> startUpdateMutantsStep, endUpdateMutantsStep;
+    std::chrono::time_point<std::chrono::steady_clock> startRemoveIsolatedStep, endRemoveIsolatedStep;
+    std::chrono::time_point<std::chrono::steady_clock> startRedistributeMassStep, endRedistributeMassStep;
+    std::chrono::time_point<std::chrono::steady_clock> startComputeNormalsStep, endComputeNormalsStep;
 public:
     // switcher for restart
     bool lbRestart = false;

@@ -602,7 +602,7 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
     // Lattice Boltzmann core steps
 
     // measure time for performance check (begin)
-    gettimeofday(&startLBStep, NULL);
+    startLBStep = std::chrono::steady_clock::now();
 
     //create active list and checks for errors in the list
     cleanLists();
@@ -622,7 +622,7 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
     streaming(walls, objects);
     
     // measure time for performance check (end)
-    gettimeofday(&endLBStep, NULL);
+    endLBStep = std::chrono::steady_clock::now();
 
 }
 
@@ -631,7 +631,7 @@ void LB::latticeBoltzmannFreeSurfaceStep() {
     // free-surface  management functions
 
     // measure time for performance check (begin)
-    gettimeofday(&startFreeSurfaceStep, NULL);
+    startFreeSurfaceStep = std::chrono::steady_clock::now();
 
     // in case mass needs to be kept constant, call enforcing function here
     if (imposeFluidVolume) {
@@ -662,7 +662,7 @@ void LB::latticeBoltzmannFreeSurfaceStep() {
     cleanLists();
 
     // measure time for performance check (end)
-    gettimeofday(&endFreeSurfaceStep, NULL);
+    endFreeSurfaceStep = std::chrono::steady_clock::now();
 
 }
 //
@@ -676,7 +676,7 @@ void LB::latticeBoltzmannCouplingStep(bool& newNeighborList, elmtList& elmts, pa
     // this automatically check also for the hideous case of particle to particle double transition
 
     // measure time for performance check (begin)
-    gettimeofday(&startCouplingStep, NULL);
+    startCouplingStep = std::chrono::steady_clock::now();
 
     // first we check if a new neighbour table has been defined. In that case, the indexing needs to be reinitialised
 
@@ -711,7 +711,7 @@ void LB::latticeBoltzmannCouplingStep(bool& newNeighborList, elmtList& elmts, pa
     // redistributing extra mass due to popping of nodes
     // redistributeMass(massSurplus);
     // measure time for performance check (begin)
-    gettimeofday(&endCouplingStep, NULL);
+    endCouplingStep = std::chrono::steady_clock::now();
 
 }
 
@@ -2757,7 +2757,7 @@ void LB::updateMass() {
     // refer to the article of Miller or of Svec et al. for this
 
     // measure time for performance check (begin)
-    gettimeofday(&startUpdateMassStep, NULL);
+    startUpdateMassStep = std::chrono::steady_clock::now();
 
 #pragma omp parallel for
     for (int it = 0; it < interfaceNodes.size(); ++it) {
@@ -2858,7 +2858,7 @@ void LB::updateMass() {
     }
 
     // measure time for performance check (begin)
-    gettimeofday(&endUpdateMassStep, NULL);
+    endUpdateMassStep = std::chrono::steady_clock::now();
 
 }
 
@@ -2866,7 +2866,7 @@ void LB::updateInterface() {
     // updates the location of the interface, creating and deleting interface nodes
 
     // measure time for performance check (begin)
-    gettimeofday(&startUpdateInterfaceStep, NULL);
+    startUpdateInterfaceStep = std::chrono::steady_clock::now();
 
     // variable for storage of mass surplus
     double massSurplus = 0.0;
@@ -2897,7 +2897,7 @@ void LB::updateInterface() {
 #endif
 
     // measure time for performance check (begin)
-    gettimeofday(&endUpdateInterfaceStep, NULL);
+    endUpdateInterfaceStep = std::chrono::steady_clock::now();
 
 }
 
@@ -2907,7 +2907,7 @@ void LB::findInterfaceMutants() {
     // interface -> gas (emptied node)
 
     // measure time for performance check (begin)
-    gettimeofday(&startFindMutantsStep, NULL);
+    startFindMutantsStep = std::chrono::steady_clock::now();
 
     filledNodes.clear();
     emptiedNodes.clear();
@@ -2935,7 +2935,7 @@ void LB::findInterfaceMutants() {
     }
 
     // measure time for performance check (end)
-    gettimeofday(&endFindMutantsStep, NULL);
+    endFindMutantsStep = std::chrono::steady_clock::now();
 
 }
 
@@ -2943,7 +2943,7 @@ void LB::smoothenInterface(double& massSurplus) {
 
 
     // measure time for performance check (begin)
-    gettimeofday(&startSmoothenInterfaceStep_1, NULL);
+    startSmoothenInterfaceStep_1 = std::chrono::steady_clock::now();
 
     static const double marginalMass = 1.0e-2;
     newInterfaceNodes.clear();
@@ -3026,10 +3026,10 @@ void LB::smoothenInterface(double& massSurplus) {
         }
     }
     // measure time for performance check (end)
-    gettimeofday(&endSmoothenInterfaceStep_1, NULL);
+    endSmoothenInterfaceStep_1 = std::chrono::steady_clock::now();
 
     // measure time for performance check (begin)
-    gettimeofday(&startSmoothenInterfaceStep_2, NULL);
+    startSmoothenInterfaceStep_2 = std::chrono::steady_clock::now();
 
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new gas node
     //unsIntList nodesToErase;
@@ -3096,7 +3096,7 @@ void LB::smoothenInterface(double& massSurplus) {
     //
     //    fluidNodes.resize(last);
     // measure time for performance check (end)
-    gettimeofday(&endSmoothenInterfaceStep_2, NULL);
+    endSmoothenInterfaceStep_2 = std::chrono::steady_clock::now();
 
 }
 
@@ -3152,7 +3152,7 @@ void LB::averageFromNeighbors(node* linkNode, double& newNodeN, tVect& newNodeU,
 void LB::updateMutants(double& massSurplus) {
 
     // measure time for performance check (begin)
-    gettimeofday(&startUpdateMutantsStep, NULL);
+    startUpdateMutantsStep = std::chrono::steady_clock::now();
 
     for (int it = 0; it < emptiedNodes.size(); ++it) {
         node* nodeHere = emptiedNodes[it];
@@ -3199,7 +3199,7 @@ void LB::updateMutants(double& massSurplus) {
     }
 
     // measure time for performance check (end)
-    gettimeofday(&endUpdateMutantsStep, NULL);
+    endUpdateMutantsStep = std::chrono::steady_clock::now();
 
 
 }
@@ -3208,7 +3208,7 @@ void LB::removeIsolated(double& massSurplus) {
     // remove isolated interface cells (surrounded either by only fluid or only solid cells)
 
     // measure time for performance check (start)
-    gettimeofday(&startRemoveIsolatedStep, NULL);
+    startRemoveIsolatedStep = std::chrono::steady_clock::now();
 
     // checking if it is surrounded by fluid (in that case is converted to fluid). Solid is an exception
     // reverse cycle is needed because of deletion function
@@ -3259,7 +3259,7 @@ void LB::removeIsolated(double& massSurplus) {
     }
 
     // measure time for performance check (end)
-    gettimeofday(&endRemoveIsolatedStep, NULL);
+    endRemoveIsolatedStep = std::chrono::steady_clock::now();
 
 }
 
@@ -3267,7 +3267,7 @@ void LB::redistributeMass(const double& massSurplus) {
     // redistribute the mass surplus among interface cells
 
     // measure time for performance check (begin)
-    gettimeofday(&startRedistributeMassStep, NULL);
+    startRedistributeMassStep = std::chrono::steady_clock::now();
 
     const double addMass = massSurplus / double(interfaceNodes.size());
 
@@ -3277,14 +3277,14 @@ void LB::redistributeMass(const double& massSurplus) {
     }
 
     // measure time for performance check (end)
-    gettimeofday(&endRedistributeMassStep, NULL);
+    endRedistributeMassStep = std::chrono::steady_clock::now();
 }
 
 void LB::computeSurfaceNormal() {
     // compute the surface normal, as the gradient of the liquidFraction function
 
     // measure time for performance check (begin)
-    gettimeofday(&startComputeNormalsStep, NULL);
+    startComputeNormalsStep = std::chrono::steady_clock::now();
 
 #pragma omp parallel for
     for (int it = 0; it < interfaceNodes.size(); ++it) {
@@ -3309,7 +3309,7 @@ void LB::computeSurfaceNormal() {
     }
 
     // measure time for performance check (end)
-    gettimeofday(&endComputeNormalsStep, NULL);
+    endComputeNormalsStep = std::chrono::steady_clock::now();
 }
 
 void LB::enforceMassConservation() {
