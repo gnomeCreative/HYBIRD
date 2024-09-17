@@ -1,11 +1,18 @@
 
-build/
+build*/
 
 input/
 
 dist/
 
 desktop.ini
+
+tutorials/*/data/
+tutorials/*/results/
+
+## CLion/JetBrains ide
+.idea/
+cmake-build-*/
 
 ## Ignore typical C++ intermediate files
 ##
