@@ -25,8 +25,6 @@
 #include <iomanip>
 // only to create a directory
 #include <filesystem>
-#include <sys/types.h>
-#include <sys/time.h>
 //
 #include "LB.h"
 #include "DEM.h"

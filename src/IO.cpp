@@ -13,7 +13,6 @@ void IO::initialize() {
 
     bool a;
     //    if (demSolver) {
-    ;
     a = filesystem::create_directories(partDirectory);
     cout << "Work directory created = " << partDirectory << ". Result: " << a << "\n";
     //    }
@@ -218,18 +217,18 @@ void IO::outputStep(LB& lb, DEM& dem) {
         if (lbmSolver) {
 
 
-            const double deltaLB = (lb.endLBStep.tv_sec - lb.startLBStep.tv_sec) * 1000000u + lb.endLBStep.tv_usec - lb.startLBStep.tv_usec;
+            const double deltaLB = std::chrono::duration<double, std::micro>(lb.endLBStep - lb.startLBStep).count();
             cout << "t=" << deltaLB << " ";
             if (lb.freeSurface) {
-                const double deltaFreeSurface = (lb.endFreeSurfaceStep.tv_sec - lb.startFreeSurfaceStep.tv_sec) * 1000000u + lb.endFreeSurfaceStep.tv_usec - lb.startFreeSurfaceStep.tv_usec;
-                const double deltaUpdateMass = (lb.endUpdateMassStep.tv_sec - lb.startUpdateMassStep.tv_sec) * 1000000u + lb.endUpdateMassStep.tv_usec - lb.startUpdateMassStep.tv_usec;
-                const double deltaUpdateInterface = (lb.endUpdateInterfaceStep.tv_sec - lb.startUpdateInterfaceStep.tv_sec) * 1000000u + lb.endUpdateInterfaceStep.tv_usec - lb.startUpdateInterfaceStep.tv_usec;
-                const double deltaFindMutants = (lb.endFindMutantsStep.tv_sec - lb.startFindMutantsStep.tv_sec) * 1000000u + lb.endFindMutantsStep.tv_usec - lb.startFindMutantsStep.tv_usec;
-                const double deltaSmoothenInterface_1 = (lb.endSmoothenInterfaceStep_1.tv_sec - lb.startSmoothenInterfaceStep_1.tv_sec) * 1000000u + lb.endSmoothenInterfaceStep_1.tv_usec - lb.startSmoothenInterfaceStep_1.tv_usec;
-                const double deltaSmoothenInterface_2 = (lb.endSmoothenInterfaceStep_2.tv_sec - lb.startSmoothenInterfaceStep_2.tv_sec) * 1000000u + lb.endSmoothenInterfaceStep_2.tv_usec - lb.startSmoothenInterfaceStep_2.tv_usec;
-                const double deltaUpdateMutants = (lb.endUpdateMutantsStep.tv_sec - lb.startUpdateMutantsStep.tv_sec) * 1000000u + lb.endUpdateMutantsStep.tv_usec - lb.startUpdateMutantsStep.tv_usec;
-                const double deltaRemoveIsolated = (lb.endRemoveIsolatedStep.tv_sec - lb.startRemoveIsolatedStep.tv_sec) * 1000000u + lb.endRemoveIsolatedStep.tv_usec - lb.startRemoveIsolatedStep.tv_usec;
-                const double deltaRedistributeMass = (lb.endRedistributeMassStep.tv_sec - lb.startRedistributeMassStep.tv_sec) * 1000000u + lb.endRedistributeMassStep.tv_usec - lb.startRedistributeMassStep.tv_usec;
+                const double deltaFreeSurface = std::chrono::duration<double, std::micro>(lb.endFreeSurfaceStep - lb.startFreeSurfaceStep).count();
+                const double deltaUpdateMass = std::chrono::duration<double, std::micro>(lb.endUpdateMassStep - lb.startUpdateMassStep).count();
+                const double deltaUpdateInterface = std::chrono::duration<double, std::micro>(lb.endUpdateInterfaceStep - lb.startUpdateInterfaceStep).count();
+                const double deltaFindMutants = std::chrono::duration<double, std::micro>(lb.endFindMutantsStep - lb.startFindMutantsStep).count();
+                const double deltaSmoothenInterface_1 = std::chrono::duration<double, std::micro>(lb.endSmoothenInterfaceStep_1 - lb.startSmoothenInterfaceStep_1).count();
+                const double deltaSmoothenInterface_2 = std::chrono::duration<double, std::micro>(lb.endSmoothenInterfaceStep_2 - lb.startSmoothenInterfaceStep_2).count();
+                const double deltaUpdateMutants = std::chrono::duration<double, std::micro>(lb.endUpdateMutantsStep - lb.startUpdateMutantsStep).count();
+                const double deltaRemoveIsolated = std::chrono::duration<double, std::micro>(lb.endRemoveIsolatedStep - lb.startRemoveIsolatedStep).count();
+                const double deltaRedistributeMass = std::chrono::duration<double, std::micro>(lb.endRedistributeMassStep - lb.startRedistributeMassStep).count();
                 //                cout << "t_fs=" << deltaFreeSurface << " ";
                 //                cout << "t_um=" << deltaUpdateMass << " ";
                 //                cout << "t_ui=" << deltaUpdateInterface << " ";
@@ -245,7 +244,7 @@ void IO::outputStep(LB& lb, DEM& dem) {
                 //                cout << "n_fs=" << lb.interfaceNodes.size() << " ";
             }
             if (demSolver) {
-                const double deltaCoupling = (lb.endCouplingStep.tv_sec - lb.startCouplingStep.tv_sec) * 1000000u + lb.endCouplingStep.tv_usec - lb.startCouplingStep.tv_usec;
+                const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
                 cout << "t_c=" << deltaCoupling << " ";
             }
 
