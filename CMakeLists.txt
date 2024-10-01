@@ -73,6 +73,9 @@ if(NOT GENERATOR_IS_MULTI_CONFIG)
             "Choose the type of build, options are: Release, Debug, RelWithDebInfo, MinSizeRel or leave the value empty for the default." FORCE)
     endif()
 endif()
+# Ensure debug preprocessor macro is set
+target_compile_definitions(hybird PRIVATE "$<$<CONFIG:Debug>:_DEBUG>")
+
 # Update the output directories, so that they include Debug/Release
 set_target_properties(hybird
     PROPERTIES
