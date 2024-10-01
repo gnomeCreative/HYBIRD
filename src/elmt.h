@@ -10,6 +10,8 @@
 
 #include "myvector.h"
 
+extern ProblemName problemName;
+
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // CLASS  DEFINITIONS
 //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -108,8 +110,8 @@ public:
     // predicted angular velocity rates (global)
     tVect wp0,wp1,wp2,wp3,wp4,wp5;
     // forces and moments
-    tVect FHydro,FParticle,FWall,FGrav,FSpringP,FSpringW;
-    tVect MHydro,MParticle,MWall,MRolling;
+    tVect FHydro,FParticle,FWall,FGrav,FSpringP,FSpringW,FLub, FLubWall;
+    tVect MHydro,MParticle,MWall,MRolling,MLub,MLubWall;
     // force intensities
     tVect solidIntensity;
     // connectivity (coordination number)
@@ -149,12 +151,16 @@ public:
         I=tVect(1.0,1.0,1.0);
         FHydro.reset();
         FWall.reset();
+		FLubWall.reset();
         FParticle.reset();
+		FLub.reset();
         FSpringP.reset();
         FSpringW.reset();
         MHydro.reset();
         MParticle.reset();
+		MLub.reset();
         MWall.reset();
+		MLubWall.reset();
         MRolling.reset();
         ACoriolis.reset();
         ACentrifugal.reset();
@@ -257,7 +263,7 @@ public:
     // velocity of the object
     tVect x1;
     // force on the object
-    tVect FParticle,FHydro;
+    tVect FParticle,FHydro,FLub;
     // force on the object, maximum over simulation time, and time of occurrence
     tVect maxFParticle;
     double timeMaxFParticle;
@@ -273,7 +279,7 @@ public:
         r=0.0;
         x0=Zero;
         x1=Zero;
-        FParticle=FHydro=Zero;
+        FParticle=FHydro=FLub=Zero;
         maxFParticle=Zero;
         savedFParticle=Zero;
         timeMaxFParticle=0.0;

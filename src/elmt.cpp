@@ -76,11 +76,15 @@ void elmt::initialize(const double& partDensity, std::vector <vecList>& prototyp
     // initialize forces
     FHydro.reset();
     FParticle.reset();
+	FLub.reset();
     FWall.reset();
+	FLubWall.reset();
     FGrav=demF*m;
     MHydro.reset();
     MParticle.reset();
+	MLub.reset();
     MWall.reset();
+	MLubWall.reset();
     
 }
 
@@ -263,6 +267,9 @@ void particle::updatePredicted(const elmt& motherElmt, const std::vector <vecLis
         radiusVec=x0-motherElmt.xp0;
         x1=x1+motherElmt.wpGlobal.cross(radiusVec);
     }
+	//if (problemName == SHEAR_CELL_2023) {
+		//r = motherElmt.radius;
+	//}
 }
 
 void particle::updateCorrected(const elmt& motherElmt, const std::vector <vecList>& prototypes) {
@@ -278,6 +285,10 @@ void particle::updateCorrected(const elmt& motherElmt, const std::vector <vecLis
         radiusVec=x0-motherElmt.x0;
         x1=x1+motherElmt.wGlobal.cross(radiusVec);
     }
+
+	//if (problemName == SHEAR_CELL_2023) {
+		//r = motherElmt.radius;
+	//}
     
 }
 
@@ -288,6 +299,10 @@ void particle::ghostUpdate(particle& originParticle, tVect& pbcVector) {
         radiusVec=originParticle.radiusVec;
         // updating particle speed
         x1=originParticle.x1;
+
+		if (problemName == SHEAR_CELL_2023) {
+			r = originParticle.r;
+		}
 }
 
 void object::updateMax(const tVect& direction, const double& time) {

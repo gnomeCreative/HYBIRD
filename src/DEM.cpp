@@ -365,7 +365,7 @@ void DEM::determineTimeStep(const double& externalTimeStep) {
     }
 }
 
-void DEM::discreteElementStep() {
+void DEM::discreteElementStep(const double& fluidviscosity, const double& spacing) {
 
     // set trigger for new neighbor list
     static const double neighListTrigger = 0.25 * nebrRange;
@@ -374,6 +374,13 @@ void DEM::discreteElementStep() {
 
         demTimeStep++;
         demTime += deltat;
+
+		if (problemName == SHEAR_CELL_2023) {
+			//if (demTimeStep % 10 == 0) {
+				radiusexpansion();
+			//}
+		}
+
         // neighbor management
         //        cout<<"1.0 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         evalMaxDisp();
@@ -392,8 +399,8 @@ void DEM::discreteElementStep() {
         updateParticlesPredicted();
 
         // force evaluation
-        evaluateForces();
-
+        evaluateForces(fluidviscosity, spacing);
+		
         // corrector step
         corrector();
 
@@ -1778,12 +1785,16 @@ void DEM::corrector() {
 }
 
 void DEM::evaluateForces() {
-    for (int a = 0; a < activeElmts.size(); ++a) {
-        unsigned int n = activeElmts[a];
+    for (int a=0; a<activeElmts.size(); ++a) {
+        unsigned int n=activeElmts[a];
         elmts[n].FParticle.reset();
+		elmts[n].FLub.reset();
         elmts[n].FWall.reset();
+		elmts[n].FLubWall.reset();
         elmts[n].MParticle.reset();
+		elmts[n].MLub.reset();
         elmts[n].MWall.reset();
+		elmts[n].MLubWall.reset();
         elmts[n].FSpringP.reset();
         elmts[n].FSpringW.reset();
         elmts[n].MRolling.reset();
@@ -1803,10 +1814,14 @@ void DEM::evaluateForces() {
 
     for (int w = 0; w < walls.size(); ++w) {
         walls[w].FParticle.reset();
+		walls[w].FHydro.reset();
+		walls[w].FLub.reset();
     }
 
     for (int o = 0; o < objects.size(); ++o) {
         objects[o].FParticle.reset();
+		objects[o].FHydro.reset();
+		objects[o].FLub.reset();
     }
 
     if (staticFrictionSolve) {
@@ -1822,16 +1837,18 @@ void DEM::evaluateForces() {
     }
 
     // forces due to particle overlap and lubrication
-    particleParticleContacts();
+    particleParticleContacts(fluidviscosity, spacing);
 
     // forces due to contact with plane walls and lubrication
-    wallParticleContacts();
+    wallParticleContacts(fluidviscosity, spacing);
 
     // forces due to contact with stationary spheres (objects)
-    objectParticleContacts();
+    objectParticleContacts(fluidviscosity, spacing);
 
     // forces due to contact with cylinders
     cylinderParticelContacts();
+
+
 
     totSprings = 0;
     if (staticFrictionSolve) {
@@ -1868,9 +1885,41 @@ void DEM::evaluateForces() {
         const tVect FVisc = -6.0 * M_PI * numVisc * elmts[n].radius * elmts[n].xp1;
         const tVect MVisc = -8.0 * M_PI * numVisc * elmts[n].radius * elmts[n].radius * elmts[n].radius * elmts[n].wpGlobal;
 
+		//const tVect FVisc = tVect(0.0, 0.0, 0.0);
+		//const tVect MVisc = tVect(0.0, 0.0, 0.0);
+
         // translational motion
         // acceleration (sum of forces / mass + sum of accelerations)
-        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
+        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FLub + elmts[n].FWall+ elmts[n].FLubWall) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
+
+		//cout << "tempo" << demTime << endl;
+
+		//cout << "hydro" << elmts[n].FHydro.norm() << endl;
+		//cout << "part" << elmts[n].FParticle.norm() << endl;
+		//cout << "lub" << elmts[n].FLub.norm() << endl;
+		//cout << "wall" << elmts[n].FWall.norm() << endl;
+		//cout << "lubwall" << elmts[n].FLubWall.norm() << endl;
+		//cout << "acc" << elmts[n].x2.norm() << endl;
+		//cout << "accind" << demF.norm() << endl;
+		//cout << "coriolis" << elmts[n].ACoriolis.norm() << endl;
+		//cout << "centrifugal" << elmts[n].ACentrifugal.norm() << endl;
+		//cout << "massa" << elmts[n].m << endl;
+
+		if (problemName == SHEAR_CELL_2023) {
+			//if (elmts[n].radius == avgParticleDiam * 0.5 - 0.000001) {
+				//elmts[n].x2 = tVect(0.0, 0.0, 0.0);
+			//}
+			//cout << shearVelocity << endl;
+
+			if (elmts[n].x1.dot(Xp) == shearVelocity) {
+				elmts[n].x2 = tVect(0.0, 0.0, 0.0);
+			}
+			if (elmts[n].x1.dot(Xp) == -shearVelocity) {
+				elmts[n].x2 = tVect(0.0, 0.0, 0.0);
+			}
+		}
+
+
 
         // rotational motion
         // adjoint of orientation quaternion
@@ -1878,7 +1927,7 @@ void DEM::evaluateForces() {
         // rotational velocity (body-fixed reference frame)
         //const tVect wBf=2.0*quat2vec( q0adj.multiply( elmts[n].qp1 ) );
         // moment in global reference frame
-        const tVect moment = MVisc + elmts[n].MHydro + elmts[n].MParticle + elmts[n].MWall + elmts[n].MRolling;
+        const tVect moment = MVisc + elmts[n].MHydro + elmts[n].MParticle + elmts[n].MLub + elmts[n].MWall + elmts[n].MLubWall + elmts[n].MRolling;
 
         // moment in body-fixed reference frame
         //if (elmts[n].size
@@ -1887,6 +1936,18 @@ void DEM::evaluateForces() {
         const tVect waBf = newtonAcc(momentBf, elmts[n].I, elmts[n].wpLocal);
         // rotational acceleration (vector)
         elmts[n].w1 = project(waBf, elmts[n].qp0);
+
+		if (problemName == SHEAR_CELL_2023) {
+			//if (elmts[n].radius == avgParticleDiam*0.5-0.000001) {
+				//elmts[n].w1 = tVect(0.0, 0.0, 0.0);
+			//}
+			if (elmts[n].x1.dot(Xp) == shearVelocity) {
+				elmts[n].w1 = tVect(0.0, 0.0, 0.0);
+			}
+			if (elmts[n].x1.dot(Xp) == -shearVelocity) {
+				elmts[n].w1 = tVect(0.0, 0.0, 0.0);
+			}
+		}
         // rotational acceleration (quaternion)
         if (elmts[n].size > 1) {
             const tQuat waQuat = quatAcc(waBf, elmts[n].qp1);
@@ -2010,7 +2071,7 @@ void DEM::saveObjectForces() {
     // compute total force on objects
     tVect totalForce = Zero;
     for (int o = 0; o < objects.size(); ++o) {
-        totalForce += objects[o].FHydro + objects[o].FParticle;
+        totalForce+=objects[o].FHydro+objects[o].FParticle;
     }
 
 
@@ -2179,9 +2240,13 @@ void DEM::destroyElements() {
                 elmts[n].active = false;
                 elmts[n].resetVelocity();
                 elmts[n].FParticle.reset();
+				elmts[n].FLub.reset();
                 elmts[n].FWall.reset();
+				elmts[n].FLubWall.reset();
                 elmts[n].MParticle.reset();
+				elmts[n].MLub.reset();
                 elmts[n].MWall.reset();
+				elmts[n].MLubWall.reset();
                 elmts[n].FSpringP.reset();
                 elmts[n].FSpringW.reset();
                 elmts[n].MRolling.reset();
@@ -2210,9 +2275,13 @@ void DEM::destroyElements() {
                 elmts[n].active = false;
                 elmts[n].resetVelocity();
                 elmts[n].FParticle.reset();
+				elmts[n].FLub.reset();
                 elmts[n].FWall.reset();
+				elmts[n].FLubWall.reset();
                 elmts[n].MParticle.reset();
+				elmts[n].MLub.reset();
                 elmts[n].MWall.reset();
+				elmts[n].MLubWall.reset();
                 elmts[n].FSpringP.reset();
                 elmts[n].FSpringW.reset();
                 elmts[n].MRolling.reset();
@@ -2637,7 +2706,7 @@ Elongation* DEM::findSpring(const unsigned int& t, const unsigned int& indexI, p
 
 }
 
-void DEM::particleParticleContacts() {
+void DEM::particleParticleContacts(const double& fluidviscosity, const double& spacing) {
 
     for (unsIntList::iterator ipi = neighborTable.begin(); ipi != neighborTable.end(); ipi = ipi + 2) {
         // couple of contact candidates
@@ -2657,9 +2726,10 @@ void DEM::particleParticleContacts() {
         const tVect vectorDistance = partJ->x0 - partI->x0;
         const double distance2 = vectorDistance.norm2();
 
+		//cout << "distanza" << sqrt(distance2) << endl;
+
         // check for contact
         if (distance2 < sigij2) {
-
             // pointer to elongation, initially pointing to an empty spring
             Elongation* elongation_here_new;
             if (staticFrictionSolve) {
@@ -2672,14 +2742,17 @@ void DEM::particleParticleContacts() {
         }
         // lubrication calculation
 		else {
-			if (sqrt(distance2) < (sigij + 0.00005)) {
-				lubrication(partI, partJ, vectorDistance);
+			if (sqrt(distance2) < (sigij + 0.5*spacing)) {
+				if (sqrt(distance2) > sigij) {
+					lubrication(partI, partJ, vectorDistance, fluidviscosity, spacing);
+					// cout << "Lubrication!" << endl;
+				}
 			}
         }    
     }
 }
 
-void DEM::wallParticleContacts() {
+void DEM::wallParticleContacts(const double& fluidviscosity, const double& spacing) {
 
     // to keep conventions, the index i refers to the wall, and j the particle
     //    unsigned int elongIndex = 0;
@@ -2740,8 +2813,8 @@ void DEM::wallParticleContacts() {
             }
             // lubrication calculation
             else {
-			if (distance < rj + 0.00005) {
-				walllubrication(wallI, partJ, overlap);
+			if (distance < rj) {
+				walllubrication(wallI, partJ, overlap, fluidviscosity, spacing);
 			}
             }
         }
@@ -2789,7 +2862,7 @@ void DEM::cylinderParticelContacts() {
 }
 
 void DEM::objectParticleContacts() {
-    //    unsigned int elongIndex = 0;
+//    unsigned int elongIndex = 0;
     // to keep conventions, the index i refers to the object, and j the particle
     for (unsIntList::iterator ip = nearObjectTable.begin(); ip != nearObjectTable.end(); ip = ip + 2) {
         // couple of contact candidates
@@ -3582,8 +3655,7 @@ void DEM::updateEnergy(double& totalKineticEnergy) {
 
 }
 
-inline void DEM::lubrication(const particle *partI, const particle *partJ, const tVect& vectorDistance) {
-
+inline void DEM::lubrication(const particle *partI, const particle *partJ, const tVect& vectorDistance, const double& fluidviscosity, const double& spacing) {
 	// pointers to elements
 	elmt *elmtI = &elmts[partI->clusterIndex];
 	elmt *elmtJ = &elmts[partJ->clusterIndex];
@@ -3596,7 +3668,7 @@ inline void DEM::lubrication(const particle *partI, const particle *partJ, const
 	// distance norm
 	const double distance = vectorDistance.norm();
 	// overlap
-	const double lag =std::max(-radI -radJ + distance,0.0000001);
+	const double lag =std::max(-radI -radJ + distance, 0.01*(radI+radJ));
 	// relative velocity
 	const tVect relVel = partJ->x1 - partI->x1;
 	// first local unit vector (normal)
@@ -3610,26 +3682,28 @@ inline void DEM::lubrication(const particle *partI, const particle *partJ, const
 	double lubnormNormalForce = 0.0;
 	if (normRelVel < 0.0) {
 		// force computation /////////////////////////////////
-		lubnormNormalForce = lubnormalContact(lag, normRelVel, effRad);
-		// ASSERT(lubnormNormalForce >= 0.0);
+		lubnormNormalForce = lubnormalContact(lag, normRelVel, effRad, fluidviscosity, spacing);
+		ASSERT(lubnormNormalForce >= 0.0);
 	}
 	// force application ///////////////////////////////////
 	// vectorial normal force
 	const tVect lubnormalForce = en * lubnormNormalForce;
 
 	if (!partI->isGhost) {
-		elmtI->FParticle = elmtI->FParticle - lubnormalForce;
+		elmtI->FLub = elmtI->FLub - lubnormalForce;
 		// elmtI->solidIntensity += lubnormalForce.abs();
 	}
 	if (!partJ->isGhost) {
-		elmtJ->FParticle = elmtJ->FParticle + lubnormalForce;
+		elmtJ->FLub = elmtJ->FLub + lubnormalForce;
 		// elmtJ->solidIntensity += lubnormalForce.abs();
 	}
-
 	// cluster geometry
 	// vectorized radii
 	const tVect vecRadI = radI * en;
 	const tVect vecRadj = -radJ * en;
+	// vectorized distance contactPoint-center of cluster
+	const tVect centerDistI = vecRadI + (partI->radiusVec);
+	const tVect centerDistJ = vecRadj + (partJ->radiusVec);
 
 	// TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
 
@@ -3642,27 +3716,31 @@ inline void DEM::lubrication(const particle *partI, const particle *partJ, const
 	const tVect tangRelVelContact = relVelContact - normalRelVel;
 	// norm of tangential velocity
 	const double normTangRelVelContact = tangRelVelContact.norm();
+	//cout << normTangRelVelContact << endl;
 	// checking if there is any tangential motion
-	const tVect lubtangForce = 0.001*tangRelVelContact;
+	const tVect lubtangForce = lubtangentialContact(lag, tangRelVelContact, effRad, fluidviscosity, spacing)*tangRelVelContact;
+
 
 
 	// torque updating
 	if (!partI->isGhost) {
-		//elmtI->MParticle = elmtI->MParticle + centerDistI.cross(lubtangForce);
-		elmtI->FParticle = elmtI->FParticle + lubtangForce;
+		elmtI->MLub = elmtI->MLub + centerDistI.cross(lubtangForce);
+		elmtI->FLub = elmtI->FLub - lubtangForce;
 		//elmtI->solidIntensity += tangForce.abs();
 	}
 	if (!partJ->isGhost) {
-		//elmtJ->MParticle = elmtJ->MParticle - centerDistJ.cross(lubtangForce);
-		elmtJ->FParticle = elmtJ->FParticle - lubtangForce;
+		elmtJ->MLub = elmtJ->MLub - centerDistJ.cross(lubtangForce);
+		elmtJ->FLub = elmtJ->FLub + lubtangForce;
 		//elmtJ->solidIntensity += tangForce.abs();
 	}
-
 }
 
-inline void DEM::walllubrication(wall *wallI, const particle *partJ, const double& overlap) {
+inline void DEM::walllubrication(wall *wallI, const particle *partJ, const double& overlap, const double& fluidviscosity, const double& spacing) {
     
-    const double lag=std::max(-overlap,0.0000001);
+	// particle radius
+	const double radJ = partJ->r;
+
+    const double lag=std::max(-overlap, 0.001*2*radJ);
 
     // pointers to element
     elmt *elmtJ = &elmts[partJ->clusterIndex];
@@ -3671,7 +3749,7 @@ inline void DEM::walllubrication(wall *wallI, const particle *partJ, const doubl
 
     // geometry ///////////////
     // particle radius
-    const double radJ = partJ->r;
+    //const double radJ = partJ->r;
     // first local unit vector (normal)
     const tVect en = wallI->n;
     // speed of the wall at contact point
@@ -3682,25 +3760,28 @@ inline void DEM::walllubrication(wall *wallI, const particle *partJ, const doubl
     const double normRelVel = relVel.dot(en);
     // relative normal velocity
     const tVect normalRelVel = en*normRelVel;
+	//cout << "velocità relativa" << normRelVel << endl;
+	// force computation /////////////////////////////////
+	if (normRelVel < 0.0) {
+		double lubnormNormalForce = lubnormalContact(lag, normRelVel, radJ, fluidviscosity, spacing); // removed 2.0 *
+		//ASSERT(lubnormNormalForce >= 0.0);
 
-    // force computation /////////////////////////////////
-    double lubnormNormalForce = lubnormalContact(lag, normRelVel, radJ); // removed 2.0 *
+		// force application ///////////////////////////////////
+		// vectorial normal force
+		const tVect lubnormalForce = en * lubnormNormalForce;
 
-    // force application ///////////////////////////////////
-    // vectorial normal force
-    const tVect lubnormalForce = en*lubnormNormalForce;
+		// force updating
+		elmtJ->FLubWall = elmtJ->FLubWall + lubnormalForce;
+		wallI->FLub = wallI->FLub - lubnormalForce;
+		//elmtJ->solidIntensity +=  normalForce.abs();
+
+	}
 
     // cluster geometry
     // vectorized radius
     const tVect vecRadJ = -radJ*en;
     // vectorized distance contactPoint-center of cluster
     tVect centerDistJ = vecRadJ;
-
-    // force updating
-    elmtJ->FWall = elmtJ->FWall + lubnormalForce;
-    wallI->FParticle = wallI->FParticle - lubnormalForce;
-    //elmtJ->solidIntensity +=  normalForce.abs();
-
 
     // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
 
@@ -3712,35 +3793,179 @@ inline void DEM::walllubrication(wall *wallI, const particle *partJ, const doubl
     const tVect tangRelVelContact = relVelContact - normalRelVel;
     // norm of tangential velocity
     const double normTangRelVelContact = tangRelVelContact.norm();
+	//cout << normTangRelVelContact << endl;
     // checking if there is any tangential motion
-    const tVect lubtangForce = 0.001*tangRelVelContact;      
+	const double lubnormTangForce = lubtangentialContact(lag, tangRelVelContact, radJ, fluidviscosity, spacing);
+	//cout << lubnormTangForce << endl;
+    const tVect lubtangForce = lubnormTangForce *tangRelVelContact;
     // torque updating
-    elmtJ->MWall = elmtJ->MWall - centerDistJ.cross(lubtangForce);
+    elmtJ->MLubWall = elmtJ->MLubWall - centerDistJ.cross(lubtangForce);
     // force updating
     //elmtJ->FSpringW = elmtJ->FSpringW - lubtangForce;
-    elmtJ->FWall = elmtJ->FWall - lubtangForce;
+    elmtJ->FLubWall = elmtJ->FLubWall - lubtangForce;
     //elmtJ->solidIntensity +=  tangForce.abs();
-    wallI->FParticle = wallI->FParticle + lubtangForce;
+    wallI->FLub = wallI->FLub + lubtangForce;
 }
 
-double DEM::lubnormalContact(const double& lag, const double& vrelnnorm, const double& effRad) {
+inline void DEM::objectlubrication(object *objectI, const particle *partJ, const tVect& vectorDistance, Elongation* elongation_new, const double& fluidviscosity, const double& spacing) {
+
+		// pointers to element
+	elmt *elmtJ = &elmts[partJ->clusterIndex];
+
+	// NORMAL FORCE ///////////////////////////////////////////////////////////////////
+
+	// geometry ///////////////
+	// particle radius
+	const double radJ = partJ->r;
+	// distance from object (norm)
+	const double distance = vectorDistance.norm();
+	// distance before contact
+	double overlap = radJ + objectI->r - distance;
+	const double lag = std::max(-overlap, 0.001*spacing);
+	// first local unit vector (normal)
+	const tVect en = (1.0 / distance) * vectorDistance;
+	// speed of the wall at contact point
+	const tVect contactPointVelocity = objectI->x1; // fix this, contact point not defined
+	// relative velocity
+	const tVect relVel = partJ->x1 - contactPointVelocity;
+	// relative normal velocity (modulus)
+	const double normRelVel = relVel.dot(en);
+	// relative normal velocity
+	const tVect normalRelVel = en * normRelVel;
+	// force computation /////////////////////////////////
+	if (normRelVel < 0.0) {
+		double lubnormNormalForce = lubnormalContact(lag, normRelVel, radJ, fluidviscosity, spacing);
+		ASSERT(lubnormNormalForce >= 0.0);
+
+		// Overlap elastic potential energy
+		//                    energy.elastic+=fn*xj/2.5;
+
+		// force application ///////////////////////////////////
+		// vectorial normal force
+		const tVect lubnormalForce = en * lubnormNormalForce;
+
+		// force updating
+		elmtJ->FLubWall = elmtJ->FLubWall + lubnormalForce;
+		objectI->FLub = objectI->FLub - lubnormalForce;
+		//elmtJ->solidIntensity += normalForce.abs();
+
+	}
+
+	// cluster geometry
+	// vectorized radius
+	const tVect vecRadJ = -radJ * en;
+	// vectorized distance contactPoint-center of cluster
+	const tVect centerDistJ = vecRadJ + (partJ->x0 - elmtJ->xp0);
+
+	// TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
+
+	// angular velocities (global reference frame)
+	const tVect wJ = elmtJ->wpGlobal; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
+	// relative velocity at contact point
+	const tVect relVelContact = relVel + wJ.cross(vecRadJ);
+	// tangential component of relative velocity
+	const tVect tangRelVelContact = relVelContact - normalRelVel;
+	// norm of tangential velocity
+	const double normTangRelVelContact = tangRelVelContact.norm();
+	// checking if there is any tangential motion
+	if (normTangRelVelContact != 0.0) {
+		// update spring
+		if (staticFrictionSolve) {
+
+			const double elong_old_norm = elongation_new->e.norm();
+
+			double normElong = elongation_new->e.dot(en);
+			const tVect normalElong = en * normElong;
+
+			elongation_new->e = elongation_new->e - normalElong;
+
+			if (elongation_new->e.norm() != 0) {
+				const double scaling = elong_old_norm / elongation_new->e.norm();
+				elongation_new->e = elongation_new->e*scaling;
+			}
+			else {
+				const double scaling = 0.0;
+				elongation_new->e = elongation_new->e*scaling;
+			}
+		}
+
+		const double lubnormTangForce = lubtangentialContact(lag, tangRelVelContact, radJ, fluidviscosity, spacing);
+		//cout << lubnormTangForce << endl;
+		const tVect lubtangForce = lubnormTangForce * tangRelVelContact;
+
+		// torque updating
+		elmtJ->MLubWall = elmtJ->MLubWall - centerDistJ.cross(lubtangForce);
+		// force updating
+		//elmtJ->FSpringW = elmtJ->FSpringW - lubtangForce;
+		elmtJ->FLubWall = elmtJ->FLubWall - lubtangForce;
+		//elmtJ->solidIntensity += tangForce.abs();
+		objectI->FLub = objectI->FLub + lubtangForce;
+
+	}
+		// save overlap
+	if (overlap > elmtJ->maxOverlap) {
+		elmtJ->maxOverlap = overlap;
+	}
+
+	// updating connectivity
+	elmtJ->coordination += 1;
+}
+
+double DEM::lubnormalContact(const double& lag, const double& vrelnnorm, const double& effRad, const double& fluidviscosity, const double& spacing) {
 
 	// total normal force
-	double lubfn = 0.0;
+	//double lubfn = 0.0;
 
 	// lubrication
-	lubfn = -1.5*3.14159*4*effRad*effRad*0.001*(1/lag-10/0.001)*vrelnnorm;
+	const double lubfn = -1.5*3.14159 * 4.0 * effRad*effRad*fluidviscosity* (1.0 / lag - 1.0 / (0.5*spacing)) * vrelnnorm;
+	// cout << lag << endl;
+	//cout << fluidviscosity << endl;
+	//cout << lubfn << endl;
     return lubfn;
 
 }
 
-double DEM::lubtangentialContact(const double& lag, const tVect& tangRelVelContact, const double& effRad) {
+double DEM::lubtangentialContact(const double& lag, const tVect& tangRelVelContact, const double& effRad, const double& fluidviscosity, const double& spacing) {
 	// tangential force
 	double lubfs = 0.0;
 
 	// lubrication force
-	const double lubviscousForce = -4/5*3.14159*0.001*2*effRad*1.25*log(0.001*0.5/lag-0.001*0.5*10/0.001);
+	const double arg = (0.5*spacing) / lag;
+	const double lubviscousForce = -4.0 / 5.0 * 3.14159*fluidviscosity * 2.0 * effRad*1.25*log(arg);
 	lubfs = lubviscousForce;
+	
+	//cout << "forzatang " << lubfs << endl;
 
 	return lubfs;
+}
+
+void DEM::radiusexpansion() {
+
+	double exp1 = -demTime;
+	double exp2 = -demTime + deltat;
+
+	double multiplier = 1.0 + (0.052631579)*(1.0 - exp(exp1));
+	double divider = 1.0 + (0.052631579)*(1.0 - exp(exp2));
+
+	double factor = multiplier / divider;
+	//cout << "moltiplicatore " << multiplier << endl;
+
+	if (demTime == 0.0) {
+		divider = 1.0;
+	}
+	   
+	//const int Pnumber = particles.size();
+	//for (int k = 0; k < Pnumber; ++k)for (int k = 0; k < Pnumber; ++k) {
+		//particles[k].r = particles[k].r*multiplier / divider;
+	//}
+	
+	for (int n = 0; n < elmts.size(); ++n) {
+		// initialize element
+		//cout << n << endl;
+		elmts[n].radius= elmts[n].radius*factor;
+	}
+
+	for (int p = 0; p < stdPartNumber; ++p) {
+		particles[p].r = elmts[p].radius;
+	}
 }

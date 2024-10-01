@@ -10,7 +10,6 @@ void LB::LBShow() const {
     cout << "LATTICE CHARACTERISTICS (lattice units):" << endl;
     cout << "directions=" << lbmDirec << ";" << endl;
     cout << "time unit = " << unit.Time << "; length unit = " << unit.Length << "; density unit = " << unit.Density << ";" << endl;
-    cout << "dynVisc unit = " << unit.DynVisc << "; kinVisc unit = " << unit.KinVisc << "; speed unit = " << unit.Speed << ";" << endl;
     cout << "xdim =" << lbSize[0] << "; ydim= " << lbSize[1] << "; zdim= " << lbSize[2] << ";" << endl;
     cout << "Init tau = " << (0.5 + 3.0 * fluidMaterial.initDynVisc) << ";init visc =" << fluidMaterial.initDynVisc << "; init density = " << fluidMaterial.initDensity << ";" << endl;
     cout << "Min tau = " << (0.5 + 3.0 * fluidMaterial.lbMinVisc) << "; Max tau = " << (0.5 + 3.0 * fluidMaterial.lbMaxVisc) << ";" << endl;
@@ -2014,8 +2013,9 @@ void LB::initializeVariables(double shearVelocity) {
             if (!solveCentrifugal) {
                 const double projection = position.dot(lbF);
                	if (problemName == SHEAR_CELL_2023) {
-					const unsigned int zHere = getPositionZ(indexHere);
-					initVelocity = tVect(-shearVelocity * (zHere-lbSize[2]*0.5) / (lbSize[2]*0.5), 0.0, 0.0);
+					const double zHere = getPositionZ(indexHere);
+					//cout << "z" << lbSize[2] << endl;
+					initVelocity = tVect(-shearVelocity * (zHere-(lbSize[2]-2)*0.5) / ((lbSize[2] - 2)*0.5), 0.0, 0.0);
 					initVelocity /= unit.Speed;
 					nodeHere->initialize(fluidMaterial.initDensity + 3.0 * fluidMaterial.initDensity * (projection - minProjection), initVelocity, fluidMaterial.initDensity, fluidMaterial.initDynVisc, lbF, 1.0, Zero);
 				}
@@ -2627,8 +2627,14 @@ void LB::streaming(wallList& walls, objectList& objects) {
                         // getting the index of the wall to compute force in the right object
                         const int solidIndex = linkNode->getSolidIndex();
                         //cout<<"solidIndex "<<solidIndex<<endl;
+						// velocity of the object
+						const tVect vel = linkNode->u;
+						// variation in Bounce-Back due to moving object
+						const double BBi = BBCoeff * nodeHere->n * coeff[j] * vel.dot(v[j]); // mass!!!!!
                         // static pressure is subtracted in order to correctly compute buoyancy for floating objects
-                        const tVect BBforce = nodeHere->bounceBackForce(j, staticPres, 0.0, fluidMaterial.earthPressureCoeff, fluidMaterial.lbMaxVisc);
+                        const tVect BBforce = nodeHere->bounceBackForce(j, staticPres, BBi, fluidMaterial.earthPressureCoeff, fluidMaterial.lbMaxVisc);
+						// adding the extra mass to the surplus
+						extraMass = BBi * nodeHere->mass;
                         // updating force and torque on the object (lattice units). This point is critical since many nodes update the force on the same object (lattice units)
 #pragma omp ordered
                         {
