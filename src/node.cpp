@@ -126,15 +126,12 @@ void node::setEquilibrium(const tVect& F, const double& nHere, const tVect& velH
 void node::reconstruct() {
     // reconstruction of macroscopical physical variables
 
-    // density
     n = 0.0;
-    for (int j = 0; j < lbmDirec; ++j) {
-        n += f[j];
-    }
-
-    // momentum
     u.reset();
     for (int j = 0; j < lbmDirec; ++j) {
+        // density
+        n += f[j];
+        // momentum
         u += f[j] * v[j];
     }
 
