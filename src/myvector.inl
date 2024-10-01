@@ -22,7 +22,7 @@ inline void tVect::print(std::ofstream& outputFile) const {
     outputFile<<x<<"\t"<<y<<"\t"<<z<<"\t";
 }
 
-void tVect::printFixedLine(std::ofstream& outputFile) const {
+inline void tVect::printFixedLine(std::ofstream& outputFile) const {
     outputFile<<std::setprecision(8)<<std::scientific<<x<<" "<<y<<" "<<z<<"\n";
 }
 
