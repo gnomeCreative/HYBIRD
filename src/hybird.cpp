@@ -4,6 +4,7 @@
 #include <ctime>
 #include <csignal>
 #include <limits>
+#include <chrono>
 #ifdef USE_OPENMP
 #include <omp.h>
 #endif
@@ -405,7 +406,7 @@ void printUfo(GetPot& command_line, GetPot& configFile) {
 }
 
 int main(int argc, char** argv) {
-
+    const auto chrono_start = std::chrono::steady_clock::now();
     // Checking number of processes involved
 #ifdef USE_OPENMP
     #pragma omp parallel
@@ -515,5 +516,9 @@ int main(int argc, char** argv) {
             break;
         }
     }
+
+    const auto chrono_end = std::chrono::steady_clock::now();
+    const std::chrono::duration<double> chrono_duration{chrono_end - chrono_start};
+    cout << "Runtime:" << std::fixed << std::setprecision(4) << chrono_duration.count() << "s\n";
     return exit_code;
 }
