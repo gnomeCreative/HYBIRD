@@ -1784,7 +1784,7 @@ void DEM::corrector() {
     }
 }
 
-void DEM::evaluateForces() {
+void DEM::evaluateForces(const double& fluidviscosity, const double& spacing) {
     for (int a=0; a<activeElmts.size(); ++a) {
         unsigned int n=activeElmts[a];
         elmts[n].FParticle.reset();
@@ -2861,7 +2861,7 @@ void DEM::cylinderParticelContacts() {
     }
 }
 
-void DEM::objectParticleContacts() {
+void DEM::objectParticleContacts(const double& fluidviscosity, const double& spacing) {
 //    unsigned int elongIndex = 0;
     // to keep conventions, the index i refers to the object, and j the particle
     for (unsIntList::iterator ip = nearObjectTable.begin(); ip != nearObjectTable.end(); ip = ip + 2) {
