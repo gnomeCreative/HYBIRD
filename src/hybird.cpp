@@ -54,8 +54,8 @@ void goCycle(IO& io, DEM& dem, LB& lb) {
 //    dem.evolveObj();
     //cout<<"1"<<endl;
     if (io.demSolver) {
-
-        dem.discreteElementStep();
+		        dem.discreteElementStep(lb.fluidMaterial.initDynVisc*lb.unit.DynVisc, lb.unit.Length);
+		//cout << lb.fluidMaterial.initDynVisc*lb.unit.DynVisc << endl;
     }
 
     if (io.lbmSolver && dem.demTime >= dem.demInitialRepeat) {
@@ -416,6 +416,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
         case SHEAR_CELL_2023:
 		{
 			PARSE_CLASS_MEMBER(configFile, dem.shearVelocity, "shearVelocity", 0.0);
+			PARSE_CLASS_MEMBER(configFile, dem.avgParticleDiam, "avgParticleDiam", 0.0);
 			break;
 		}
 

@@ -182,6 +182,21 @@ private:
     string fluidFlowRateFileName;
     ofstream fluidFlowRateFile;
     void exportFluidFlowRate(const LB& lb);
+
+	//viscosity file
+
+	string viscosityFileName;
+	ofstream viscosityFile;
+
+	//tau file
+
+	string tauFileName;
+	ofstream tauFile;
+
+    //temperature file
+
+    string temperatureFileName;
+    ofstream temperatureFile;
     
    // particle flow rate file
     string particleFlowRateFileName;
@@ -227,6 +242,7 @@ private:
     ofstream forceFile, wallForceFile, maxWallForceFile;
     double hydraulicForceTot(const elmtList& elmts) const;
     double collisionForceTot(const elmtList& elmts) const;
+	double lubricationForceTot(const elmtList& elmts) const;
     void exportForces(const DEM& dem);
     void exportWallForce(const DEM& dem);
     
@@ -247,8 +263,11 @@ private:
     void writeViscFile(const LB& lb, const wallList& walls, const elmtList& elmts);
     void exportShearCell(const LB& lb, const DEM& dem);
     void exportShearCell2023(const LB& lb, const DEM& dem);
+	void exportShearCell2023bumpy(const LB& lb, const DEM& dem);
     void apparentViscosity(const LB& lb, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
     void apparentViscosity2023(const LB& lb, const DEM& dem, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
+	void apparentViscosity2023bumpy(const LB& lb, const DEM& dem, const elmtList& elmts, double& externalShear, double& appVisc, double& tauUp, double& tauBottom, double& tauLubUp, double& tauLubBottom, double& tauUpSolid, double& tauBottomSolid) const;
+    void calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, double& temperature) const;
 
     // AVALANCHE /////
     string obstacleFileName;

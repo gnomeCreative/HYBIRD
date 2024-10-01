@@ -68,6 +68,26 @@ void IO::initialize() {
             topFileName = workDirectory + "/flowTop.dat";
             break;
         }
+		case SHEAR_CELL_2023:
+		{
+			//  initializing fluid flow rate file
+			viscosityFileName = workDirectory + "/viscosity.dat";
+			viscosityFile.open(viscosityFileName.c_str(), ios::app);
+			viscosityFile << "time, viscosity\n";
+			viscosityFile.close();
+
+			//  initializing fluid flow rate file
+			tauFileName = workDirectory + "/tau.dat";
+			tauFile.open(tauFileName.c_str(), ios::app);
+			tauFile << "time, tauWaterLBMBottom, tauWaterLBMUp, tauWaterLubricationBottom, tauWaterLubricationUp, tauSolidBottom, tauSolidUp\n";
+			tauFile.close();
+
+            //  initializing fluid flow rate file
+            temperatureFileName = workDirectory + "/temperature.dat";
+            temperatureFile.open(temperatureFileName.c_str(), ios::app);
+            temperatureFile << "time, temperature\n";
+            temperatureFile.close();
+		}
     }
 
 
@@ -131,7 +151,7 @@ void IO::initialize() {
         //  initializing force file
         forceFileName = workDirectory + "/force.dat";
         forceFile.open(forceFileName.c_str(), ios::app);
-        forceFile << "time collisionForces hydraulicForces\n";
+        forceFile << "time collisionForces hydraulicForces lubricationForces \n";
         forceFile.close();
 
         //  initializing max speed file
@@ -178,7 +198,7 @@ void IO::initialize() {
     // initializing force-on-the-wall file
     wallForceFileName = workDirectory + "/wallForce.dat";
     wallForceFile.open(wallForceFileName.c_str(), ios::app);
-    wallForceFile << "time n_walls x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
+    wallForceFile << "time n_walls x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z FLub_X FLub_Y FLub_Z)\n";
     wallForceFile.close();
 
     lastScreenExp = 0;
@@ -346,7 +366,7 @@ void IO::outputStep(LB& lb, DEM& dem) {
             }
             case SHEAR_CELL_2023:
 			{
-				exportShearCell2023(lb, dem);
+				exportShearCell2023bumpy(lb, dem);
 				break;
 			}
 
@@ -817,6 +837,12 @@ void IO::exportParaviewParticles(const elmtList& elmts, const particleList& part
             elmts[particles[i].clusterIndex].FParticle.printFixedLine(paraviewParticleFile);
         }
     }
+	paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FLubrication\" NumberOfComponents=\"3\"/>\n";
+	for (int i = 0; i < Pnumber; ++i) {
+		if (particles[i].active) {
+			elmts[particles[i].clusterIndex].FLub.printFixedLine(paraviewParticleFile);
+		}
+	}
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FGrav\" NumberOfComponents=\"3\"/>\n";
     for (int i = 0; i < Pnumber; ++i) {
         if (particles[i].active) {
@@ -1393,7 +1419,7 @@ void IO::exportRecycleParticles(const elmtList& elmts, const pbcList& pbcs, cons
 
     ofstream recycleParticleFile;
     recycleParticleFile.open(partRecycleFile.c_str());
-    recycleParticleFile << std::setprecision(8);
+    recycleParticleFile << std::setprecision(16);
     recycleParticleFile << std::scientific;
     // total number of element
 
@@ -2514,7 +2540,8 @@ void IO::exportWallForce(const DEM& dem) {
     for (int w = 0; w < dem.walls.size(); ++w) {
         const tVect partF = dem.walls[w].FParticle;
         const tVect hydroF = dem.walls[w].FHydro;
-        wallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
+		const tVect lubF = dem.walls[w].FLub;
+        wallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp) << " " << lubF.dot(Xp) << " " << lubF.dot(Yp) << " " << lubF.dot(Zp);
     }
     wallForceFile << endl;
     wallForceFile.close();
@@ -2592,6 +2619,49 @@ void IO::exportShearCell2023(const LB& lb, const DEM& dem) {
 	cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
 }
 
+void IO::exportShearCell2023bumpy(const LB& lb, const DEM& dem) {
+	// apparent viscosity from shear cell
+	double appVisc = 0.0;
+	double externalShear = 0.0;
+	double wallStress = 0.0;
+
+	double tauUp = 0.0;
+	double tauBottom = 0.0;
+
+	double tauLubUp = 0.0;
+	double tauLubBottom = 0.0;
+
+	double tauUpSolid = 0.0;
+	double tauBottomSolid = 0.0;
+
+    double temperature = 0.0;
+
+	apparentViscosity2023bumpy(lb, dem, dem.elmts, externalShear, appVisc, tauUp, tauBottom, tauLubUp, tauLubBottom, tauUpSolid, tauBottomSolid);
+	cout << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
+	exportFile << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
+
+    calctemperature(lb, dem, dem.elmts, temperature);
+
+	//tVect xDirec = tVect(1.0, 0.0, 0.0);
+	//cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FHydro.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FHydro.dot(xDirec) << " ";
+	//cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
+	   	   
+	// printing rate
+	viscosityFile.open(viscosityFileName.c_str(), ios::app);
+	viscosityFile << realTime << " " << appVisc << "\n";
+	viscosityFile.close();
+
+	// printing rate
+	tauFile.open(tauFileName.c_str(), ios::app);
+	tauFile << realTime << " " << tauBottom << " " << tauUp << " " << tauLubBottom << " " << tauLubUp << " " << tauBottomSolid << " " << tauUpSolid << "\n";
+	tauFile.close();
+
+    // printing rate
+    temperatureFile.open(temperatureFileName.c_str(), ios::app);
+    temperatureFile << realTime << " " << temperature << "\n";
+    temperatureFile.close();
+}
+
 void IO::exportEnergy(const DEM& dem, const LB& lb) {
 
     if (dem.elmts.size()) {
@@ -2631,7 +2701,8 @@ void IO::exportForces(const DEM& dem) {
     forceFile.open(forceFileName.c_str(), ios::app);
     const double collisionForce = collisionForceTot(dem.elmts);
     const double hydraulicForce = hydraulicForceTot(dem.elmts);
-    forceFile << realTime << " " << collisionForce << " " << hydraulicForce << "\n";
+	const double lubricationForce = lubricationForceTot(dem.elmts);
+    forceFile << realTime << " " << collisionForce << " " << hydraulicForce <<  " " << lubricationForce << "\n";
     forceFile.close();
 }
 
@@ -2744,6 +2815,103 @@ void IO::apparentViscosity2023(const LB& lb, const DEM& dem, const wallList& wal
 	appVisc = wallStress / externalShear;
 }
 
+void IO::apparentViscosity2023bumpy(const LB& lb, const DEM& dem, const elmtList& elmts, double& externalShear, double& appVisc, double& tauUp, double& tauBottom, double& tauLubUp, double& tauLubBottom, double& tauUpSolid, double& tauBottomSolid) const {
+	// computes the apparent viscosity of a shear cell, as the ratio between shear at the wall and imposed shear rate
+	// the cell is sheared in direction x and has moving wall in z
+
+	double TauUp = 0.0;
+	double TauBottom = 0.0;
+
+	double TauLubUp = 0.0;
+	double TauLubBottom = 0.0;
+
+	double TauUpSolid = 0.0;
+	double TauBottomSolid = 0.0;
+		
+
+
+		double cellSize = double(lb.lbSize[2] - 2) * lb.unit.Length-2*0.001;
+
+		tVect xDirec = tVect(1.0, 0.0, 0.0);
+		tVect zDirec = tVect(0.0, 0.0, 1.0);
+
+		for (int n = 0; n < elmts.size(); ++n) {
+
+			if (elmts[n].x1.dot(Xp) == -dem.shearVelocity) {
+				TauUp += elmts[n].FHydro.dot(xDirec);
+				TauLubUp += elmts[n].FLub.dot(xDirec);
+			}
+			if (elmts[n].x1.dot(Xp) == dem.shearVelocity) {
+				TauBottom += elmts[n].FHydro.dot(xDirec);
+				TauLubBottom += elmts[n].FLub.dot(xDirec);
+			}	
+		}
+
+		for (int n = 0; n < elmts.size(); ++n) {
+			if (elmts[n].x1.dot(Xp) == -dem.shearVelocity) {
+				TauUpSolid += elmts[n].FParticle.dot(xDirec);
+			}
+			if (elmts[n].x1.dot(Xp) == dem.shearVelocity) {
+				TauBottomSolid += elmts[n].FParticle.dot(xDirec);
+			}
+		}
+
+		externalShear = 2.0 * dem.shearVelocity / cellSize;
+
+		double plateSize = double(lb.lbSize[0] - 2) * double(lb.lbSize[1] - 2) * lb.unit.Length * lb.unit.Length;
+
+		tauBottom = -TauBottom / plateSize;
+		tauUp= TauUp / plateSize;
+
+		tauLubBottom = -TauLubBottom / plateSize;
+		tauLubUp = TauLubUp / plateSize;
+
+		tauBottomSolid = -TauBottomSolid / plateSize;
+		tauUpSolid = TauUpSolid / plateSize;
+
+		double wallStress = (tauUp+tauBottom+tauLubUp+tauLubBottom)*0.5;
+
+		appVisc = wallStress / externalShear;
+
+		//cout << "Apparent viscosity" << appVisc << endl;
+		cout << "tauBottomLBM = " << std::scientific << std::setprecision(2) << tauBottom << " tauUpLBM = " << std::scientific << std::setprecision(2) << tauUp << " ";
+		cout << "tauBottomLub = " << std::scientific << std::setprecision(2) << tauLubBottom << " tauUpLub = " << std::scientific << std::setprecision(2) << tauLubUp << " ";
+		cout << "tauBottomSolid = " << std::scientific << std::setprecision(2) << tauBottomSolid << " tauUpSolid = " << std::scientific << std::setprecision(2) << tauUpSolid << " ";
+}
+
+
+void IO::calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, double& temperature) const {
+    double sumT = 0.0;
+    double npart = 0.0;
+    for (int n = 0; n < elmts.size(); ++n) {        
+
+        if (elmts[n].x1.dot(Xp) != dem.shearVelocity) {        
+            if (elmts[n].x1.dot(Xp) != -dem.shearVelocity) {
+                
+                double velx = elmts[n].x1.dot(Xp);
+                double vely = elmts[n].x1.dot(Yp);
+                double velz = elmts[n].x1.dot(Zp);
+
+                double posz = elmts[n].x0.dot(Zp);
+
+                double velmediax = -dem.shearVelocity * (posz - (lb.lbSize[2] - 2) * 0.5 * lb.unit.Length) / ((lb.lbSize[2] - 2) * 0.5 * lb.unit.Length);
+                double velmediay = 0.0;
+                double velmediaz = 0.0;
+
+                double velflutx = velx - velmediax;
+                double velfluty = vely - velmediay;
+                double velflutz = velz - velmediaz;
+                
+                sumT = sumT + velflutx * velflutx + velfluty * velfluty + velflutz * velflutz;
+                cout << "sumT" << sumT << endl;
+                npart = npart + 1;
+            }
+        }
+    }
+
+    temperature = 1 / 3 * 1 / npart * sumT;
+}
+
 tVect IO::fluidCenterOfMass(const LB& lb) const {
     // prints the total mass in the free fluid domain
     tVect center(0.0, 0.0, 0.0);
@@ -2796,6 +2964,16 @@ double IO::collisionForceTot(const elmtList& elmts) const {
     }
 
     return totForce;
+}
+
+double IO::lubricationForceTot(const elmtList& elmts) const {
+	double totForce = 0.0;
+
+	for (int n = 0; n < elmts.size(); ++n) {
+		totForce += elmts[n].FLub.norm()+ elmts[n].FLubWall.norm();
+	}
+
+	return totForce;
 }
 
 tVect IO::totForceObject(const objectList& objects, const unsigned int& groupBegin, const unsigned int& groupEnd) const {
