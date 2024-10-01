@@ -45,6 +45,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(hybird PRIVATE OpenMP::OpenMP_CXX)
+    target_compile_definitions(hybird PRIVATE USE_OPENMP)
     # Under CLion/MinGW, CMake finds OpenMP but doesn't fill the corresponding variables
     # So do it manually
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

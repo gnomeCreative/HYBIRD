@@ -4,6 +4,9 @@
 #include <ctime>
 #include <csignal>
 #include <limits>
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
 
 #include "getpot.h"
 
@@ -404,13 +407,15 @@ void printUfo(GetPot& command_line, GetPot& configFile) {
 int main(int argc, char** argv) {
 
     // Checking number of processes involved
-    cout << "Program starts with threads:";
-#pragma omp parallel
+#ifdef USE_OPENMP
+    #pragma omp parallel
     {
-#pragma omp critical
-        cout << " X ";
+        #pragma omp single
+        cout << "Program starts with " << omp_get_num_threads() << " threads.\n";
     }
-    cout << "\n";
+#else
+    cout << "Program built without OpenMP support.\n";
+#endif
 
     // DECLARATION OF VARIABLES - Input-Output ///////////////
     IO io;
