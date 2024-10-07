@@ -42,25 +42,30 @@ target_compile_features(hybird PUBLIC cxx_std_17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #Enable OpenMP
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(hybird PRIVATE OpenMP::OpenMP_CXX)
-    target_compile_definitions(hybird PRIVATE USE_OPENMP)
-    # Under CLion/MinGW, CMake finds OpenMP but doesn't fill the corresponding variables
-    # So do it manually
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if(OpenMP_CXX_LIBRARIES STREQUAL "" OR OpenMP_CXX_LIB_NAMES STREQUAL "")
-            target_link_options(hybird PRIVATE "-fopenmp")
+option(HYBIRD_ENABLE_OPENMP "If Off OpenMP support will not be enabled" ON)
+if(HYBIRD_ENABLE_OPENMP)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(hybird PRIVATE OpenMP::OpenMP_CXX)
+        target_compile_definitions(hybird PRIVATE USE_OPENMP)
+        # Under CLion/MinGW, CMake finds OpenMP but doesn't fill the corresponding variables
+        # So do it manually
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            if(OpenMP_CXX_LIBRARIES STREQUAL "" OR OpenMP_CXX_LIB_NAMES STREQUAL "")
+                target_link_options(hybird PRIVATE "-fopenmp")
+            endif()
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            if(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
+                # Visual Studio 2019+ has experimental flag for OMP3.0 support
+                set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "-openmp:experimental")
+                # CMake 3.30 alt: set(OpenMP_RUNTIME_MSVC "experimental")
+            endif()
         endif()
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        if(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
-            # Visual Studio 2019+ has experimental flag for OMP3.0 support
-            set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "-openmp:experimental")
-            # CMake 3.30 alt: set(OpenMP_RUNTIME_MSVC "experimental")
-        endif()
+    else()    
+        message(WARNING "OpenMP C++ Support was not found!")
     endif()
-else()    
-    message(WARNING "OpenMP C++ Support was not found!")
+else()
+    message(STATUS "Build configured without OpenMP support.")
 endif()
 
 # Default to release builds
