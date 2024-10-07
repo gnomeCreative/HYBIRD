@@ -2079,6 +2079,7 @@ void LB::initializeWalls(wallList& walls, cylinderList& cylinders, objectList& o
 // integration functions
 
 void LB::cleanLists() {
+#ifdef _DEBUG
     // sorts the active-node list and removes duplicates
     std::sort(fluidNodes.begin(), fluidNodes.end());
     std::sort(interfaceNodes.begin(), interfaceNodes.end());
@@ -2099,6 +2100,7 @@ void LB::cleanLists() {
             interfaceNodes.erase(interfaceNodes.begin() + ind);
         }
     }
+#endif
 
     // list with active nodes i.e. nodes where collision and streaming are solved
     // solid nodes, particle nodes and gas nodes are excluded
