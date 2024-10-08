@@ -2760,16 +2760,11 @@ void LB::updateMass() {
     // measure time for performance check (begin)
     startUpdateMassStep = std::chrono::steady_clock::now();
 
-#pragma omp parallel for
-    for (int it = 0; it < interfaceNodes.size(); ++it) {
-        interfaceNodes[it]->newMass = interfaceNodes[it]->mass;
-    }
-    
-
     // mass for interface nodes is regulated by the evolution equation
 #pragma omp parallel for
     for (int it = 0; it < interfaceNodes.size(); ++it) {
         node* nodeHere = interfaceNodes[it];
+        nodeHere->newMass = nodeHere->mass;
         // additional mass streaming to/from interface
         double deltaMass = 0.0;
         //cycling through neighbors
@@ -2845,17 +2840,15 @@ void LB::updateMass() {
             }
         }
         nodeHere->newMass += deltaMass;
+        
+        interfaceNodes[it]->mass = interfaceNodes[it]->newMass;
+        interfaceNodes[it]->age=min(interfaceNodes[it]->age+ageRatio,1.0);
     }
     // mass for fluid nodes is equal to density
 #pragma omp parallel for
     for (int it = 0; it < fluidNodes.size(); ++it) {
         fluidNodes[it]->mass = fluidNodes[it]->n;
         fluidNodes[it]->age=min(fluidNodes[it]->age+ageRatio,1.0);
-    }
-#pragma omp parallel for
-    for (int it = 0; it < interfaceNodes.size(); ++it) {
-        interfaceNodes[it]->mass = interfaceNodes[it]->newMass;
-        interfaceNodes[it]->age=min(interfaceNodes[it]->age+ageRatio,1.0);
     }
 
     // measure time for performance check (begin)
