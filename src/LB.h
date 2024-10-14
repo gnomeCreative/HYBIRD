@@ -216,14 +216,13 @@ public:
     void initializeVariables();
     void initializeWalls(wallList& walls, cylinderList& cylinders, objectList& objects);
     // integration functions
-    void reconstruction();
-    void collision();
+    void collision(node* nodeHere);
     void streaming(wallList& walls, objectList& objects);
     double curvedWallReconstruction(const unsigned int& j, const node* nodeHere, const tVect& wallSpeed) const;
     // error dumping functions
     void cleanLists();
     // coupling functions
-    void computeHydroForces(elmtList& elmts, particleList& particles);
+    void computeHydroForces(node* nodeHere, elmtList& elmts, particleList& particles);
     void findNewActive(nodeList& newPopUpNodes, elmtList& elmts, particleList& particles);
     void findNewSolid(nodeList& newSolidNodes, elmtList& elmts, particleList& particles);
     void activeToSolid(unsIntList& newSolidNodes, elmtList& elmts, double& massSurplus);
