@@ -409,6 +409,7 @@ int main(int argc, char** argv) {
     const auto chrono_start = std::chrono::steady_clock::now();
     // Checking number of processes involved
 #ifdef USE_OPENMP
+    //omp_set_num_threads(8);
     #pragma omp parallel
     {
         #pragma omp single
@@ -494,7 +495,6 @@ int main(int argc, char** argv) {
     // CYCLE /////////////////////////////
     // integrate in time
     while (true) {
-
         if (io.realTime != 0.0 && io.realTime > io.maxTime) {
             exit_code = SUCCESS;
         }// exit normally if the maximum simulation time has been reached
