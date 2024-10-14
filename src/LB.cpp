@@ -3026,8 +3026,8 @@ void LB::smoothenInterface(double& massSurplus) {
     startSmoothenInterfaceStep_2 = std::chrono::steady_clock::now();
 
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new gas node
-    //unsIntList nodesToErase;
-    //nodesToErase.clear();
+    // tested unordered_set, was slower
+    std::set<unsigned int> nodesToErase;
     for (int it = 0; it < emptiedNodes.size(); ++it) {
         // empied node
         node* nodeHere = emptiedNodes[it];
@@ -3049,46 +3049,21 @@ void LB::smoothenInterface(double& massSurplus) {
                     // the remaining 1% of the mass is added to the surplus
                     linkNode->scatterMass(massSurplusHere);
                     //massSurplus += massSurplusHere;
-                    // removing from fluid nodes
-                    // ERROR: TAKE OUT FROM CYCLE, THIS IS KILLING PERFORMANCE 
-                    for (int ind = fluidNodes.size() - 1; ind >= 0; --ind) {
-                        const unsigned int i = fluidNodes[ind]->coord;
-                        if (i == link) {
-                            fluidNodes.erase(fluidNodes.begin() + ind);
-                        }
-                    }
-                    //nodesToErase.push_back(link);
+                    // Store the node we want to erase later
+                    nodesToErase.insert(link);
 
                 }
             }
         }
     }
-    //    // ERROR: TAKE OUT FROM CYCLE, THIS IS KILLING PERFORMANCE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    //    for (int ind = fluidNodes.size() - 1; ind >= 0; --ind) {
-    //        const unsigned int i = fluidNodes[ind]->coord;
-    //        it = std::find(nodesToErase.begin(), nodesToErase.end(), i);
-    //        if (it != nodesToErase.end())
-    //            if (i == link) {
-    //                fluidNodes.erase(fluidNodes.begin() + ind);
-    //            }
-    //    }
-
-    //    int last = 0;
-    //    for (int i = 0; i < fluidNodes.size(); ++i, ++last) {
-    //        const int coordHere=fluidNodes[i]->coord;
-    //        unsIntList::iterator i_find = std::find(nodesToErase.begin(), nodesToErase.end(), coordHere);
-    //        if (i_find != nodesToErase.end()) {
-    //            cout<<nodes[coordHere].isInterface()<<endl;
-    //            ++i;
-    //        }
-    //        if (i >= nodesToErase.size()) {
-    //            break;
-    //        }
-    //
-    //        fluidNodes[last] = fluidNodes[i];
-    //    }
-    //
-    //    fluidNodes.resize(last);
+    // Process and remove all fluid nodes that have been converted
+    for (int ind = fluidNodes.size() - 1; ind >= 0; --ind) {
+        const unsigned int i = fluidNodes[ind]->coord;
+         if (nodesToErase.find(i) != nodesToErase.end()) {
+             fluidNodes.erase(fluidNodes.begin() + ind);
+         }
+    }
+    
     // measure time for performance check (end)
     endSmoothenInterfaceStep_2 = std::chrono::steady_clock::now();
 
