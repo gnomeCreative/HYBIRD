@@ -606,16 +606,49 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
     //create active list and checks for errors in the list
     cleanLists();
 
-    // reconstruction of macroscopic variables
-    reconstruction();
-
-    // compute interaction forces
-    if (elmts.size()) {
-        computeHydroForces(elmts, particles);
+    // initializing the elements forces (lattice units)
+#pragma omp parallel for
+    for (int n = 0; n < elmts.size(); ++n) {
+        //initializing this time step hydrodynamic force
+        elmts[n].FHydro = tVect(0.0, 0.0, 0.0);
+        elmts[n].MHydro = tVect(0.0, 0.0, 0.0);
+        // initializing the fluid mass for buoyancy
+        elmts[n].fluidVolume = 0.0;
     }
 
-    //collision operator
-    collision();
+    if (!forceField) {
+        lbF.reset();
+    }
+
+#pragma omp parallel for
+    for (int it = 0; it < activeNodes.size(); ++it) {
+        node* nodeHere = activeNodes[it];
+
+        // reconstruction of macroscopic variables from microscopic distribution
+        // this step is necessary to proceed to the collision step
+        nodeHere->reconstruct();
+
+        // compute interaction forces
+        if (elmts.size()) {
+            computeHydroForces(nodeHere, elmts, particles);
+        }
+
+        //collision operator
+        collision(nodeHere);
+    }
+
+    // shifting elements forces and torques to physical units
+#pragma omp parallel for
+    for (int n = 0; n < elmts.size(); ++n) {
+
+        // adding buoyancy
+        const tVect buoyancy = (-1.0) * elmts[n].fluidVolume*lbF;
+
+        //        elmts[n].FHydro+=buoyancy;
+        elmts[n].FHydro *= unit.Force;
+        elmts[n].MHydro *= unit.Torque;
+        elmts[n].fluidVolume *= unit.Volume;
+    }
 
     //streaming operator
     streaming(walls, objects);
@@ -2111,88 +2144,63 @@ void LB::cleanLists() {
 
 }
 
-void LB::reconstruction() {
-    // reconstruction of macroscopic variables from microscopic distribution
-    // this step is necessary to proceed to the collision step
 
-#pragma omp parallel for
-    for (int it = 0; it < activeNodes.size(); ++it) {
-        activeNodes[it]->reconstruct();
-    }
-}
-
-
-void LB::collision() {
-
-    if (!forceField) {
-        lbF.reset();
-    }
-
+void LB::collision(node* nodeHere) {
     if (TRTsolver == false) {
-#pragma omp parallel for
-        for (int it = 0; it < activeNodes.size(); ++it) {
-
-            node* nodeHere = activeNodes[it];
-            // equilibrium distributions
-            double feq[lbmDirec];
-            // force field
-            tVect force=lbF;
-            if (solveCentrifugal) {
-                force+=nodeHere->centrifugalForce;
-            }
-            if (solveCentrifugal) {
-                force+=computeCoriolis(nodeHere->u,rotationSpeed);
-            }
-            // shift velocity field to F/2
-            nodeHere->shiftVelocity(force);
-            nodeHere->computeEquilibrium(feq);
-            //        if (types[index].isInsideParticle()) {
-            //            nodes[index]->resetViscosity(initDynVisc);
-            //        }
-            if (fluidMaterial.rheologyModel != NEWTONIAN || fluidMaterial.turbulenceOn) {
-                // compute shear rate tensor, find invariant calculate viscosity (Bingham)
-                nodeHere->computeApparentViscosity(feq, fluidMaterial);
-            }
-            //if (nodeHere->isInterface()) nodeHere->visc=fluidMaterial.lbMaxVisc;
-            //else if (fluidMaterial.rheologyModel == NEWTONIAN)  nodeHere->visc=fluidMaterial.initDynVisc;
-            // compute new distributions
-            nodeHere->solveCollision(feq);
-            // add force term to new distributions
-            //nodeHere->addForce(lbF);
-            nodeHere->addForce(feq,force);
+        // equilibrium distributions
+        double feq[lbmDirec];
+        // force field
+        tVect force=lbF;
+        if (solveCentrifugal) {
+            force+=nodeHere->centrifugalForce;
         }
+        if (solveCentrifugal) {
+            force+=computeCoriolis(nodeHere->u,rotationSpeed);
+        }
+        // shift velocity field to F/2
+        nodeHere->shiftVelocity(force);
+        nodeHere->computeEquilibrium(feq);
+        //        if (types[index].isInsideParticle()) {
+        //            nodes[index]->resetViscosity(initDynVisc);
+        //        }
+        if (fluidMaterial.rheologyModel != NEWTONIAN || fluidMaterial.turbulenceOn) {
+            // compute shear rate tensor, find invariant calculate viscosity (Bingham)
+            nodeHere->computeApparentViscosity(feq, fluidMaterial);
+        }
+        //if (nodeHere->isInterface()) nodeHere->visc=fluidMaterial.lbMaxVisc;
+        //else if (fluidMaterial.rheologyModel == NEWTONIAN)  nodeHere->visc=fluidMaterial.initDynVisc;
+        // compute new distributions
+        nodeHere->solveCollision(feq);
+        // add force term to new distributions
+        //nodeHere->addForce(lbF);
+        nodeHere->addForce(feq,force);
     } else {
-#pragma omp parallel for
-        for (int it = 0; it < activeNodes.size(); ++it) {
-
-            node* nodeHere = activeNodes[it];
-            // equilibrium distributions
-            double feqp[lbmDirec];
-            double feqm[lbmDirec];
-            // force field
-            tVect force=lbF;
-            if (solveCentrifugal) {
-                force+=nodeHere->centrifugalForce;
-            }
-            if (solveCentrifugal) {
-                force+=computeCoriolis(nodeHere->u,rotationSpeed);
-            }
-            // shift velocity field to F/2
-            nodeHere->shiftVelocity(force);
-            nodeHere->computeEquilibriumTRT(feqp, feqm);
-            //        if (types[index].isInsideParticle()) {
-            //            nodes[index]->resetViscosity(initDynVisc);
-            //        }
-            if (fluidMaterial.rheologyModel != NEWTONIAN || fluidMaterial.turbulenceOn) {
-                // compute shear rate tensor, find invariant calculate viscosity (Bingham)
-                nodeHere->computeApparentViscosity(feqp, fluidMaterial);
-            }
-            else nodeHere->visc = fluidMaterial.initDynVisc;
-            // compute new distributions
-            nodeHere->solveCollisionTRT(feqp, feqm, magicNumber);
-            // add force term to new distributions
-            nodeHere->addForceTRT(force);
+        // equilibrium distributions
+        double feqp[lbmDirec];
+        double feqm[lbmDirec];
+        // force field
+        tVect force=lbF;
+        if (solveCentrifugal) {
+            force+=nodeHere->centrifugalForce;
         }
+        if (solveCentrifugal) {
+            force+=computeCoriolis(nodeHere->u,rotationSpeed);
+        }
+        // shift velocity field to F/2
+        nodeHere->shiftVelocity(force);
+        nodeHere->computeEquilibriumTRT(feqp, feqm);
+        //        if (types[index].isInsideParticle()) {
+        //            nodes[index]->resetViscosity(initDynVisc);
+        //        }
+        if (fluidMaterial.rheologyModel != NEWTONIAN || fluidMaterial.turbulenceOn) {
+            // compute shear rate tensor, find invariant calculate viscosity (Bingham)
+            nodeHere->computeApparentViscosity(feqp, fluidMaterial);
+        }
+        else nodeHere->visc = fluidMaterial.initDynVisc;
+        // compute new distributions
+        nodeHere->solveCollisionTRT(feqp, feqm, magicNumber);
+        // add force term to new distributions
+        nodeHere->addForceTRT(force);
     }
 
 }
@@ -2840,7 +2848,7 @@ void LB::updateMass() {
             }
         }
         nodeHere->newMass += deltaMass;
-        
+
         interfaceNodes[it]->mass = interfaceNodes[it]->newMass;
         interfaceNodes[it]->age=min(interfaceNodes[it]->age+ageRatio,1.0);
     }
@@ -3301,75 +3309,45 @@ void LB::enforceMassConservation() {
 
 //// particle coupling functions
 
-void LB::computeHydroForces(elmtList& elmts, particleList& particles) {
+void LB::computeHydroForces(node* nodeHere, elmtList& elmts, particleList& particles) {
+    // resetting hydrodynamic forces on nodes
+    nodeHere->hydroForce.reset();
+    if (nodeHere->isInsideParticle()) { // && types[index].isFluid()
+        // getting the index of the particle to compute force in the right object
+        const unsigned int index = nodeHere->coord;
+        const unsigned int particleIndex = nodeHere->getSolidIndex();
+        const unsigned int clusterIndex = particles[particleIndex].clusterIndex;
+        // calculating velocity of the solid boundary at the node (due to rotation of particles)
+        // vectorized radius (real units)
+        const tVect radius = getPosition(index) - particles[particleIndex].x0 / unit.Length + particles[particleIndex].radiusVec / unit.Length;
+        // update velocity of the particle node (u=v_center+omega x radius) (real units)
+        const tVect localVel = elmts[clusterIndex].x1 / unit.Speed + (elmts[clusterIndex].wGlobal.cross(radius)) / unit.AngVel;
 
-    // initializing the elements forces (lattice units)
-#pragma omp parallel for
-    for (int n = 0; n < elmts.size(); ++n) {
-        //initializing this time step hydrodynamic force
-        elmts[n].FHydro = tVect(0.0, 0.0, 0.0);
-        elmts[n].MHydro = tVect(0.0, 0.0, 0.0);
-        // initializing the fluid mass for buoyancy
-        elmts[n].fluidVolume = 0.0;
-    }
 
-#pragma omp parallel for
-    // cycling through active nodes
-    for (int ip = 0; ip < activeNodes.size(); ++ip) {
-        node* nodeHere = activeNodes[ip];
-        // resetting hydrodynamic forces on nodes
-        nodeHere->hydroForce.reset();
-        if (nodeHere->isInsideParticle()) { // && types[index].isFluid()
-            // getting the index of the particle to compute force in the right object
-            const unsigned int index = nodeHere->coord;
-            const unsigned int particleIndex = nodeHere->getSolidIndex();
-            const unsigned int clusterIndex = particles[particleIndex].clusterIndex;
-            // calculating velocity of the solid boundary at the node (due to rotation of particles)
-            // vectorized radius (real units)
-            const tVect radius = getPosition(index) - particles[particleIndex].x0 / unit.Length + particles[particleIndex].radiusVec / unit.Length;
-            // update velocity of the particle node (u=v_center+omega x radius) (real units)
-            const tVect localVel = elmts[clusterIndex].x1 / unit.Speed + (elmts[clusterIndex].wGlobal.cross(radius)) / unit.AngVel;
+            // calculate differential velocity
+            const tVect diffVel = nodeHere->age*nodeHere->age*nodeHere->liquidFraction()*(nodeHere->u - localVel);
 
-            
-                // calculate differential velocity
-                const tVect diffVel = nodeHere->age*nodeHere->age*nodeHere->liquidFraction()*(nodeHere->u - localVel);
-            
-                // force on fluid
-                 nodeHere->hydroForce += -1.0 * diffVel; // -1.0*nodes[index]->liquidFraction()*diffVel;
-            
-            //             // force on fluid
-            //            # pragma omp critical
-            //            {
-            //                for (int j=0; j<lbmDirec; ++j) {
-            //                    const unsigned int link=neighbors[index].d[j];
-            //                    if (types[link].isActive()) {
-            //                        nodes[link]->hydroForce+=-1.0/nodes[index]->liquidFraction()*coeff[j]*diffVel;
-            //                    }
-            //                }
-            //            }
+            // force on fluid
+             nodeHere->hydroForce += -1.0 * diffVel; // -1.0*nodes[index]->liquidFraction()*diffVel;
 
-            // force on particle
+        //             // force on fluid
+        //            # pragma omp critical
+        //            {
+        //                for (int j=0; j<lbmDirec; ++j) {
+        //                    const unsigned int link=neighbors[index].d[j];
+        //                    if (types[link].isActive()) {
+        //                        nodes[link]->hydroForce+=-1.0/nodes[index]->liquidFraction()*coeff[j]*diffVel;
+        //                    }
+        //                }
+        //            }
+
+        // force on particle
 #pragma omp critical
-            {
-                elmts[clusterIndex].fluidVolume += nodeHere->mass;
-                elmts[clusterIndex].FHydro += 1.0 * diffVel;
-                elmts[clusterIndex].MHydro += 1.0 * radius.cross(diffVel);
-            }
+        {
+            elmts[clusterIndex].fluidVolume += nodeHere->mass;
+            elmts[clusterIndex].FHydro += 1.0 * diffVel;
+            elmts[clusterIndex].MHydro += 1.0 * radius.cross(diffVel);
         }
-    }
-
-
-    // shifting elements forces and torques to physical units
-#pragma omp parallel for
-    for (int n = 0; n < elmts.size(); ++n) {
-
-        // adding buoyancy
-        const tVect buoyancy = (-1.0) * elmts[n].fluidVolume*lbF;
-
-        //        elmts[n].FHydro+=buoyancy;
-        elmts[n].FHydro *= unit.Force;
-        elmts[n].MHydro *= unit.Torque;
-        elmts[n].fluidVolume *= unit.Volume;
     }
 }
 
