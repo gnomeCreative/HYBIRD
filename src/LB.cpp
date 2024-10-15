@@ -607,7 +607,9 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
     cleanLists();
 
     // initializing the elements forces (lattice units)
-#pragma omp parallel for
+#pragma omp parallel shared(extraMass)
+{
+    #pragma omp for nowait
     for (int n = 0; n < elmts.size(); ++n) {
         //initializing this time step hydrodynamic force
         elmts[n].FHydro = tVect(0.0, 0.0, 0.0);
@@ -616,11 +618,13 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
         elmts[n].fluidVolume = 0.0;
     }
 
+    #pragma omp single
     if (!forceField) {
         lbF.reset();
     }
+    #pragma omp barrier
 
-#pragma omp parallel for
+    #pragma omp for //schedule(guided, 100)
     for (int it = 0; it < activeNodes.size(); ++it) {
         node* nodeHere = activeNodes[it];
 
@@ -638,7 +642,7 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
     }
 
     // shifting elements forces and torques to physical units
-#pragma omp parallel for
+    #pragma omp for nowait
     for (int n = 0; n < elmts.size(); ++n) {
 
         // adding buoyancy
@@ -649,9 +653,10 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
         elmts[n].MHydro *= unit.Torque;
         elmts[n].fluidVolume *= unit.Volume;
     }
-
     //streaming operator
     streaming(walls, objects);
+
+}
     
     // measure time for performance check (end)
     endLBStep = std::chrono::steady_clock::now();
@@ -2322,26 +2327,24 @@ void LB::streaming(wallList& walls, objectList& objects) {
     for (int j = 0; j < lbmDirec; j++) {
         staticPres[j] = fluidMaterial.initDensity * coeff[j];
     }
+
     // coefficient for bounce-back
     static const double BBCoeff = 2.0 * 3.0;
-    // extra mass due to bounce-back and moving walls
-    double extraMass = 0.0;
 
-    // initializing wall forces
-    for (int iw = 0; iw < walls.size(); ++iw) {
-        walls[iw].FHydro.reset();
+    #pragma omp single
+    {
+        // extra mass due to bounce-back and moving walls
+        this->extraMass = 0.0;
+        // initializing wall forces
+        for (int iw = 0; iw < walls.size(); ++iw) {
+            walls[iw].FHydro.reset();
+        }
+        // initializing object forces
+        for (int io = 0; io < objects.size(); ++io) {
+            objects[io].FHydro.reset();
+        }
     }
-    // initializing object forces
-    for (int io = 0; io < objects.size(); ++io) {
-        objects[io].FHydro.reset();
-    }
-
-    //  Saving in support variables f->fs
-#pragma omp parallel for
-    for (int it = 0; it < activeNodes.size(); ++it) {
-        activeNodes[it]->store();
-    }
-
+    #pragma omp barrier
     //    for (int in = 0; in < wallNodes.size(); ++in) {
     //        wallNodes[in]->surfaceCorner = false;;
     //    }
@@ -2360,12 +2363,14 @@ void LB::streaming(wallList& walls, objectList& objects) {
     //    }
 
     //  Streaming
-#pragma omp parallel for ordered reduction(+:extraMass)
+#pragma omp for ordered reduction(+:extraMass)
     // cycling through active nodes
     for (int in = 0; in < activeNodes.size(); ++in) {
 
         // pointer to active node
         node* nodeHere = activeNodes[in];
+        //  Saving in support variables f->fs
+        nodeHere->store();
         // cycling through neighbours
         for (int j = 1; j < lbmDirec; ++j) {
             // getting neighbour index
@@ -2739,24 +2744,28 @@ void LB::streaming(wallList& walls, objectList& objects) {
         }
     }
 
-
-    for (int in = 0; in < activeNodes.size(); ++in) {
-        // pointer to active node
-        node* nodeHere = activeNodes[in];
-        for (int j = 1; j < lbmDirec; ++j) {
-            if (nodeHere->f[j] == 0) {
-                cout << "Error!" << endl;
+    #pragma omp single
+    {
+#ifdef _DEBUG
+        for (int in = 0; in < activeNodes.size(); ++in) {
+            // pointer to active node
+            node* nodeHere = activeNodes[in];
+            for (int j = 1; j < lbmDirec; ++j) {
+                if (nodeHere->f[j] == 0) {
+                    cout << "Error!" << endl;
+                }
             }
         }
-    }
-    // redistributing extra mass due to bounce back to interface cells
-    //redistributeMass(extraMass);
+#endif
+        // redistributing extra mass due to bounce back to interface cells
+        //redistributeMass(extraMass);
 
-    for (int w = 0; w < walls.size(); ++w) {
-        walls[w].FHydro *= unit.Force;
-    }
-    for (int o = 0; o < objects.size(); ++o) {
-        objects[o].FHydro *= unit.Force;
+        for (int w = 0; w < walls.size(); ++w) {
+            walls[w].FHydro *= unit.Force;
+        }
+        for (int o = 0; o < objects.size(); ++o) {
+            objects[o].FHydro *= unit.Force;
+        }
     }
 }
 
