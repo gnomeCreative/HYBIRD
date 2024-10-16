@@ -1,0 +1,84 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/lib/gcc/x86_64-pc-cygwin/12/include/c++",
+						"/usr/lib/gcc/x86_64-pc-cygwin/12/include/c++/x86_64-pc-cygwin",
+						"/usr/lib/gcc/x86_64-pc-cygwin/12/include/c++/backward",
+						"/usr/lib/gcc/x86_64-pc-cygwin/12/include",
+						"/usr/include",
+						"/usr/include/w32api"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/lib/gcc/x86_64-pc-cygwin/12",
+						"/usr/x86_64-pc-cygwin/lib",
+						"/usr/lib",
+						"/lib"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"stdc++",
+						"gcc_s",
+						"gcc",
+						"cygwin",
+						"advapi32",
+						"shell32",
+						"user32",
+						"kernel32",
+						"gcc_s",
+						"gcc"
+					]
+				},
+				"path" : "/usr/bin/g++.exe",
+				"version" : "12.4.0"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"m",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm",
+				"ccm",
+				"cxxm",
+				"c++m"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"implicit" : {},
+				"path" : "/usr/bin/windres.exe"
+			},
+			"language" : "RC",
+			"sourceFileExtensions" : 
+			[
+				"rc",
+				"RC"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}
