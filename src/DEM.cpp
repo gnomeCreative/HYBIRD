@@ -553,10 +553,10 @@ void DEM::compositeProperties() {
     prototypes[5] = prototype5;
     prototype5.resize(5);
     prototype5[0] = tVect(0.0, 0.0, 0.0);
-    prototype5[1] = tVect(1.0, 0.0, 0.0);
-    prototype5[2] = tVect(2.00, 0.0, 0.0);
-    prototype5[3] = tVect(3.0, 0.0, 0.0);
-    prototype5[4] = tVect(4.0, 0.0, 0.0);
+    prototype5[1] = tVect(0.0, 1.0, 0.0);
+    prototype5[2] = tVect(0.00, 2.0, 0.0);
+    prototype5[3] = tVect(0.0, 3.0, 0.0);
+    prototype5[4] = tVect(0.0, 4.0, 0.0);
     prototypes[5] = prototype5;
 
 }
@@ -1966,7 +1966,9 @@ void DEM::evaluateForces() {
             case (SEGUIN): { // fix acceleration = 0.0 (elements in 2D domain)
                 elmts[n].x2.y = 0.0;
                 if (elmts[n].index == 0){ // immersed cylinder case
+                    elmts[n].x2.x = 0.0;
                     elmts[n].x2.y = 0.0;
+                    elmts[n].x2.z = 0.0;
                 }
                 break;
             }
@@ -2002,6 +2004,7 @@ void DEM::evaluateForces() {
                 // Immersed cylinder
                 if (elmts[n].index==0){
                     elmts[n].w1.x = 0.0;
+                    elmts[n].w1.y = 0.0;
                     elmts[n].w1.z = 0.0;
                 }
                 break;
