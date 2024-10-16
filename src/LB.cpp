@@ -624,7 +624,7 @@ void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList&
     }
     #pragma omp barrier
 
-    #pragma omp for //schedule(guided, 100)
+    #pragma omp for schedule(guided, 100)
     for (int it = 0; it < activeNodes.size(); ++it) {
         node* nodeHere = activeNodes[it];
 
