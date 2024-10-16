@@ -1,0 +1,4 @@
+C:\Users\ci1apa\AppData\Local\JetBrains\CLion2024.2\cygwin_cmake\bin\cmake.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja.exe -DCMAKE_C_COMPILER=/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=/usr/bin/g++.exe -G Ninja -S /cygdrive/c/codes/hybird/submarine/HYBIRD -B /cygdrive/c/codes/hybird/submarine/HYBIRD/cmake-build-release
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /cygdrive/c/codes/hybird/submarine/HYBIRD/cmake-build-release
