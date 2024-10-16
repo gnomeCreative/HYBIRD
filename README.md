@@ -13,7 +13,7 @@ Building HYBIRD has the following requirements.
 
 * [CMake](https://cmake.org/) `>=3.22`
 * C++17 capable C++ compiler
-  * Windows compilation is only supported with [MinGW](https://www.mingw-w64.org/), Visual Studio is not supported.
+  * Windows compilation supports both [MinGW](https://www.mingw-w64.org/) and Visual Studio.
   * Linux/WSL2: GCC >= 8.0
 
 ### Building with CMake
@@ -46,7 +46,10 @@ make -j8
 
 | Option                               | Value                       | Description                                                                                                |
 | -------------------------------------| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `CMAKE_BUILD_TYPE`                   | `Release` / `Debug` / `MinSizeRel` / `RelWithDebInfo` | Select the build configuration for single-target generators such as `make`       |
+| `CMAKE_BUILD_TYPE`                   | `Release` (default)/ `Debug` / `MinSizeRel` / `RelWithDebInfo` | Select the build configuration for single-target generators such as `make`       |
+| `HYBIRD_ENABLE_OPENMP`               | `On` (default)/ `Off`       | If set to `Off` OpenMP support will be disabled, this may improve performance for small configurations. |
+
+**Note** The Debug build configuration enables the `_DEBUG` pre-processor macro, this may enable additional expensive validation. Release build configurations, the default, should be preferred by most users to ensure performance is maximised.
 
 ## User Guide
 
