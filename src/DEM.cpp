@@ -1959,12 +1959,15 @@ void DEM::evaluateForces() {
         elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall + elmts[n].FCylinder) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
         // problem name Y correction ( Y needs to be fixed to have spheres that acts like cylinders)
         switch (problemName) {
-            case (TBAR): {
+            case (TBAR): { // fix acceleration = 0.0 (elements in 2D domain)
                 elmts[n].x2.y = 0.0;
                 break;
             }
-            case (SEGUIN): {
+            case (SEGUIN): { // fix acceleration = 0.0 (elements in 2D domain)
                 elmts[n].x2.y = 0.0;
+                if (elmts[n].index == 0){ // immersed cylinder case
+                    elmts[n].x2.y = 0.0;
+                }
                 break;
             }
         }
@@ -1985,21 +1988,40 @@ void DEM::evaluateForces() {
         elmts[n].w1 = project(waBf, elmts[n].qp0);
         // problem name XZ correction ( XZ needs to be fixed to have spheres that acts like cylinders)
         switch (problemName){
+            // fix acceleration = 0.0 (elements in 2D domain)
             case (TBAR): {
                 elmts[n].w1.x = 0.0;
                 elmts[n].w1.z = 0.0;
                 break;
             }
             case (SEGUIN): {
+                // Fix acceleration = 0.0 (elements in 2D domain)
                 elmts[n].w1.x = 0.0;
                 elmts[n].w1.z = 0.0;
+
+                // Immersed cylinder
+                if (elmts[n].index==0){
+                    elmts[n].w1.x = 0.0;
+                    elmts[n].w1.z = 0.0;
+                }
                 break;
             }
         }
         // rotational acceleration (quaternion)
         if (elmts[n].size > 1) {
-            const tQuat waQuat = quatAcc(waBf, elmts[n].qp1);
-            elmts[n].q2 = 0.5 * elmts[n].qp0.multiply(waQuat);
+            switch (problemName) {
+                // immersed cylinder
+                case (SEGUIN):{
+                    elmts[n].q2 = tQuat(0.0,0.0,0.0,0.0);
+                    break;
+                } 
+                // others
+                case (NONE):{
+                    const tQuat waQuat = quatAcc(waBf, elmts[n].qp1);
+                    elmts[n].q2 = 0.5 * elmts[n].qp0.multiply(waQuat);
+                    break;
+                }
+            }
         }
     }
 
