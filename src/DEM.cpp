@@ -529,7 +529,7 @@ void DEM::compositeProperties() {
     // every vector defines the position of a particle in the object reference frame
     // unit is radius
 
-    prototypes.resize(5);
+    prototypes.resize(6);
     prototype1.resize(1);
     prototype1[0].reset();
     prototypes[1] = prototype1;
@@ -2005,7 +2005,7 @@ void DEM::evaluateForces() {
                 case (SEGUIN):{
                     elmts[n].q2 = tQuat(0.0,0.0,0.0,0.0);
                     break;
-                } 
+                }
                 // others
                 case (NONE):{
                     const tQuat waQuat = quatAcc(waBf, elmts[n].qp1);
