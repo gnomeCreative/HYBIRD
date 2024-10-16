@@ -1,0 +1,3 @@
+/cygdrive/c/codes/hybird/submarine/HYBIRD/cmake-build-release/CMakeFiles/hybird.dir
+/cygdrive/c/codes/hybird/submarine/HYBIRD/cmake-build-release/CMakeFiles/edit_cache.dir
+/cygdrive/c/codes/hybird/submarine/HYBIRD/cmake-build-release/CMakeFiles/rebuild_cache.dir

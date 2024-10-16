@@ -12,18 +12,18 @@ void IO::initialize() {
 
     bool a;
     //    if (demSolver) {
-    a = filesystem::create_directories(partDirectory);
+    a = filesystem::create_directories(partDirectory.c_str());
     cout << "Work directory created = " << partDirectory << ". Result: " << a << "\n";
     //    }
     //    if (lbmSolver) {
-    a = filesystem::create_directories(fluidDirectory.c_str(), 0777);
+    a = filesystem::create_directories(fluidDirectory.c_str());
     cout << "Work directory created = " << fluidDirectory << ". Result: " << a << "\n";
     //    }
 
     if (singleObjects.size() > 0) {
         // create directory
         singleObjectDirectory = workDirectory + "/singleObjectData";
-        int a = filesystem::create_directories(singleObjectDirectory.c_str(), 0777);
+        int a = filesystem::create_directories(singleObjectDirectory.c_str());
         cout << "Work directory created = " << singleObjectDirectory << ". Result: " << a << "\n";
     }
 
