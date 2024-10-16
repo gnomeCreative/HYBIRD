@@ -520,7 +520,7 @@ void DEM::evolveBoundaries() {
 
 void DEM::compositeProperties() {
 
-    vecList prototype1, prototype2, prototype3, prototype4;
+    vecList prototype1, prototype2, prototype3, prototype4, prototype5;
 
 
     // prototypes for shapes
@@ -546,6 +546,16 @@ void DEM::compositeProperties() {
     prototype4[2] = tVect(2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
     prototype4[3] = tVect(-2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
     prototypes[4] = prototype4;
+
+    // prototype for immersed cylinders (submarine)
+    prototypes[5] = prototype5;
+    prototype5.resize(5);
+    prototype5[0] = tVect(0.0, 0.0, 0.0);
+    prototype5[1] = tVect(1.0, 0.0, 0.0);
+    prototype5[2] = tVect(2.00, 0.0, 0.0);
+    prototype5[3] = tVect(3.0, 0.0, 0.0);
+    prototype5[4] = tVect(4.0, 0.0, 0.0);
+    prototypes[5] = prototype5;
 
 }
 
