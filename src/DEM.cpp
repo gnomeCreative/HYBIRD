@@ -1942,7 +1942,7 @@ void DEM::evaluateForces() {
             }
             case (SEGUIN): { // fix acceleration = 0.0 (elements in 2D domain)
                 elmts[n].x2.y = 0.0;
-                if (elmts[n].index == 0){ // immersed cylinder case
+                if (elmts[n].index == 0 && elmts[n].size>1){ // immersed cylinder case
                     elmts[n].x2.x = 0.0;
                     elmts[n].x2.y = 0.0;
                     elmts[n].x2.z = 0.0;
@@ -1979,7 +1979,7 @@ void DEM::evaluateForces() {
                 elmts[n].w1.z = 0.0;
 
                 // Immersed cylinder
-                if (elmts[n].index==0){
+                if (elmts[n].index==0 && elmts[n].size>1){
                     elmts[n].w1.x = 0.0;
                     elmts[n].w1.y = 0.0;
                     elmts[n].w1.z = 0.0;
