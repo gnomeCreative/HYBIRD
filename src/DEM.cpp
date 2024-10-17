@@ -1666,29 +1666,29 @@ void DEM::initializeCylinders(const Problem &problem) {
             break;
         }
         
-        case SEGUIN: {
-            const double intruderX = 0.00; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
-            const double intruderZ = 0.05; // to be determinated after column collpase (probelm name = none)
-            const double intruderd = 16e-3; // diameter of the intruder
-//            const double velocityIntruder = -30.0e-3;
-            
-            cylinder intruder;
-            intruder.index = index;
-            intruder.p1 = tVect(intruderX, -0.05, intruderZ);
-            intruder.p2 = tVect(intruderX, 0.05, intruderZ);
-            intruder.R = intruderd / 2.0;
-            intruder.omega = tVect(0.0, 0.0, 0.0);
-            intruder.initAxes();
-            intruder.moving = true;
-            intruder.slip = false;
-            intruder.limited = false;
-            intruder.type = FULL;
-            intruder.translating = true;
-            intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
-            cylinders.push_back(intruder);
-            ++index;
-            break;
-        }
+//         case SEGUIN: {
+//             const double intruderX = 0.00; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+//             const double intruderZ = 0.05; // to be determinated after column collpase (probelm name = none)
+//             const double intruderd = 16e-3; // diameter of the intruder
+// //            const double velocityIntruder = -30.0e-3;
+//
+//             cylinder intruder;
+//             intruder.index = index;
+//             intruder.p1 = tVect(intruderX, -0.05, intruderZ);
+//             intruder.p2 = tVect(intruderX, 0.05, intruderZ);
+//             intruder.R = intruderd / 2.0;
+//             intruder.omega = tVect(0.0, 0.0, 0.0);
+//             intruder.initAxes();
+//             intruder.moving = true;
+//             intruder.slip = false;
+//             intruder.limited = false;
+//             intruder.type = FULL;
+//             intruder.translating = true;
+//             intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
+//             cylinders.push_back(intruder);
+//             ++index;
+//             break;
+//         }
     }
     for (int n = 0; n < cylinders.size(); ++n) {
         cylinders[n].cylinderShow();
