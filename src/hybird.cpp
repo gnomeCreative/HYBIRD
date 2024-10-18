@@ -136,8 +136,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
         int a;
         a = filesystem::create_directories(io.workDirectory);
         cout << "Work directory created = " << io.workDirectory << ". Result: " << a << "\n";
-
-        std::system(("cp '" + io.configFileName + "' '" + io.workDirectory + "'").c_str());
+        std::filesystem::copy_file(io.configFileName, io.workDirectory);
     }
     // make sure the config files can be read
     std::ifstream configFile(io.configFileName.c_str());
