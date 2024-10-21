@@ -221,6 +221,23 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     ASSERT(io.fluidExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.fluidLagrangianExpTime, "fluidLagrangianExpTime", 0.0);
     ASSERT(io.fluidLagrangianExpTime >= 0);
+    if (io.fluidLagrangianExpTime > 0.0) {
+        string fluidLagrangianFormatString;
+        PARSE_CLASS_MEMBER(configFile, fluidLagrangianFormatString, "fluidLagrangianFormat", "BINARY");
+        std::transform(fluidLagrangianFormatString.begin(), fluidLagrangianFormatString.end(), fluidLagrangianFormatString.begin(), ::tolower);
+        if (fluidLagrangianFormatString == "ascii"
+         || fluidLagrangianFormatString == "text"
+         || fluidLagrangianFormatString == "txt") {
+            io.fluidLagrangianFormat = IO::ParaviewFormat::Ascii;
+         } else if (fluidLagrangianFormatString == "binary_low_memory"
+                 || fluidLagrangianFormatString == "binary_lowmem"
+                 || fluidLagrangianFormatString == "low_memory"
+                 || fluidLagrangianFormatString == "lowmem") {
+             io.fluidLagrangianFormat = IO::ParaviewFormat::BinaryLowMem;
+         } else { // "binary"
+                     io.fluidLagrangianFormat = IO::ParaviewFormat::Binary;
+         }
+    }
     PARSE_CLASS_MEMBER(configFile, io.fluid2DExpTime, "fluid2DExpTime", 0.0);
     ASSERT(io.fluid2DExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partExpTime, "partExpTime", 0.0);
