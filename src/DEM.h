@@ -143,6 +143,7 @@ public:
     double velocityCylinderX;
     double velocityCylinderY;
     double velocityCylinderZ;
+    double frictionCoefficientElements;
 public:
 
     DEM() {

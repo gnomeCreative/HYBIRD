@@ -1942,6 +1942,7 @@ void DEM::evaluateForces() {
             }
             case (SEGUIN): { // fix acceleration = 0.0 (elements in 2D domain)
                 elmts[n].x2.y = 0.0;
+                elmts[n].x2.z = (FVisc.z + elmts[n].FHydro.z + elmts[n].FParticle.z + elmts[n].FWall.z + elmts[n].FCylinder.z) / elmts[n].m + demF.z + elmts[n].ACoriolis.z + elmts[n].ACentrifugal.z + (elmts[n].m * frictionCoefficientElements);
                 if (elmts[n].index == 0 && elmts[n].size>1){ // immersed cylinder case
                     elmts[n].x2.x = 0.0;
                     elmts[n].x2.y = 0.0;
