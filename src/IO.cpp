@@ -683,44 +683,47 @@ void IO::exportSingleObjects(const objectList& objects) {
 
 }
 
-// void IO::exportSingleElements(const elmtList& elmts) {
-//
-//     std::vector<string> xyzString;
-//     xyzString.resize(3);
-//     xyzString[0] = 'x';
-//     xyzString[1] = 'y';
-//     xyzString[2] = 'z';
-//     for (int i = 0; i < singleElements.size(); i++) {
-//         const unsigned int indexHere = singleElements[i];
-//         const tVect forceHere = elmts[indexHere].FHydro + elmts[indexHere].FParticle;
-//         double f[3] = {forceHere.dot(Xp), forceHere.dot(Yp), forceHere.dot(Zp)};
-//         for (int xyz = 0; xyz < 3; xyz++) {
-//             string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + "_" + xyzString[xyz] + ".dat";
-//             ofstream singleElementFile;
-//             singleElementFile.open(singleObjectFileName.c_str(), ios::app);
-//             singleElementFile << realTime << " " << f[xyz] << "\n";
-//             singleElementFile.close();
-//         }
-//     }
-//
-// }
-
 void IO::exportSingleElements(const elmtList& elmts) {
+    // export specific element from the particle.dat file
 
-    std::vector<string> xyzString;
-    xyzString.resize(3);
-    xyzString[0] = 'x';
-    xyzString[1] = 'y';
-    xyzString[2] = 'z';
     for (int i = 0; i < singleElements.size(); i++) {
+        // cycle through all the elemnts to be tracked
         const unsigned int indexHere = singleElements[i];
-        const tVect forceHere = elmts[indexHere].FHydro + elmts[indexHere].FParticle;
-        double f[3] = {forceHere.dot(Xp), forceHere.dot(Yp), forceHere.dot(Zp)};
-        for (int xyz = 0; xyz < 3; xyz++) {
-            string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + "_" + xyzString[xyz] + ".dat";
-            ofstream singleElementFile;
-            singleElementFile.open(singleObjectFileName.c_str(), ios::app);
-            singleElementFile << realTime << " " << f[xyz] << "\n";
+        // get the position of the tracked element
+        const double xNow = elmts[indexHere].x0.x;
+        const double yNow = elmts[indexHere].x0.y;
+        const double zNow = elmts[indexHere].x0.z;
+        // get the forces (particle and hydro) of the tracked element
+        const tVect forceHydro = elmts[indexHere].FHydro;
+        const tVect forcePart = elmts[indexHere].FParticle;
+        double FParticleX = forcePart.dot(Xp);
+        double FParticleY = forcePart.dot(Yp);
+        double FParticleZ = forcePart.dot(Zp);
+        double FHydroX = forceHydro.dot(Xp);
+        double FHydroY = forceHydro.dot(Yp);
+        double FHydroZ = forceHydro.dot(Zp);
+
+        // write the results in a .dat file
+        string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + ".dat";
+        ofstream singleElementFile;
+        singleElementFile.open(singleObjectFileName.c_str(), ios::app);
+        singleElementFile << std::scientific << std::setprecision(6); // Set scientific format and precision
+
+        if (realTime<=1e-10) {
+            singleElementFile <<
+                "realTime" << " " << "x" << " " << "y" << " " << "z" << " " <<
+                "FParticleX" << " " << "FParticleY" << " " <<  "FParticleZ" << " " <<
+                "FHydroX" << " " << "FHydroY" << " " << "FHydroZ" << "\n" <<
+                realTime << " " <<
+                xNow << " " << yNow << " " <<  zNow << " " <<
+                FParticleX << " " << FParticleY << " " <<  FParticleZ << " " <<
+                FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
+        } else {
+            singleElementFile <<
+                realTime << " " <<
+                xNow << " " << yNow << " " <<  zNow << " " <<
+                FParticleX << " " << FParticleY << " " <<  FParticleZ << " " <<
+                FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
             singleElementFile.close();
         }
     }
