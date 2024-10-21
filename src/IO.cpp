@@ -27,6 +27,14 @@ void IO::initialize() {
         cout << "Work directory created = " << singleObjectDirectory << ". Result: " << a << "\n";
     }
 
+    // tracking specific elements
+    if (singleElements.size() > 0) {
+        // create directory
+        singleElementDirectory = workDirectory + "/singleElementData";
+        int a = filesystem::create_directories(singleElementDirectory.c_str());
+        cout << "Work directory created = " << singleElementDirectory << ". Result: " << a << "\n";
+    }
+
     //  initialising energy file
     energyFileName = workDirectory + "/energy.dat";
     //  initializing object force files
@@ -371,6 +379,10 @@ void IO::outputStep(LB& lb, DEM& dem) {
             exportSingleObjects(dem.objects);
         }
 
+        if (singleElements.size() > 0) {
+            exportSingleElements(dem.elmts);
+        }
+
         if (objectGroupBegin.size() > 0) {
             exportGroupForce(dem.objects);
         }
@@ -668,6 +680,50 @@ void IO::exportSingleObjects(const objectList& objects) {
         }
     }
 
+
+}
+
+// void IO::exportSingleElements(const elmtList& elmts) {
+//
+//     std::vector<string> xyzString;
+//     xyzString.resize(3);
+//     xyzString[0] = 'x';
+//     xyzString[1] = 'y';
+//     xyzString[2] = 'z';
+//     for (int i = 0; i < singleElements.size(); i++) {
+//         const unsigned int indexHere = singleElements[i];
+//         const tVect forceHere = elmts[indexHere].FHydro + elmts[indexHere].FParticle;
+//         double f[3] = {forceHere.dot(Xp), forceHere.dot(Yp), forceHere.dot(Zp)};
+//         for (int xyz = 0; xyz < 3; xyz++) {
+//             string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + "_" + xyzString[xyz] + ".dat";
+//             ofstream singleElementFile;
+//             singleElementFile.open(singleObjectFileName.c_str(), ios::app);
+//             singleElementFile << realTime << " " << f[xyz] << "\n";
+//             singleElementFile.close();
+//         }
+//     }
+//
+// }
+
+void IO::exportSingleElements(const elmtList& elmts) {
+
+    std::vector<string> xyzString;
+    xyzString.resize(3);
+    xyzString[0] = 'x';
+    xyzString[1] = 'y';
+    xyzString[2] = 'z';
+    for (int i = 0; i < singleElements.size(); i++) {
+        const unsigned int indexHere = singleElements[i];
+        const tVect forceHere = elmts[indexHere].FHydro + elmts[indexHere].FParticle;
+        double f[3] = {forceHere.dot(Xp), forceHere.dot(Yp), forceHere.dot(Zp)};
+        for (int xyz = 0; xyz < 3; xyz++) {
+            string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + "_" + xyzString[xyz] + ".dat";
+            ofstream singleElementFile;
+            singleElementFile.open(singleObjectFileName.c_str(), ios::app);
+            singleElementFile << realTime << " " << f[xyz] << "\n";
+            singleElementFile.close();
+        }
+    }
 
 }
 
