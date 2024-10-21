@@ -73,6 +73,9 @@ public:
     doubleList flowLevelBegin, flowLevelEnd;
     // file for storing beginning and end of observation windows
     unsIntList objectGroupBegin, objectGroupEnd;
+
+    // file for storing indices of single elemts to export
+    unsIntList singleElements;
     // general functions
     // 
     double energyStopThreshold;
@@ -172,6 +175,10 @@ private:
     // single-object data file
     string singleObjectDirectory;
     void exportSingleObjects(const objectList& objects);
+
+    // single-elements data file
+    string singleElementDirectory;
+    void exportSingleElements(const elmtList& elmts);
     
     // max speed files
     string maxFluidSpeedFileName, maxParticleSpeedFileName;
