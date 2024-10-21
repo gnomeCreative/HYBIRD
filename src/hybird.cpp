@@ -308,6 +308,10 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, Problem& problem, GetPot& configF
     cout << endl;
     ASSERT(io.singleElements.size() == totSingleElements);
 
+    // Seguin-specific friction problem
+    PARSE_CLASS_MEMBER(configFile, dem.frictionCoefficientElements, "frictionCoefficientElements", 0.0);
+    ASSERT(dem.frictionCoefficientElements>=0.0);
+
     // flow level sensors
     unsigned int totFlowLevelBegin = configFile.vector_variable_size("flowLevelSensorBegin");
     unsigned int totFlowLevelEnd = configFile.vector_variable_size("flowLevelSensorEnd");
