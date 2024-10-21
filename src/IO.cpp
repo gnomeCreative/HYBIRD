@@ -419,9 +419,14 @@ void IO::createFiles(const LB& lb, const DEM& dem) {
             lastFluidExp = fluidExpCounter;
             char filePathBuffer [1024];
             sprintf(filePathBuffer, fluidFileFormat.c_str(), currentTimeStep);
-            //if (currentTimeStep>120) {
-            exportEulerianParaviewFluid(lb, filePathBuffer);
-            //}
+            if (fluidLagrangianFormat == ParaviewFormat::Ascii) {
+                exportEulerianParaviewFluid(lb, filePathBuffer);  // Benchmark: 2994s
+            } else if (fluidLagrangianFormat == ParaviewFormat::BinaryLowMem) {
+                // exportEulerianParaviewFluid_binary(lb, filePathBuffer);  // Benchmark: 315s
+                exportEulerianParaviewFluid_binaryv2(lb, filePathBuffer);  // Benchmark: 211s
+            } else {
+                exportEulerianParaviewFluid_binaryv3(lb, filePathBuffer);  // Benchmark: 120s (but requires ~200mb extra memory)
+            }
         }
 
         const unsigned int fluidLagrangianExpCounter = (fluidLagrangianExpTime > 0 ? static_cast<unsigned int> (realTime / fluidLagrangianExpTime) + 1 : 0);
@@ -1497,6 +1502,474 @@ void IO::exportEulerianParaviewFluid(const LB& lb, const string& fluidFile) {
     paraviewFluidFile << "   </CellData>\n";
     paraviewFluidFile << "  </Piece>\n";
     paraviewFluidFile << " </ImageData>\n";
+    paraviewFluidFile << "</VTKFile>\n";
+    // data file closing
+    paraviewFluidFile.close();
+}
+
+void IO::exportEulerianParaviewFluid_binary(const LB& lb, const string& fluidFile) {
+    /**
+     * This function is a rewrite of exportEulerianParaviewFluid() that writes to a binary vtkhdf5 format
+     * It is intended to provide much faster fluid export performance
+     **/
+
+    // start printing all the crap required for Paraview
+    // header file opening
+    ofstream paraviewFluidFile;
+
+    paraviewFluidFile.open(fluidFile.c_str(), std::ios::binary);
+//    paraviewFluidFile << std::scientific << std::setprecision(4);
+    // writing on header file
+
+    // Endianness (the order of bits within a byte) depends on the processor hardware
+    // but it's probably LittleEndian, IBM processors are the only default BigEndian you're likely to come across
+    static const uint16_t m_endianCheck(0x00ff);
+    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
+    paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
+    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << lb.lbSize[0] - 1 << " 0 " << lb.lbSize[1] - 1 << " 0 " << lb.lbSize[2] - 1 << "\" "
+            << "Origin=\"" << -0.5 * lb.unit.Length << " " << -0.5 * lb.unit.Length << " " << -0.5 * lb.unit.Length << "\" "
+            << "Spacing=\"" << lb.unit.Length << " " << lb.unit.Length << " " << lb.unit.Length << "\">\n";
+    paraviewFluidFile << "  <Piece Extent=\"0 " << lb.lbSize[0] - 1 << " 0 " << lb.lbSize[1] - 1 << " 0 " << lb.lbSize[2] - 1 << "\">\n";
+    paraviewFluidFile << "   <PointData>\n";
+    unsigned int offset = 0;
+    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
+    offset += lb.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
+    offset += lb.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.freeSurface) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.lbTopography) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    paraviewFluidFile << "   </PointData>\n";
+    paraviewFluidFile << "   <CellData>\n";
+    paraviewFluidFile << "   </CellData>\n";
+    paraviewFluidFile << "  </Piece>\n";
+    paraviewFluidFile << " </ImageData>\n";
+    paraviewFluidFile << " <AppendedData encoding=\"raw\">\n  _";
+    /**
+     * Based on the sparse documentation at https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
+     * and alot of testing.
+     * Inside <AppendedData> the binary dump must be preceded by an underscore (_)
+     * Each DataArray's binary dump must be preceded by it's length.
+     * The length should be exported as the integer type specified as header_type in the opening <VTKFile> tag
+     * The offset specified in the above <DataArray> tag refers to the offset from the start of the whole binary dump to the start of the length
+     */
+    static const double zero = 0;
+    static const tVect tVect_zero = {0,0,0};
+    // May be faster to iterate the (sorted) map and catch missing items
+    // Might be possible to do inline compression, this would slow export but unclear by how much
+    offset = lb.totPossibleNodes * sizeof(unsigned char);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < lb.totPossibleNodes; ++i) {
+        const auto &node = lb.nodes.find(i);
+        if (node != lb.nodes.end()) {
+            if (node->second.isInsideParticle()) {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&node->second.type), sizeof(node->second.type));
+            } else {
+                const unsigned char t = 1;
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(unsigned char));
+            }
+        } else {
+            const unsigned char t = 2;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(unsigned char));
+        }
+    }
+    offset = lb.totPossibleNodes * 3 * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < lb.totPossibleNodes; ++i) {
+        const auto &node = lb.nodes.find(i);
+        if (node != lb.nodes.end()) {
+            static const tVect uPhysic = lb.nodes.at(i).u * lb.unit.Speed;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&uPhysic), sizeof(tVect));
+        } else {
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&tVect_zero), sizeof(tVect));
+        }
+    }
+    offset = lb.totPossibleNodes * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < lb.totPossibleNodes; ++i) {
+        const auto &node = lb.nodes.find(i);
+        if (node != lb.nodes.end()) {
+            const double t = 0.3333333 * (node->second.n - 1.0) * lb.unit.Pressure;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
+        } else {
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+        }
+    }
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < lb.totPossibleNodes; ++i) {
+            const auto &node = lb.nodes.find(i);
+            if (node != lb.nodes.end()) {
+                const double t = node->second.visc * lb.unit.DynVisc;
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
+            } else {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+        }
+    }
+    if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < lb.totPossibleNodes; ++i) {
+            const auto &node = lb.nodes.find(i);
+            if (node != lb.nodes.end()) {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&node->second.friction), sizeof(double));
+            } else {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+        }
+    }
+    if (lb.freeSurface) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < lb.totPossibleNodes; ++i) {
+            const auto &node = lb.nodes.find(i);
+            if (node != lb.nodes.end()) {
+                const double t = node->second.mass * lb.unit.Density;
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
+            } else {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+        }
+    }
+    if (lb.lbTopography) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < lb.totPossibleNodes; ++i) {
+            const auto &node = lb.nodes.find(i);
+            if (node != lb.nodes.end()) {
+                if (node->second.isTopography()) {
+                    const double one = 1.0;
+                    paraviewFluidFile.write(reinterpret_cast<const char*>(&one), sizeof(double));
+                } else {
+                    paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+                }
+            } else {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+        }
+    }
+    paraviewFluidFile << "</AppendedData>";
+    paraviewFluidFile << "</VTKFile>\n";
+    // data file closing
+    paraviewFluidFile.close();
+}
+
+void IO::exportEulerianParaviewFluid_binaryv2(const LB& lb, const string& fluidFile) {
+    /**
+     * This function is a rewrite of exportEulerianParaviewFluid() that writes to a binary vtkhdf5 format
+     * It is intended to provide much faster fluid export performance
+     **/
+
+    // start printing all the crap required for Paraview
+    // header file opening
+    ofstream paraviewFluidFile;
+
+    paraviewFluidFile.open(fluidFile.c_str(), std::ios::binary);
+//    paraviewFluidFile << std::scientific << std::setprecision(4);
+    // writing on header file
+
+    // Endianness (the order of bits within a byte) depends on the processor hardware
+    // but it's probably LittleEndian, IBM processors are the only default BigEndian you're likely to come across
+    static const uint16_t m_endianCheck(0x00ff);
+    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
+    paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
+    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << lb.lbSize[0] - 1 << " 0 " << lb.lbSize[1] - 1 << " 0 " << lb.lbSize[2] - 1 << "\" "
+            << "Origin=\"" << -0.5 * lb.unit.Length << " " << -0.5 * lb.unit.Length << " " << -0.5 * lb.unit.Length << "\" "
+            << "Spacing=\"" << lb.unit.Length << " " << lb.unit.Length << " " << lb.unit.Length << "\">\n";
+    paraviewFluidFile << "  <Piece Extent=\"0 " << lb.lbSize[0] - 1 << " 0 " << lb.lbSize[1] - 1 << " 0 " << lb.lbSize[2] - 1 << "\">\n";
+    paraviewFluidFile << "   <PointData>\n";
+    unsigned int offset = 0;
+    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
+    offset += lb.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
+    offset += lb.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.freeSurface) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.lbTopography) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    paraviewFluidFile << "   </PointData>\n";
+    paraviewFluidFile << "   <CellData>\n";
+    paraviewFluidFile << "   </CellData>\n";
+    paraviewFluidFile << "  </Piece>\n";
+    paraviewFluidFile << " </ImageData>\n";
+    paraviewFluidFile << " <AppendedData encoding=\"raw\">\n  _";
+    /**
+     * Based on the sparse documentation at https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
+     * and alot of testing.
+     * Inside <AppendedData> the binary dump must be preceded by an underscore (_)
+     * Each DataArray's binary dump must be preceded by it's length.
+     * The length should be exported as the integer type specified as header_type in the opening <VTKFile> tag
+     * The offset specified in the above <DataArray> tag refers to the offset from the start of the whole binary dump to the start of the length
+     */
+    static const double zero = 0;
+    static const tVect tVect_zero = {0,0,0};
+    // May be faster to iterate the (sorted) map and catch missing items
+    // Might be possible to do inline compression, this would slow export but unclear by how much
+    offset = lb.totPossibleNodes * sizeof(unsigned char);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    int i = 0;
+    for (const auto &[key, node] : lb.nodes) {
+        for (;i<key;++i) {
+            const unsigned char t = 2;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(unsigned char));
+        }
+        if (node.isInsideParticle()) {
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&node.type), sizeof(unsigned char));
+        } else {
+            const unsigned char t = 1;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(unsigned char));
+        }
+        ++i;
+    }
+    offset = lb.totPossibleNodes * 3 * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    i = 0;
+    for (const auto &[key, node] : lb.nodes) {
+        for (;i<key;++i) {
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&tVect_zero), sizeof(tVect));
+        }
+        const tVect uPhysic = lb.nodes.at(i).u * lb.unit.Speed;
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&uPhysic), sizeof(tVect));
+        ++i;
+    }
+    offset = lb.totPossibleNodes * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    i = 0;
+    for (const auto &[key, node] : lb.nodes) {
+        for (;i<key;++i) {
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+        }
+        const double t = 0.3333333 * (node.n - 1.0) * lb.unit.Pressure;
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
+        ++i;
+    }
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        i = 0;
+        for (const auto &[key, node] : lb.nodes) {
+            for (;i<key;++i) {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+            const double t = node.visc * lb.unit.DynVisc;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
+            ++i;
+        }
+    }
+    if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        i = 0;
+        for (const auto &[key, node] : lb.nodes) {
+            for (;i<key;++i) {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&node.friction), sizeof(double));
+            ++i;
+        }
+    }
+    if (lb.freeSurface) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        i = 0;
+        for (const auto &[key, node] : lb.nodes) {
+            for (;i<key;++i) {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+            const double t = node.mass * lb.unit.Density;
+            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
+            ++i;
+        }
+    }
+    if (lb.lbTopography) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        i = 0;
+        for (const auto &[key, node] : lb.nodes) {
+            for (;i<key;++i) {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+            if (node.isTopography()) {
+                const double one = 1.0;
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&one), sizeof(double));
+            } else {
+                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
+            }
+            ++i;
+        }
+    }
+    paraviewFluidFile << "</AppendedData>";
+    paraviewFluidFile << "</VTKFile>\n";
+    // data file closing
+    paraviewFluidFile.close();
+}
+
+void IO::exportEulerianParaviewFluid_binaryv3(const LB& lb, const string& fluidFile) {
+    /**
+     * This function is a rewrite of exportEulerianParaviewFluid() that writes to a binary vtkhdf5 format
+     * It is intended to provide much faster fluid export performance
+     **/
+
+    // start printing all the crap required for Paraview
+    // header file opening
+    ofstream paraviewFluidFile;
+
+    paraviewFluidFile.open(fluidFile.c_str(), std::ios::binary);
+//    paraviewFluidFile << std::scientific << std::setprecision(4);
+    // writing on header file
+
+    // Endianness (the order of bits within a byte) depends on the processor hardware
+    // but it's probably LittleEndian, IBM processors are the only default BigEndian you're likely to come across
+    static const uint16_t m_endianCheck(0x00ff);
+    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
+    paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
+    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << lb.lbSize[0] - 1 << " 0 " << lb.lbSize[1] - 1 << " 0 " << lb.lbSize[2] - 1 << "\" "
+            << "Origin=\"" << -0.5 * lb.unit.Length << " " << -0.5 * lb.unit.Length << " " << -0.5 * lb.unit.Length << "\" "
+            << "Spacing=\"" << lb.unit.Length << " " << lb.unit.Length << " " << lb.unit.Length << "\">\n";
+    paraviewFluidFile << "  <Piece Extent=\"0 " << lb.lbSize[0] - 1 << " 0 " << lb.lbSize[1] - 1 << " 0 " << lb.lbSize[2] - 1 << "\">\n";
+    paraviewFluidFile << "   <PointData>\n";
+    unsigned int offset = 0;
+    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
+    offset += lb.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
+    offset += lb.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.freeSurface) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    if (lb.lbTopography) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += lb.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    }
+    paraviewFluidFile << "   </PointData>\n";
+    paraviewFluidFile << "   <CellData>\n";
+    paraviewFluidFile << "   </CellData>\n";
+    paraviewFluidFile << "  </Piece>\n";
+    paraviewFluidFile << " </ImageData>\n";
+    paraviewFluidFile << " <AppendedData encoding=\"raw\">\n  _";
+    /**
+     * Based on the sparse documentation at https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
+     * and alot of testing.
+     * Inside <AppendedData> the binary dump must be preceded by an underscore (_)
+     * Each DataArray's binary dump must be preceded by it's length.
+     * The length should be exported as the integer type specified as header_type in the opening <VTKFile> tag
+     * The offset specified in the above <DataArray> tag refers to the offset from the start of the whole binary dump to the start of the length
+     */
+    // Allocate a buffer equal to size of the largest data array
+    // Allocate once rather than allocating and freeing per export
+    static char *const t_buffer = static_cast<char*>(malloc(lb.totPossibleNodes * 3 * sizeof(double)));
+    static unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
+    static double *const d_buffer = reinterpret_cast<double*>(t_buffer);
+    static tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
+    // Type
+    offset = lb.totPossibleNodes * sizeof(unsigned char);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    std::fill(uc_buffer, uc_buffer + lb.totPossibleNodes, 2);
+    for (const auto &[key, node] : lb.nodes) {
+        uc_buffer[key] = node.isInsideParticle() ? node.type : 1;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Velocity
+    offset = lb.totPossibleNodes * 3 * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    memset(v_buffer, 0, sizeof(tVect) * lb.totPossibleNodes);
+    for (const auto &[key, node] : lb.nodes) {
+        v_buffer[key] = node.u * lb.unit.Speed;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Pressure
+    offset = lb.totPossibleNodes * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    memset(d_buffer, 0, sizeof(double) * lb.totPossibleNodes);
+    const double THIRD_PRESSURE = 0.3333333 * lb.unit.Pressure;
+    for (const auto &[key, node] : lb.nodes) {
+        d_buffer[key] = (node.n - 1.0) * THIRD_PRESSURE;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Dynamic Viscosity
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        memset(d_buffer, 0, sizeof(double) * lb.totPossibleNodes);
+        for (const auto &[key, node] : lb.nodes) {
+            d_buffer[key] = node.visc * lb.unit.DynVisc;
+        }
+        paraviewFluidFile.write(t_buffer, offset);
+    }
+    // Friction
+    if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        memset(d_buffer, 0, sizeof(double) * lb.totPossibleNodes);
+        for (const auto &[key, node] : lb.nodes) {
+            d_buffer[key] = node.friction;
+        }
+        paraviewFluidFile.write(t_buffer, offset);
+    }
+    // AMass
+    if (lb.freeSurface) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        memset(d_buffer, 0, sizeof(double) * lb.totPossibleNodes);
+        for (const auto &[key, node] : lb.nodes) {
+            d_buffer[key] = node.mass * lb.unit.Density;
+        }
+        paraviewFluidFile.write(t_buffer, offset);
+    }
+    // Top Surface
+    if (lb.lbTopography) {
+        offset = lb.totPossibleNodes * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        memset(d_buffer, 0, sizeof(double) * lb.totPossibleNodes);
+        for (const auto &[key, node] : lb.nodes) {
+            if (node.isTopography()) {
+                d_buffer[key] = 1.0;
+            }
+        }
+        paraviewFluidFile.write(t_buffer, offset);
+    }
+    paraviewFluidFile << "</AppendedData>";
     paraviewFluidFile << "</VTKFile>\n";
     // data file closing
     paraviewFluidFile.close();
