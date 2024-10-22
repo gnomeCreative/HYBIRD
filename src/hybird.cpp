@@ -242,6 +242,18 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     ASSERT(io.fluid2DExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partExpTime, "partExpTime", 0.0);
     ASSERT(io.partExpTime >= 0);
+    if (io.partExpTime > 0.0) {
+        string partExpFormatString;
+        PARSE_CLASS_MEMBER(configFile, partExpFormatString, "partExpFormat", "BINARY");
+        std::transform(partExpFormatString.begin(), partExpFormatString.end(), partExpFormatString.begin(), ::tolower);
+        if (partExpFormatString == "ascii"
+         || partExpFormatString == "text"
+         || partExpFormatString == "txt") {
+            io.partExpFormat = IO::ParaviewFormat::Ascii;
+        } else { // "binary"
+            io.partExpFormat = IO::ParaviewFormat::Binary;
+        }
+    }
     PARSE_CLASS_MEMBER(configFile, io.fluidRecycleExpTime, "fluidRecycleExpTime", 0.0);
     ASSERT(io.fluidRecycleExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partRecycleExpTime, "partRecycleExpTime", 0.0);

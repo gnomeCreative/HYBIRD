@@ -63,7 +63,7 @@ public:
     // Formats for output
     enum ParaviewFormat {
         Binary, BinaryLowMem, Ascii
-    } fluidLagrangianFormat = ParaviewFormat::Binary;
+    } fluidLagrangianFormat = Binary, partExpFormat = Binary;
     // recycle intervals
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
@@ -118,6 +118,7 @@ private:
     unsigned int lastPartExp;
     string partFileFormat;
     void exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile);
+    void exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile);
     
     // object paraview file
     unsigned int lastObjectExp;

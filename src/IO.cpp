@@ -457,7 +457,11 @@ void IO::createFiles(const LB& lb, const DEM& dem) {
             lastPartExp = partExpCounter;
             char filePathBuffer [1024];
             sprintf(filePathBuffer, partFileFormat.c_str(), currentTimeStep);
-            exportParaviewParticles(dem.elmts, dem.particles, filePathBuffer);
+            if (partExpFormat == ParaviewFormat::Ascii) {
+                exportParaviewParticles(dem.elmts, dem.particles, filePathBuffer);
+            } else {
+                exportParaviewParticles_binaryv3(dem.elmts, dem.particles, filePathBuffer);
+            }
         }
 
         const unsigned int partRecycleExpCounter = (partRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / partRecycleExpTime) + 1 : 0);
@@ -924,6 +928,224 @@ void IO::exportParaviewParticles(const elmtList& elmts, const particleList& part
     paraviewParticleFile << "  </Piece>\n";
     //    paraviewHeaderFile<<"  <Piece Source=\""<<pieceFile<<"\"/>\n";
     paraviewParticleFile << " </UnstructuredGrid>\n";
+    paraviewParticleFile << "</VTKFile>";
+    // header file closing
+    paraviewParticleFile.close();
+}
+
+void IO::exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile) {
+    // Build a list of active particles for faster access
+    std::vector<unsigned int> active_particles;
+    for (int i = 0; i < particles.size(); ++i) {
+        if (particles[i].active) {
+            active_particles.push_back(i);
+        }
+    }
+
+    // file opening
+    ofstream paraviewParticleFile;
+    paraviewParticleFile.open(particleFile.c_str(), std::ios::binary);
+    // writing on header file
+    static const uint16_t m_endianCheck(0x00ff);
+    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
+    paraviewParticleFile << "<?xml version=\"1.0\"?>\n";
+    paraviewParticleFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\" header_type=\"UInt32\">\n";
+    paraviewParticleFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
+    paraviewParticleFile << "  <Piece NumberOfPoints=\"" << active_particles.size() << "\" NumberOfCells=\"" << active_particles.size() << "\">\n";
+    paraviewParticleFile << "   <PointData>\n";
+    unsigned int offset = 0;
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radius\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"particleIndex\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"clusterIndex\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"coordinationNumber\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"w\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FParticle\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FGrav\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"solidIntensity\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MParticle\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FWall\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MWall\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    if (lbmSolver) {
+        paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+        offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+        paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MHydro\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+        offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+        paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"fluidIntensity\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+        offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    }
+    paraviewParticleFile << "   </PointData>\n";
+    paraviewParticleFile << "   <CellData>\n";
+    paraviewParticleFile << "   </CellData>\n";
+    paraviewParticleFile << "   <Points>\n";
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "   </Points>\n";
+    paraviewParticleFile << "   <Cells>\n";
+    paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"connectivity\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"offsets\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"UInt8\" Name=\"types\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * sizeof(unsigned char) + sizeof(unsigned int);
+    paraviewParticleFile << "   </Cells>\n";
+    paraviewParticleFile << "  </Piece>\n";
+    paraviewParticleFile << " </UnstructuredGrid>\n";
+    paraviewParticleFile << " <AppendedData encoding=\"raw\">\n  _";
+    // Allocate a buffer equal to size of the largest data array
+    // Allocate once rather than allocating and freeing per export
+    static char *const t_buffer = static_cast<char*>(malloc(active_particles.size() * 3 * sizeof(double)));
+    static double *const d_buffer = reinterpret_cast<double*>(t_buffer);
+    static tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
+    static unsigned int *const u_buffer = reinterpret_cast<unsigned int*>(t_buffer);
+    static unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
+    // radius
+    offset = active_particles.size() * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        d_buffer[i] = particles[active_particles[i]].r;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // particleIndex
+    offset = active_particles.size() * sizeof(unsigned int);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        u_buffer[i] = particles[active_particles[i]].particleIndex;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // clusterIndex
+    offset = active_particles.size() * sizeof(unsigned int);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        u_buffer[i] = particles[active_particles[i]].clusterIndex;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // coordinationNumber
+    offset = active_particles.size() * sizeof(unsigned int);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        u_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].coordination;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // v
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = particles[active_particles[i]].x1;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // w
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].wGlobal;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // FParticle
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FParticle;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // FGrav
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FGrav;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // solidIntensity
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].solidIntensity;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // MParticle
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MParticle;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // FWall
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FWall;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // MWall
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MWall;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    if (lbmSolver) {
+        // FHydro
+        offset = active_particles.size() * 3 * sizeof(double);
+        paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < active_particles.size(); ++i) {
+            v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FHydro;
+        }
+        paraviewParticleFile.write(t_buffer, offset);
+        // MHydro
+        offset = active_particles.size() * 3 * sizeof(double);
+        paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < active_particles.size(); ++i) {
+            v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MHydro;
+        }
+        paraviewParticleFile.write(t_buffer, offset);
+        // fluidIntensity
+        offset = active_particles.size() * 3 * sizeof(double);
+        paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < active_particles.size(); ++i) {
+            v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FHydro;
+        }
+        paraviewParticleFile.write(t_buffer, offset);
+    }
+
+    // Points
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = particles[active_particles[i]].x0;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // connectivity
+    offset = active_particles.size() * sizeof(unsigned int);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
+        u_buffer[i] = i;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // offsets
+    offset = active_particles.size() * sizeof(unsigned int);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (unsigned int i = 1; i < active_particles.size() + 1; ++i) {
+        u_buffer[i] = i;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // types
+    offset = active_particles.size() * sizeof(unsigned char);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    std::fill(uc_buffer, uc_buffer + active_particles.size(), 1u);
+    paraviewParticleFile.write(t_buffer, offset);
+    paraviewParticleFile << "</AppendedData>";
     paraviewParticleFile << "</VTKFile>";
     // header file closing
     paraviewParticleFile.close();
