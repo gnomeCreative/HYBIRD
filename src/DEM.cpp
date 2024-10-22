@@ -1964,8 +1964,12 @@ void DEM::evaluateForces() {
                 break;
             }
             case (SEGUIN): { // fix acceleration = 0.0 (elements in 2D domain)
+                // friction due to the element-plate contact (friction due to a non-smooth plane)
+                const double FelmtsPlane = elmts[n].m * 9.81* frictionCoefficientElements;
+                const double AelmtsPlane = FelmtsPlane/elmts[n].m;
                 elmts[n].x2.y = 0.0;
-                elmts[n].x2.z = (FVisc.z + elmts[n].FHydro.z + elmts[n].FParticle.z + elmts[n].FWall.z + elmts[n].FCylinder.z) / elmts[n].m + demF.z + elmts[n].ACoriolis.z + elmts[n].ACentrifugal.z + (elmts[n].m * frictionCoefficientElements);
+                elmts[n].x2.z -= AelmtsPlane;
+
                 if (elmts[n].index == 0 && elmts[n].size>1){ // immersed cylinder case
                     elmts[n].x2.x = 0.0;
                     elmts[n].x2.y = 0.0;
