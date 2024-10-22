@@ -79,7 +79,7 @@ jobs:
       run: >
         cmake . -B "${{ env.BUILD_DIR }}" 
         -G "${{ env.COMPILER }}" -A x64
-        -DHYBIRD_ENABLE_OPENMP="${{ env.OPENMP }}"
+        -DHYBIRD_ENABLE_OPENMP="${{ env.FLAMEGPU_SEATBELTS }}"
       # -Werror=dev
 
     - name: Build hybird
