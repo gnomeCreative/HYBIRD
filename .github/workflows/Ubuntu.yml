@@ -1,0 +1,126 @@
+# Guidance: https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions
+# Compile project on Ubuntu
+name: Ubuntu
+
+on:
+  # Branch pushes that do not only modify other workflow files
+  push:
+    branches:
+      - '**'
+    paths:
+      - "**"
+      - "!.github/**"
+      - "!matlab/**"
+      - ".github/workflows/Ubuntu.yml"
+  # Pull requests to main, that do not only modify other workflow files
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - "**"
+      - "!.github/**"
+      - "!matlab/**"
+      - ".github/workflows/Windows.yml"
+  # Allow manual invocation.
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ${{ matrix.cxx.os }}
+    strategy:
+      fail-fast: false
+      # Multiplicative build matrix
+      # optional exclude: can be partial, include: must be specific
+      matrix:
+        cxx:
+          - compiler: gcc-12
+            os: ubuntu-22.04
+          - compiler: gcc-11
+            os: ubuntu-22.04
+          - compiler: gcc-8
+            os: ubuntu-20.04
+        config:
+          - name: "Release"
+            config: "Release"
+            OPENMP: "ON"
+          - name: "OpenMP-OFF"
+            config: "Release"
+            OPENMP: "OFF"
+          - name: "Debug"
+            config: "Debug"
+            OPENMP: "ON"
+        # exclude:
+        exclude:
+          # Exclude Debug and OpenMP Off for old GCC
+          - cxx:
+              compiler: gcc-11
+            config:
+              name: "Debug"
+          - cxx:
+              compiler: gcc-11
+            config:
+              name: "OpenMP-OFF"
+          - cxx:
+              compiler: gcc-8
+            config:
+              name: "Debug"
+          - cxx:
+              compiler: gcc-8
+            config:
+              name: "OpenMP-OFF"
+
+    # Name the job based on matrix/env options
+    name: "build (${{ matrix.cxx.compiler }}, ${{ matrix.config.name }}, ${{ matrix.cxx.os }})"
+
+    # Define job-wide env constants, and promote matrix elements to env constants for portable steps.
+    env:
+      # Workflow specific constants for building a specific example
+      # Compute the output name which should be unique within the matrix. This must be unique per build matrix/job combination
+      ARTIFACT_NAME: hybird-${{ matrix.cxx.os }}-${{ matrix.cxx.compiler }}-${{ matrix.config.name }}
+      # Define constants
+      BUILD_DIR: "build"
+      COMPILER: ${{ matrix.cxx.compiler }}
+      OS: ${{ matrix.cxx.os }}
+      CONFIG: ${{ matrix.config.config }}
+      OPENMP: ${{ matrix.config.OPENMP }}
+
+    # What the CI actually runs
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install/Select gcc and g++
+      if: ${{ startsWith(env.COMPILER, 'gcc-') }}
+      run: |
+        gcc_version=${COMPILER//gcc-/}
+        sudo apt-get install -y gcc-${gcc_version} g++-${gcc_version}
+        echo "CC=/usr/bin/gcc-${gcc_version}" >> $GITHUB_ENV
+        echo "CXX=/usr/bin/g++-${gcc_version}" >> $GITHUB_ENV
+
+    # Problem matchers allow compilation warnings/errors to be highlighted on GitHub
+    - name: Add custom problem matchers for annotations
+      run: echo "::add-matcher::.github/problem-matchers.json"
+
+    - name: Configure cmake
+      run: >
+        cmake . -B "${{ env.BUILD_DIR }}"
+        -DCMAKE_BUILD_TYPE="${{ env.CONFIG }}"
+        -DHYBIRD_ENABLE_OPENMP="${{ env.FLAMEGPU_SEATBELTS }}"
+      # -Werror=dev
+
+    - name: Build hybird
+      working-directory: ${{ env.BUILD_DIR }}
+      run: cmake --build . --target hybird --verbose --parallel `nproc`
+
+    # Upload wheel artifacts to the job on GHA, with a short retention
+    # Use a unique name per job matrix run, to avoid a risk of corruption according to the docs (although it should work with unique filenames)
+    - name: Upload Wheel Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ${{ env.BUILD_DIR }}/bin/${{ env.CONFIG }}/hybird
+        if-no-files-found: error
+        retention-days: 5
