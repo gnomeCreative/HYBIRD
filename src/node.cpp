@@ -558,54 +558,6 @@ bool node::isCurvedWall() const {
     }
 }
 
-bool node::isSlipStatWall() const {
-    return type == SLIP_STAT_WALL;
-}
-
-bool node::isSlipDynWall() const {
-    return type == SLIP_DYN_WALL;
-}
-
-bool node::isStatWall() const {
-    return type == STAT_WALL;
-}
-
-bool node::isDynWall() const {
-    return type == DYN_WALL;
-}
-
-bool node::isCylinderWall() const {
-    return type == CYL;
-}
-
-bool node::isObjectWall() const {
-    return type == OBJ;
-}
-
-bool node::isTopography() const {
-    return type == TOPO;
-}
-
-bool node::isOutlet() const {
-    return type == OUTLET;
-}
-
-bool node::isInterface() const {
-    return type == INTERFACE;
-}
-
-bool node::isFluid() const {
-    return type == LIQUID;
-}
-
-bool node::isGas() const {
-    return type == GAS;
-}
-
-bool node::isPeriodic() const {
-    return type == PERIODIC;
-}
-
 // functions for change of type
 
 void node::setSlipStatWall() {
@@ -662,10 +614,6 @@ void node::setType(const types& typ) {
 }
 
 // particle flag
-
-bool node::isInsideParticle() const {
-    return p;
-}
 
 void node::setInsideParticle() {
     p = true;

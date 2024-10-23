@@ -175,18 +175,18 @@ public:
     bool isActive() const;
     bool isWall() const;
     bool isCurvedWall() const;
-    bool isSlipStatWall() const; 
-    bool isSlipDynWall() const;
-    bool isStatWall() const;
-    bool isDynWall() const;
-    bool isCylinderWall() const;
-    bool isObjectWall() const;
-    bool isTopography() const;
-    bool isOutlet() const;
-    bool isInterface() const;
-    bool isFluid() const;
-    bool isGas() const;
-    bool isPeriodic() const;
+    inline bool isSlipStatWall() const { return type == SLIP_STAT_WALL; }
+    inline bool isSlipDynWall() const { return type == SLIP_DYN_WALL; }
+    inline bool isStatWall() const { return type == STAT_WALL; }
+    inline bool isDynWall() const { return type == DYN_WALL; }
+    inline bool isCylinderWall() const { return type == CYL; }
+    inline bool isObjectWall() const { return type == OBJ; }
+    inline bool isTopography() const { return type == TOPO; }
+    inline bool isOutlet() const { return type == OUTLET; }
+    inline bool isInterface() const { return type == INTERFACE; }
+    inline bool isFluid() const { return type == LIQUID; }
+    inline bool isGas() const { return type == GAS; }
+    inline bool isPeriodic() const { return type == PERIODIC; }
     // functions for change of type
     void setSlipStatWall();
     void setSlipDynWall();
@@ -203,7 +203,7 @@ public:
     void setType(const types& typ);
     //unsigned int getType() const;
     // particle flag
-    bool isInsideParticle() const;
+    inline bool isInsideParticle() const { return p; };
     void setInsideParticle();
     void setOutsideParticle();
     // functions to get and assign index

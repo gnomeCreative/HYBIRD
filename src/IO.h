@@ -60,6 +60,10 @@ public:
     double maxTime;
     // intervals for output
     double screenExpTime, stateExpTime, fluidExpTime, fluidLagrangianExpTime, fluid2DExpTime, partExpTime, objectExpTime, singleObjectExpTime, cylinderExpTime;
+    // Formats for output
+    enum ParaviewFormat {
+        Binary, BinaryLowMem, Ascii
+    } fluidLagrangianFormat = Binary, partExpFormat = Binary;
     // recycle intervals
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
@@ -114,6 +118,7 @@ private:
     unsigned int lastPartExp;
     string partFileFormat;
     void exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile);
+    void exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile);
     
     // object paraview file
     unsigned int lastObjectExp;
@@ -129,6 +134,9 @@ private:
     unsigned int lastFluidExp;
     string fluidFileFormat;
     void exportEulerianParaviewFluid(const LB& lb, const string& fluidFile);
+    void exportEulerianParaviewFluid_binary(const LB& lb, const string& fluidFile);
+    void exportEulerianParaviewFluid_binaryv2(const LB& lb, const string& fluidFile);
+    void exportEulerianParaviewFluid_binaryv3(const LB& lb, const string& fluidFile);
     
     // Lagrangian fluid paraview file
     unsigned int lastFluidLagrangianExp;

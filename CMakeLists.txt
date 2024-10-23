@@ -101,3 +101,15 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Stricter warnings
     target_compile_options(hybird PRIVATE "$<$<COMPILE_LANGUAGE:C,CXX>:/W4>")
 endif()
+
+# Static stdlib (required by Intel VTune)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    option(HYBIRD_STATIC_STDLIB "If enabled link against static stdlib, only necessary for Intel VTune profiler." OFF)
+    # Required for intel vtune
+    if (HYBIRD_STATIC_STDLIB)
+        target_link_options(hybird PRIVATE -static-libgcc -static-libstdc++)
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # todo, test the correct configuration for MSVC 
+    # set_property(TARGET hybird PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
