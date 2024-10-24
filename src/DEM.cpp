@@ -186,6 +186,8 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
     }
     cout << " done" << endl;
 
+    // copy object file to the work directory
+
     // numerical viscosity for stability
     PARSE_CLASS_MEMBER(configFile, numVisc, "numVisc", 0.0);
     // set multiplication number (sets the number of DEM steps between two fluid steps)
