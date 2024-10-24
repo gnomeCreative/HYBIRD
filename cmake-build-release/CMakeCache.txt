@@ -213,11 +213,18 @@ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 //Value Computed by CMake
 HYBIRD_BINARY_DIR:STATIC=/cygdrive/c/codes/hybird/submarine/HYBIRD/cmake-build-release
 
+//If Off OpenMP support will not be enabled
+HYBIRD_ENABLE_OPENMP:BOOL=ON
+
 //Value Computed by CMake
 HYBIRD_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 HYBIRD_SOURCE_DIR:STATIC=/cygdrive/c/codes/hybird/submarine/HYBIRD
+
+//If enabled link against static stdlib, only necessary for Intel
+// VTune profiler.
+HYBIRD_STATIC_STDLIB:BOOL=OFF
 
 //CXX compiler flags for OpenMP parallelization
 OpenMP_CXX_FLAGS:STRING=-fopenmp
