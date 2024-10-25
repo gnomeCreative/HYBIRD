@@ -136,6 +136,8 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
         int a;
         a = filesystem::create_directories(io.workDirectory);
         cout << "Work directory created = " << io.workDirectory << ". Result: " << a << "\n";
+
+        // Andrea's Version
         try {
             // Manually extract the filename from the full path
             std::string configFileName = io.configFileName.substr(io.configFileName.find_last_of("/\\") + 1);
@@ -157,16 +159,28 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
             cout << "Failed to copy config to working directory. Result: " << e.what() << "\n";
         }
 
-
-
-        // try  {
-        //     std::filesystem::copy_file(io.configFileName,
-        //         std::filesystem::path(io.workDirectory)/std::filesystem::path(io.configFileName).filename());
+        // Rob's Version
+        // try {
+        //     // Ensure configFileName contains only the filename, stripping the full path if necessary
+        //     std::string configFileName = std::filesystem::path(io.configFileName).filename().string();
+        //
+        //     // Construct the destination path by combining the work directory and the extracted filename
+        //     std::filesystem::path destination = std::filesystem::path(io.workDirectory) / configFileName;
+        //
+        //     // Debugging: Print the paths being used
+        //     std::cout << "Source config file: " << io.configFileName << "\n";
+        //     std::cout << "Extracted filename: " << configFileName << "\n";
+        //     std::cout << "Work directory: " << io.workDirectory << "\n";
+        //     std::cout << "Destination path: " << destination << "\n";
+        //
+        //     // Copy the file from source to destination
+        //     std::filesystem::copy_file(io.configFileName, destination);
+        //
+        //     std::cout << "Configuration file copied successfully to: " << destination << "\n";
         // } catch (std::filesystem::filesystem_error& e) {
-        //     cout << "Failed to copy config to working directory. Result: " << e.what() << "\n";
+        //     std::cout << "Failed to copy config to working directory. Result: " << e.what() << "\n";
         // }
-        // std::system(("cp '" + io.configFileName + "' '" + io.workDirectory + "'").c_str());
-        getchar();
+
     }
     // make sure the config files can be read
     std::ifstream configFile(io.configFileName.c_str());
