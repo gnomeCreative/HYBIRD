@@ -233,6 +233,8 @@ public:
     double grav;
     // elastic potential energy
     double elastic;
+    // turbulent kinetic energy
+    double turbulent;
     // total energy
     double total;
     energy(){
@@ -241,6 +243,7 @@ public:
         trKin=0.0;
         grav=0.0;
         elastic=0.0;
+        turbulent = 0.0;
         total=0.0;
     }
     void reset();

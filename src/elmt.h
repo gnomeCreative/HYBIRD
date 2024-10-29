@@ -126,6 +126,8 @@ public:
     double maxDtOverlap;
     // whether the element is slipping on a wall
     int slippingCase;
+    // particle elastic energy
+    double elasticEnergy;
     // default constructor
     elmt() {
         //
@@ -167,6 +169,7 @@ public:
         components.resize(size);
         fluidVolume=0.0;
         maxOverlap=0.0;
+        elasticEnergy = 0.0;
     }
     void elmtShow()const;
     void initialize(const double& partDensity, std::vector <vecList>& prototypes, tVect& demF);

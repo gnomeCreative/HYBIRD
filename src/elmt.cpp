@@ -85,6 +85,8 @@ void elmt::initialize(const double& partDensity, std::vector <vecList>& prototyp
 	MLub.reset();
     MWall.reset();
 	MLubWall.reset();
+
+    elasticEnergy = 0.0;
     
 }
 

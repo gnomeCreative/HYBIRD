@@ -1,0 +1,987 @@
+﻿  Building Custom Rule E:/HYBIRD/CMakeLists.txt
+  DEM.cpp
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(232,75): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(659,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(716,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(946,12): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(975,15): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(981,20): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         with
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         [
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         ]
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(998,15): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         with
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         [
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         ]
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         ]
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1014,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         ]
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1033,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         ]
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1086,17): warning C4458: se si dichiara 'section', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/DEM.cpp')
+      E:\HYBIRD\src\getpot.h(300,27):
+      vedere la dichiarazione di 'GetPot::section'
+  
+E:\HYBIRD\src\getpot.h(1131,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1191,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1232,5): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1269,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1360,19): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,38): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,30): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1482,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1826,26): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(1898,27): warning C4458: se si dichiara 'prefix', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/DEM.cpp')
+      E:\HYBIRD\src\getpot.h(299,27):
+      vedere la dichiarazione di 'GetPot::prefix'
+  
+E:\HYBIRD\src\getpot.h(2005,24): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(2042,18): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(2043,37): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,32): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,19): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\getpot.h(2285,24): warning C4267: '=': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+  
+E:\HYBIRD\src\DEM.cpp(93,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(153,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(236,35): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(249,30): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(354,47): warning C4244: '=': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(373,35): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(422,20): warning C4189: 'frac': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(854,20): warning C4189: 'a': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(1354,26): warning C4189: 'erodibleSizeX': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(1669,31): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(1965,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(1989,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(2199,76): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(2199,21): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(2388,53): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(2388,37): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\DEM.cpp(2474,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(2498,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(2501,26): warning C4189: 'radiusPartHere': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(2503,30): warning C4189: 'radiusObjHere': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(2521,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(2579,31): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\DEM.cpp(2864,78): warning C4100: 'spacing': parametro formale senza riferimenti
+E:\HYBIRD\src\DEM.cpp(2864,48): warning C4100: 'fluidviscosity': parametro formale senza riferimenti
+E:\HYBIRD\src\DEM.cpp(3718,15): warning C4189: 'normTangRelVelContact': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(3795,18): warning C4189: 'normTangRelVelContact': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\DEM.cpp(3928,66): warning C4100: 'tangRelVelContact': parametro formale senza riferimenti
+E:\HYBIRD\src\DEM.cpp(3968,20): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\getpot.h(1371,25): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+      E:\HYBIRD\src\getpot.h(1371,25):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1384,35):
+          vedere il riferimento all'istanza 'T GetPot::next<std::string>(const T &)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+E:\HYBIRD\src\getpot.h(1463,53): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/DEM.cpp')
+      E:\HYBIRD\src\getpot.h(1463,53):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1470,35):
+          vedere il riferimento all'istanza 'T GetPot::direct_follow<std::string>(const T &,const char *)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+  elmt.cpp
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/elmt.cpp')
+  
+E:\HYBIRD\src\elmt.cpp(70,20): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\elmt.cpp(131,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+  hybird.cpp
+E:\HYBIRD\src\getpot.h(232,75): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(659,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(716,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(946,12): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(975,15): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(981,20): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         with
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         [
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         ]
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(998,15): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         with
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         [
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         ]
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         ]
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1014,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         ]
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1033,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         ]
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1086,17): warning C4458: se si dichiara 'section', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/hybird.cpp')
+      E:\HYBIRD\src\getpot.h(300,27):
+      vedere la dichiarazione di 'GetPot::section'
+  
+E:\HYBIRD\src\getpot.h(1131,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1191,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1232,5): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1269,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1360,19): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,38): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,30): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1482,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1826,26): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(1898,27): warning C4458: se si dichiara 'prefix', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/hybird.cpp')
+      E:\HYBIRD\src\getpot.h(299,27):
+      vedere la dichiarazione di 'GetPot::prefix'
+  
+E:\HYBIRD\src\getpot.h(2005,24): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(2042,18): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(2043,37): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,32): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,19): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\getpot.h(2285,24): warning C4267: '=': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/hybird.cpp')
+  
+E:\HYBIRD\src\hybird.cpp(233,31): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\hybird.cpp(282,35): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\hybird.cpp(283,47): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\hybird.cpp(284,45): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\hybird.cpp(334,13): warning C4244: '=': conversione da 'T' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\hybird.cpp(334,13): warning C4244:         with
+E:\HYBIRD\src\hybird.cpp(334,13): warning C4244:         [
+E:\HYBIRD\src\hybird.cpp(334,13): warning C4244:             T=double
+E:\HYBIRD\src\hybird.cpp(334,13): warning C4244:         ]
+E:\HYBIRD\src\hybird.cpp(336,13): warning C4244: '=': conversione da 'T' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\hybird.cpp(336,13): warning C4244:         with
+E:\HYBIRD\src\hybird.cpp(336,13): warning C4244:         [
+E:\HYBIRD\src\hybird.cpp(336,13): warning C4244:             T=double
+E:\HYBIRD\src\hybird.cpp(336,13): warning C4244:         ]
+E:\HYBIRD\src\hybird.cpp(432,14): warning C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\getpot.h(1371,25): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+      E:\HYBIRD\src\getpot.h(1371,25):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1384,35):
+          vedere il riferimento all'istanza 'T GetPot::next<std::string>(const T &)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+E:\HYBIRD\src\getpot.h(1463,53): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/hybird.cpp')
+      E:\HYBIRD\src\getpot.h(1463,53):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1470,35):
+          vedere il riferimento all'istanza 'T GetPot::direct_follow<std::string>(const T &,const char *)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+  IO.cpp
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(232,75): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(659,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(716,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(946,12): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(975,15): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(981,20): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         with
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         [
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         ]
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(998,15): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         with
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         [
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         ]
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         ]
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1014,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         ]
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1033,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         ]
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1086,17): warning C4458: se si dichiara 'section', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/IO.cpp')
+      E:\HYBIRD\src\getpot.h(300,27):
+      vedere la dichiarazione di 'GetPot::section'
+  
+E:\HYBIRD\src\getpot.h(1131,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1191,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1232,5): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1269,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1360,19): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,38): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,30): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1482,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1826,26): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(1898,27): warning C4458: se si dichiara 'prefix', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/IO.cpp')
+      E:\HYBIRD\src\getpot.h(299,27):
+      vedere la dichiarazione di 'GetPot::prefix'
+  
+E:\HYBIRD\src\getpot.h(2005,24): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(2042,18): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(2043,37): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,32): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,19): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\getpot.h(2285,24): warning C4267: '=': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+  
+E:\HYBIRD\src\IO.cpp(27,13): warning C4456: se si dichiara 'a', la dichiarazione locale precedente verrà nascosta
+      E:\HYBIRD\src\IO.cpp(14,10):
+      vedere la dichiarazione di 'a'
+  
+E:\HYBIRD\src\IO.cpp(417,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(250,30): warning C4189: 'deltaRemoveIsolated': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(249,30): warning C4189: 'deltaUpdateMutants': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(243,30): warning C4189: 'deltaFreeSurface': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(245,30): warning C4189: 'deltaUpdateInterface': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(246,30): warning C4189: 'deltaFindMutants': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(248,30): warning C4189: 'deltaSmoothenInterface_2': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(251,30): warning C4189: 'deltaRedistributeMass': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(247,30): warning C4189: 'deltaSmoothenInterface_1': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(244,30): warning C4189: 'deltaUpdateMass': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(446,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(456,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(466,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(479,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(487,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(498,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(509,13): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+E:\HYBIRD\src\IO.cpp(528,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(536,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(561,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(562,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(583,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(584,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(592,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(593,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(627,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(629,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(703,47): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(703,41): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(704,46): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(704,39): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(754,39): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(754,23): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(935,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(940,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(945,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(961,37): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(961,23): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1041,39): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1041,23): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1404,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1427,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1453,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1467,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1478,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1489,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1500,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(1590,18): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1591,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1592,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1595,18): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1596,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1597,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1600,18): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1601,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1602,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1607,18): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1608,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1609,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1612,18): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1613,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1614,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1617,18): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1618,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1619,20): warning C4244: '=': conversione da 'const double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1659,12): warning C4189: 'totMass': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(1743,41): warning C4244: 'argomento': conversione da 'unsigned __int64' a 'const double'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1744,41): warning C4244: 'argomento': conversione da 'unsigned __int64' a 'const double'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(1931,9): warning C4189: 'wallStress': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\IO.cpp(2018,72): warning C4267: 'argomento': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(2289,15): warning C4018: '>=': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2289,34): warning C4018: '<=': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2310,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2329,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2379,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2384,37): warning C4389: '==': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2387,44): warning C4389: '==': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2494,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2499,37): warning C4389: '==': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2502,44): warning C4389: '==': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2539,35): warning C4244: 'argomento': conversione da 'double' a '_Ty'. Possibile perdita di dati.
+E:\HYBIRD\src\IO.cpp(2539,35): warning C4244:         with
+E:\HYBIRD\src\IO.cpp(2539,35): warning C4244:         [
+E:\HYBIRD\src\IO.cpp(2539,35): warning C4244:             _Ty=unsigned int
+E:\HYBIRD\src\IO.cpp(2539,35): warning C4244:         ]
+E:\HYBIRD\src\IO.cpp(2760,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2769,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2793,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2796,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2799,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2802,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2805,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\IO.cpp(2749,12): warning C4189: 'heapHeight': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\getpot.h(1371,25): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+      E:\HYBIRD\src\getpot.h(1371,25):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1384,35):
+          vedere il riferimento all'istanza 'T GetPot::next<std::string>(const T &)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+E:\HYBIRD\src\getpot.h(1463,53): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/IO.cpp')
+      E:\HYBIRD\src\getpot.h(1463,53):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1470,35):
+          vedere il riferimento all'istanza 'T GetPot::direct_follow<std::string>(const T &,const char *)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+  LB.cpp
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(232,75): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(659,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(716,9): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(946,12): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(975,15): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(981,20): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         with
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         [
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(981,20): warning C4244:         ]
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(998,15): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         with
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         [
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(998,15): warning C4244:         ]
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1003,11): warning C4244:         ]
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1014,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1021,9): warning C4244:         ]
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1033,17): warning C4127: espressione condizionale costante
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244: 'argomento': conversione da 'int' a '_Elem'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         with
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         [
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:             _Elem=char
+E:\HYBIRD\src\getpot.h(1044,9): warning C4244:         ]
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1086,17): warning C4458: se si dichiara 'section', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/LB.cpp')
+      E:\HYBIRD\src\getpot.h(300,27):
+      vedere la dichiarazione di 'GetPot::section'
+  
+E:\HYBIRD\src\getpot.h(1131,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1191,25): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1232,5): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1269,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1360,19): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,38): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1479,30): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1482,60): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1826,26): warning C4267: 'return': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(1898,27): warning C4458: se si dichiara 'prefix', il membro della classe verrà nascosto
+  (compilazione del file di origine 'src/LB.cpp')
+      E:\HYBIRD\src\getpot.h(299,27):
+      vedere la dichiarazione di 'GetPot::prefix'
+  
+E:\HYBIRD\src\getpot.h(2005,24): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(2042,18): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(2043,37): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,32): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(2107,19): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\getpot.h(2285,24): warning C4267: '=': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+  
+E:\HYBIRD\src\LB.cpp(151,13): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(154,13): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(157,13): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(160,13): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(161,13): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(165,14): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(166,14): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(170,14): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(171,14): warning C4146: l'operatore 'meno' unario è stato applicato al tipo unsigned. Il risultato resta unsigned
+E:\HYBIRD\src\LB.cpp(199,9): warning C4805: '==': combinazione non affidabile dei tipi 'double' e 'bool' nell'operazione
+E:\HYBIRD\src\LB.cpp(543,43): warning C4244: 'argomento': conversione da 'unsigned __int64' a 'double'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(862,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(863,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(878,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(879,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(894,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(895,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1056,55): warning C4244: 'inizializzazione': conversione da 'unsigned int' a 'unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1056,44): warning C4244: 'inizializzazione': conversione da 'unsigned int' a 'const unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1060,29): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1050,18): warning C4189: 'wallThickness': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(1118,29): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1124,41): warning C4244: 'argomento': conversione da 'const unsigned int' a 'const unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1143,29): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1168,45): warning C4244: 'argomento': conversione da 'const unsigned int' a 'const unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1212,29): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1213,33): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1215,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1287,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1327,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1364,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1386,35): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1388,35): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1390,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1402,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1425,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1442,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1460,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1478,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1498,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1518,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1533,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1549,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1579,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1581,43): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1582,43): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1603,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1629,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1649,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1664,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1681,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1685,62): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1685,49): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1705,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1729,35): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1730,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1745,35): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1746,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1764,37): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1303,37): warning C4100: 'totParticles': parametro formale senza riferimenti
+E:\HYBIRD\src\LB.cpp(1566,30): warning C4189: 'outletSizeY': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(1568,30): warning C4189: 'obstacleSizeY': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(1567,30): warning C4189: 'obstacleSizeX': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(1571,30): warning C4189: 'edgeRadius': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(1813,23): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\LB.cpp(1828,22): warning C4244: 'argomento': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1831,19): warning C4244: 'argomento': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1832,19): warning C4244: 'argomento': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1833,26): warning C4244: 'argomento': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1835,19): warning C4244: 'argomento': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1865,41): warning C4244: 'argomento': conversione da 'const unsigned int' a 'const unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1849,22): warning C4189: 'indexHere': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(1904,53): warning C4244: 'argomento': conversione da 'const unsigned int' a 'const unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(1925,22): warning C4189: 'it': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(2095,18): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(2103,18): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(2732,38): warning C4456: se si dichiara 'j', la dichiarazione locale precedente verrà nascosta
+      E:\HYBIRD\src\LB.cpp(2369,18):
+      vedere la dichiarazione di 'j'
+  
+E:\HYBIRD\src\LB.cpp(2866,32): warning C4244: '=': conversione da 'const _Ty' a 'float'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(2866,32): warning C4244:         with
+E:\HYBIRD\src\LB.cpp(2866,32): warning C4244:         [
+E:\HYBIRD\src\LB.cpp(2866,32): warning C4244:             _Ty=double
+E:\HYBIRD\src\LB.cpp(2866,32): warning C4244:         ]
+E:\HYBIRD\src\LB.cpp(2871,36): warning C4244: '=': conversione da 'const _Ty' a 'float'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(2871,36): warning C4244:         with
+E:\HYBIRD\src\LB.cpp(2871,36): warning C4244:         [
+E:\HYBIRD\src\LB.cpp(2871,36): warning C4244:             _Ty=double
+E:\HYBIRD\src\LB.cpp(2871,36): warning C4244:         ]
+E:\HYBIRD\src\LB.cpp(2930,18): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3074,34): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(2956,36): warning C4100: 'massSurplus': parametro formale senza riferimenti
+E:\HYBIRD\src\LB.cpp(3172,15): warning C4189: 'nodeHere': variabile locale inizializzata ma senza riferimenti
+E:\HYBIRD\src\LB.cpp(3229,18): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3253,18): warning C4267: 'inizializzazione': conversione da 'size_t' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3532,61): warning C4244: 'argomento': conversione da 'unsigned int' a 'const unsigned short'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3818,52): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3818,38): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3828,52): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3828,38): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3838,52): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3838,38): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3882,42): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3882,34): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3883,41): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3883,33): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3907,42): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3907,34): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3908,41): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3908,33): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3929,42): warning C4244: 'inizializzazione': conversione da 'double' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\LB.cpp(3929,34): warning C4244: 'inizializzazione': conversione da 'double' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\getpot.h(1371,25): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+      E:\HYBIRD\src\getpot.h(1371,25):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1384,35):
+          vedere il riferimento all'istanza 'T GetPot::next<std::string>(const T &)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+E:\HYBIRD\src\getpot.h(1463,53): warning C4267: '=': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/LB.cpp')
+      E:\HYBIRD\src\getpot.h(1463,53):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) è
+          E:\HYBIRD\src\getpot.h(1470,35):
+          vedere il riferimento all'istanza 'T GetPot::direct_follow<std::string>(const T &,const char *)' della funzione modello di cui è in corso la compilazione
+          with
+          [
+              T=std::string
+          ]
+  
+  node.cpp
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/node.cpp')
+  
+E:\HYBIRD\src\node.cpp(34,11): warning C4244: '=': conversione da 'const double' a 'float'. Possibile perdita di dati.
+E:\HYBIRD\src\node.cpp(66,32): warning C4458: se si dichiara 'extraMass', il membro della classe verrà nascosto
+      E:\HYBIRD\src\node.h(91,27):
+      vedere la dichiarazione di 'node::extraMass'
+  
+E:\HYBIRD\src\node.cpp(78,52): warning C4267: 'inizializzazione': conversione da 'size_t' a 'unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\node.cpp(78,33): warning C4267: 'inizializzazione': conversione da 'size_t' a 'const unsigned int'. Possibile perdita di dati.
+E:\HYBIRD\src\node.cpp(80,18): warning C4458: se si dichiara 'n', il membro della classe verrà nascosto
+      E:\HYBIRD\src\node.h(79,12):
+      vedere la dichiarazione di 'node::n'
+  
+E:\HYBIRD\src\node.cpp(80,27): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\node.cpp(118,21): warning C4456: se si dichiara 'vmu', la dichiarazione locale precedente verrà nascosta
+      E:\HYBIRD\src\node.cpp(114,11):
+      vedere la dichiarazione di 'vmu'
+  
+E:\HYBIRD\src\node.cpp(102,40): warning C4100: 'F': parametro formale senza riferimenti
+E:\HYBIRD\src\node.cpp(111,18): warning C4189: 'omegaF': variabile locale inizializzata ma senza riferimenti
+  utils.cpp
+E:\HYBIRD\src\myvector.inl(160,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\myvector.inl(160,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\myvector.inl(161,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,39): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\myvector.inl(162,17): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\myvector.inl(242,47): warning C4100: 'quat': parametro formale senza riferimenti
+  (compilazione del file di origine 'src/utils.cpp')
+  
+E:\HYBIRD\src\utils.cpp(311,25): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\utils.cpp(314,29): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\utils.cpp(355,29): warning C4018: '<': errata corrispondenza tra signed e unsigned
+E:\HYBIRD\src\utils.cpp(399,27): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(399,20): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(400,14): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(402,27): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(402,20): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(403,14): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(442,27): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(442,20): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(443,14): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(445,27): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(445,20): warning C4244: 'inizializzazione': conversione da 'double' a 'const int'. Possibile perdita di dati.
+E:\HYBIRD\src\utils.cpp(446,14): warning C4244: 'inizializzazione': conversione da 'double' a 'int'. Possibile perdita di dati.
+  Generazione del codice in corso...
+E:\HYBIRD\src\IO.cpp(2528,1): warning C4701: utilizzata variabile locale 'numPartInt' potenzialmente non inizializzata
+E:\HYBIRD\src\myvector.inl(165,1): warning C4702: codice non eseguibile
+E:\HYBIRD\src\DEM.cpp(2740,1): warning C4701: utilizzata variabile locale 'elongation_here_new' potenzialmente non inizializzata
+E:\HYBIRD\src\DEM.cpp(2740,1): warning C4703: utilizzata variabile puntatore locale non inizializzata 'elongation_here_new'
+E:\HYBIRD\src\DEM.cpp(2811,1): warning C4701: utilizzata variabile locale 'elongation_here_new' potenzialmente non inizializzata
+E:\HYBIRD\src\DEM.cpp(2811,1): warning C4703: utilizzata variabile puntatore locale non inizializzata 'elongation_here_new'
+E:\HYBIRD\src\DEM.cpp(2858,1): warning C4701: utilizzata variabile locale 'elongation_here_new' potenzialmente non inizializzata
+E:\HYBIRD\src\DEM.cpp(2858,1): warning C4703: utilizzata variabile puntatore locale non inizializzata 'elongation_here_new'
+E:\HYBIRD\src\DEM.cpp(2891,1): warning C4701: utilizzata variabile locale 'elongation_here_new' potenzialmente non inizializzata
+E:\HYBIRD\src\DEM.cpp(2891,1): warning C4703: utilizzata variabile puntatore locale non inizializzata 'elongation_here_new'
+  hybird.vcxproj -> E:\HYBIRD\bin\Release\hybird.exe

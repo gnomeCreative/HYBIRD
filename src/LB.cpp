@@ -3561,6 +3561,23 @@ void LB::updateEnergy(double& totalKineticEnergy) {
 
     // elastic is missing
 
+    // turbulent kinetic energy
+    double tKinTurb(0.0), tpKinTurb(0.0);
+
+    for (int it = 0; it < activeNodes.size(); ++it) {
+        node* nodeHere = activeNodes[it];
+        if (nodeHere->isInsideParticle()) {
+            tpKinTurb += 0.5 * nodeHere->mass * nodeHere->u.norm2();
+        }
+        else {
+            tKinTurb += 0.5 * nodeHere->mass * nodeHere->u.norm2();
+        }
+    }
+
+    fluidEnergy.turbulent = tKinTurb;
+
+    fluidImmersedEnergy.turbulent = tpKinTurb;
+
     // total
     fluidEnergy.updateTotal();
     fluidImmersedEnergy.updateTotal();

@@ -1798,6 +1798,7 @@ void DEM::evaluateForces(const double& fluidviscosity, const double& spacing) {
         elmts[n].FSpringP.reset();
         elmts[n].FSpringW.reset();
         elmts[n].MRolling.reset();
+        elmts[n].elasticEnergy = 0.0;
         // reset also apparent accellerations
         elmts[n].ACoriolis.reset();
         elmts[n].ACentrifugal.reset();
@@ -2963,7 +2964,7 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
     }
 
     // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
-
+    tVect tangForce;
     // angular velocities (global reference frame)
     const tVect wI = elmtI->wpGlobal; //2.0*quat2vec( elmtI->qp1.multiply( elmtI->qp0.adjoint() ) );
     const tVect wJ = elmtJ->wpGlobal; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
@@ -3020,6 +3021,27 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
             }
         }
 
+    }
+
+    double overlapElasticEnergy = 0.5 * (0.5 * normalForce.norm2() / sphereMat.linearStiff+ 0.5 * tangForce.norm2() / sphereMat.linearStiff*7/2)/(demSize[0] * demSize[1] * (demSize[2]-2*avgParticleDiam));
+    //cout << "energia elastica" << avgParticleDiam << endl;
+
+    // Overlap elastic potential energy
+    if (!partI->isGhost) {
+        if (elmtI->x1.x != shearVelocity) {
+            if (elmtI->x1.x != -shearVelocity) {
+                elmtI->elasticEnergy = elmtI->elasticEnergy + overlapElasticEnergy;
+                //cout << "energia elastica" << elmtI->elasticEnergy << endl;
+            }
+        }
+    }
+    if (!partJ->isGhost) {
+        if (elmtJ->x1.x != shearVelocity) {
+            if (elmtJ->x1.x != -shearVelocity) {
+                elmtJ->elasticEnergy = elmtJ->elasticEnergy + overlapElasticEnergy;
+                //cout << "energia elastica" << overlapElasticEnergy << endl;
+            }
+        }
     }
 
 
@@ -3647,7 +3669,15 @@ void DEM::updateEnergy(double& totalKineticEnergy) {
     }
     particleEnergy.grav = g;
 
-    // elastic is missing
+    // elastic
+    // 
+    double el = 0.0;
+    for (int n = 0; n < elmts.size(); n++) {
+        el += elmts[n].elasticEnergy;
+    }
+    //cout << "energia elastica" << el << endl;
+    particleEnergy.elastic = el;
+    
 
     // total
     particleEnergy.updateTotal();

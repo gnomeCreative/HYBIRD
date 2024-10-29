@@ -87,6 +87,12 @@ void IO::initialize() {
             temperatureFile.open(temperatureFileName.c_str(), ios::app);
             temperatureFile << "time, temperature\n";
             temperatureFile.close();
+
+            //  initializing fluid flow rate file
+            energycontributionFileName = workDirectory + "/energy_contribution.dat";
+            energycontributionFile.open(energycontributionFileName.c_str(), ios::app);
+            energycontributionFile << "time, elasticenergy, kineticfluctuatingenergy, ratio\n";
+            energycontributionFile.close();
 		}
     }
 
@@ -853,6 +859,12 @@ void IO::exportParaviewParticles(const elmtList& elmts, const particleList& part
     for (int i = 0; i < Pnumber; ++i) {
         if (particles[i].active) {
             elmts[particles[i].clusterIndex].solidIntensity.printFixedLine(paraviewParticleFile);
+        }
+    }
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"elastic energy\"/>\n";
+    for (int i = 0; i < Pnumber; ++i) {
+        if (particles[i].active) {
+            paraviewParticleFile << elmts[particles[i].clusterIndex].elasticEnergy << "\n";
         }
     }
     //    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FCoriolis\" NumberOfComponents=\"3\"/>\n";
@@ -2905,11 +2917,17 @@ void IO::calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, do
                 sumT = sumT + velflutx * velflutx + velfluty * velfluty + velflutz * velflutz;
                 //cout << "sumT" << sumT << endl;
                 npart = npart + 1;
+                //cout << "T" << lb.lbSize[2] << endl;
             }
         }
     }
 
-    temperature = 1 / 3 * 1 / npart * sumT;
+    temperature = (1.0 / 3.0) * (sumT / npart);
+    double concentration = npart*1.0 / 6.0 * 3.14159 * dem.avgParticleDiam * dem.avgParticleDiam * dem.avgParticleDiam / (double(lb.lbSize[0] - 2) * lb.unit.Length * double(lb.lbSize[1] - 2) *lb.unit.Length*(double(lb.lbSize[2] - 2) * lb.unit.Length-2*dem.avgParticleDiam));
+    double porosity = 1 - concentration;
+    double voidratio = porosity / (1 - porosity);
+    fluctuatingenergy = (3.0 / 2.0) * dem.sphereMat.density / (1.0 + voidratio) * temperature;
+    //cout << "bananaaaaaaaaaaaaaaa" << voidratio << endl;
 }
 
 tVect IO::fluidCenterOfMass(const LB& lb) const {

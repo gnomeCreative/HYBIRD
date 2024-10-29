@@ -1,0 +1,3 @@
+/cygdrive/e/HYBIRD/build/CMakeFiles/hybird.dir
+/cygdrive/e/HYBIRD/build/CMakeFiles/edit_cache.dir
+/cygdrive/e/HYBIRD/build/CMakeFiles/rebuild_cache.dir

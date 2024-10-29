@@ -1,0 +1,4 @@
+Cannot generate into E:\HYBIRD
+It was created with incompatible generator 'CodeBlocks - Unix Makefiles'
+
+Please either delete it manually or select another generation directory

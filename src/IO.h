@@ -197,6 +197,11 @@ private:
 
     string temperatureFileName;
     ofstream temperatureFile;
+
+    //temperature file
+
+    string energycontributionFileName;
+    ofstream energycontributionFile;
     
    // particle flow rate file
     string particleFlowRateFileName;
