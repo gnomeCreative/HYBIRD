@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="HYBIRD"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="E:/HYBIRD"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hybird">
+				<Option output="E:/HYBIRD/bin/Release/hybird.exe" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="E:/HYBIRD"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include/c++"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include/c++/x86_64-pc-cygwin"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include/c++/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/../../../../lib/../include/w32api"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 hybird"/>
+					<CompileFile command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hybird/fast">
+				<Option output="E:/HYBIRD/bin/Release/hybird.exe" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="E:/HYBIRD"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include/c++"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include/c++/x86_64-pc-cygwin"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include/c++/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/11/../../../../lib/../include/w32api"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 hybird/fast"/>
+					<CompileFile command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="E:/HYBIRD"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="E:/HYBIRD"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/cygwin64/bin/make.exe -f &quot;E:/HYBIRD/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="E:/HYBIRD/src/DEM.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/DEM.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/IO.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/IO.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/LB.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/LB.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/elmt.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/elmt.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/getpot.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/hybird.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/lattice.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/macros.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/myvector.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/myvector.inl">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/node.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/node.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/utils.cpp">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/src/utils.h">
+			<Option target="hybird"/>
+		</Unit>
+		<Unit filename="E:/HYBIRD/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

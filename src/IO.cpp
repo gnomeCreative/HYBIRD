@@ -2903,7 +2903,7 @@ void IO::calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, do
                 double velflutz = velz - velmediaz;
                 
                 sumT = sumT + velflutx * velflutx + velfluty * velfluty + velflutz * velflutz;
-                cout << "sumT" << sumT << endl;
+                //cout << "sumT" << sumT << endl;
                 npart = npart + 1;
             }
         }
