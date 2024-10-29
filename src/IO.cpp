@@ -2647,12 +2647,13 @@ void IO::exportShearCell2023bumpy(const LB& lb, const DEM& dem) {
 	double tauBottomSolid = 0.0;
 
     double temperature = 0.0;
+    double fluctuatingenergy = 0.0;
 
 	apparentViscosity2023bumpy(lb, dem, dem.elmts, externalShear, appVisc, tauUp, tauBottom, tauLubUp, tauLubBottom, tauUpSolid, tauBottomSolid);
 	cout << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
 	exportFile << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
 
-    calctemperature(lb, dem, dem.elmts, temperature);
+    calctemperature(lb, dem, dem.elmts, temperature, fluctuatingenergy);
 
 	//tVect xDirec = tVect(1.0, 0.0, 0.0);
 	//cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FHydro.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FHydro.dot(xDirec) << " ";
@@ -2672,6 +2673,12 @@ void IO::exportShearCell2023bumpy(const LB& lb, const DEM& dem) {
     temperatureFile.open(temperatureFileName.c_str(), ios::app);
     temperatureFile << realTime << " " << temperature << "\n";
     temperatureFile.close();
+
+    // printing rate
+    double ratio = dem.particleEnergy.elastic / (fluctuatingenergy+dem.particleEnergy.elastic);
+    energycontributionFile.open(energycontributionFileName.c_str(), ios::app);
+    energycontributionFile << realTime << " " << dem.particleEnergy.elastic << " " << fluctuatingenergy << " " << ratio << "\n";
+    energycontributionFile.close();
 }
 
 void IO::exportEnergy(const DEM& dem, const LB& lb) {
@@ -2892,7 +2899,7 @@ void IO::apparentViscosity2023bumpy(const LB& lb, const DEM& dem, const elmtList
 }
 
 
-void IO::calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, double& temperature) const {
+void IO::calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, double& temperature, double& fluctuatingenergy) const {
     double sumT = 0.0;
     double npart = 0.0;
     for (int n = 0; n < elmts.size(); ++n) {        

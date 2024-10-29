@@ -272,7 +272,7 @@ private:
     void apparentViscosity(const LB& lb, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
     void apparentViscosity2023(const LB& lb, const DEM& dem, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
 	void apparentViscosity2023bumpy(const LB& lb, const DEM& dem, const elmtList& elmts, double& externalShear, double& appVisc, double& tauUp, double& tauBottom, double& tauLubUp, double& tauLubBottom, double& tauUpSolid, double& tauBottomSolid) const;
-    void calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, double& temperature) const;
+    void calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, double& temperature, double& fluctuatingenergy) const;
 
     // AVALANCHE /////
     string obstacleFileName;
