@@ -11,11 +11,14 @@
 #include "myvector.h"
 
 // dimensions
-#define lbmDim 3
+constexpr unsigned int lbmDim = 3;
 // directions
-#define lbmDirec 19
-#define lbmDirec2D 9
-#define lbmMainDirec 7
+constexpr unsigned int lbmDirec = 19;
+constexpr unsigned int lbmDirec2D = 9;
+constexpr unsigned int lbmMainDirec = 7;
+// sqrt() is not constexpr until C++26
+// Result of sqrt(2.0)
+constexpr double sqrt_2 = 1.4142135623730950488;
 
 // LATTICE PARAMETERS  ////////////////
 // definition of parameters for the lattice
@@ -25,8 +28,7 @@
 
 // direction vectors of the lattice D3Q19
 // order is O,x,y,z,xy,yz,zx.
-
-const tVect v[lbmDirec]={    tVect(0.0,0.0,0.0), //0
+constexpr tVect v[lbmDirec]={    tVect(0.0,0.0,0.0), //0
                                   //
                                  tVect(1.0,0.0,0.0), // 1
                                  tVect(-1.0,0.0,0.0), // 2
@@ -52,7 +54,7 @@ const tVect v[lbmDirec]={    tVect(0.0,0.0,0.0), //0
                                  tVect(1.0,0.0,-1.0), // 17
                                   tVect(-1.0,0.0,1.0) }; // 18
 
-const tVect vDirec[lbmDirec]={    tVect(0.0,0.0,0.0), //0
+constexpr tVect vDirec[lbmDirec]={    tVect(0.0,0.0,0.0), //0
                                   //
                                  tVect(1.0,0.0,0.0), // 1
                                  tVect(-1.0,0.0,0.0), // 2
@@ -63,22 +65,22 @@ const tVect vDirec[lbmDirec]={    tVect(0.0,0.0,0.0), //0
                                  tVect(0.0,0.0,1.0), // 5
                                  tVect(0.0,0.0,-1.0), // 6
                                   //
-                                 tVect(1.0,1.0,0.0)/sqrt(2.0), // 7
-                                 tVect(-1.0,-1.0,0.0)/sqrt(2.0), // 8
-                                 tVect(-1.0,1.0,0.0)/sqrt(2.0), // 9
-                                 tVect(1.0,-1.0,0.0)/sqrt(2.0), // 10
+                                 tVect(1.0,1.0,0.0)/sqrt_2, // 7
+                                 tVect(-1.0,-1.0,0.0)/sqrt_2, // 8
+                                 tVect(-1.0,1.0,0.0)/sqrt_2, // 9
+                                 tVect(1.0,-1.0,0.0)/sqrt_2, // 10
                                   //
-                                 tVect(0.0,1.0,1.0)/sqrt(2.0), // 11
-                                 tVect(0.0,-1.0,-1.0)/sqrt(2.0), // 12
-                                 tVect(0.0,-1.0,1.0)/sqrt(2.0), // 13
-                                 tVect(0.0,1.0,-1.0)/sqrt(2.0), // 14
+                                 tVect(0.0,1.0,1.0)/sqrt_2, // 11
+                                 tVect(0.0,-1.0,-1.0)/sqrt_2, // 12
+                                 tVect(0.0,-1.0,1.0)/sqrt_2, // 13
+                                 tVect(0.0,1.0,-1.0)/sqrt_2, // 14
                                   //
-                                 tVect(1.0,0.0,1.0)/sqrt(2.0), // 15
-                                 tVect(-1.0,0.0,-1.0)/sqrt(2.0), // 16
-                                 tVect(1.0,0.0,-1.0)/sqrt(2.0), // 17
-                                  tVect(-1.0,0.0,1.0)/sqrt(2.0) }; // 18
+                                 tVect(1.0,0.0,1.0)/sqrt_2, // 15
+                                 tVect(-1.0,0.0,-1.0)/sqrt_2, // 16
+                                 tVect(1.0,0.0,-1.0)/sqrt_2, // 17
+                                  tVect(-1.0,0.0,1.0)/sqrt_2 }; // 18
 
-const double vNorm[lbmDirec]={    0.0, //0
+constexpr double vNorm[lbmDirec]={    0.0, //0
                                   //
                                  1.0, // 1
                                  1.0, // 2
@@ -89,24 +91,24 @@ const double vNorm[lbmDirec]={    0.0, //0
                                  1.0, // 5
                                  1.0, // 6
                                   //
-                                 sqrt(2.0), // 7
-                                 sqrt(2.0), // 8
-                                 sqrt(2.0), // 9
-                                 sqrt(2.0), // 10
+                                 sqrt_2, // 7
+                                 sqrt_2, // 8
+                                 sqrt_2, // 9
+                                 sqrt_2, // 10
                                   //
-                                 sqrt(2.0), // 11
-                                 sqrt(2.0), // 12
-                                 sqrt(2.0), // 13
-                                 sqrt(2.0), // 14
+                                 sqrt_2, // 11
+                                 sqrt_2, // 12
+                                 sqrt_2, // 13
+                                 sqrt_2, // 14
                                   //
-                                 sqrt(2.0), // 15
-                                 sqrt(2.0), // 16
-                                 sqrt(2.0), // 17
-                                 sqrt(2.0) }; // 18
+                                 sqrt_2, // 15
+                                 sqrt_2, // 16
+                                 sqrt_2, // 17
+                                 sqrt_2 }; // 18
 
 
 // tensor v_i x v_i
-const tMat vv[lbmDirec]={    tMat(v[0],v[0]),
+constexpr tMat vv[lbmDirec]={    tMat(v[0],v[0]),
                                     tMat(v[1],v[1]),
                                     tMat(v[2],v[2]),
                                     tMat(v[3],v[3]),
@@ -127,25 +129,25 @@ const tMat vv[lbmDirec]={    tMat(v[0],v[0]),
                                     tMat(v[18],v[18]) };
 
 // opposed directions (used for bounce back)
-const unsigned int opp[lbmDirec]={0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
+constexpr unsigned int opp[lbmDirec]={0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
 
-const unsigned int two_dim[lbmDirec2D]={0, 1, 2, 3, 4, 7, 8, 9, 10};
+constexpr unsigned int two_dim[lbmDirec2D]={0, 1, 2, 3, 4, 7, 8, 9, 10};
 
-const unsigned int main1[lbmDirec]={0, 1, 2, 3, 4, 5, 6, 1, 2, 2, 1, 3, 4, 3, 4, 1, 2, 1, 2};
-const unsigned int main2[lbmDirec]={0, 1, 2, 3, 4, 5, 6, 3, 4, 3, 4, 5, 6, 5, 6, 5, 6, 6, 5};
+constexpr unsigned int main1[lbmDirec]={0, 1, 2, 3, 4, 5, 6, 1, 2, 2, 1, 3, 4, 3, 4, 1, 2, 1, 2};
+constexpr unsigned int main2[lbmDirec]={0, 1, 2, 3, 4, 5, 6, 3, 4, 3, 4, 5, 6, 5, 6, 5, 6, 6, 5};
 
 // slip directions (used for slip walls)
-const unsigned int slip1CheckSup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 3, 4, 5, 6, 1, 2, 6, 5};
-const unsigned int slip1Sup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 9, 10, 8, 7, 13, 14, 12, 11, 18, 17, 15, 16};
-const unsigned int slip2CheckSup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 3, 4, 2, 1, 5, 6, 4, 3, 5, 6, 1, 2};
-const unsigned int slip2Sup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 10, 9, 7, 8, 14, 13, 11, 12, 17, 18, 16, 15};
+constexpr unsigned int slip1CheckSup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 3, 4, 5, 6, 1, 2, 6, 5};
+constexpr unsigned int slip1Sup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 9, 10, 8, 7, 13, 14, 12, 11, 18, 17, 15, 16};
+constexpr unsigned int slip2CheckSup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 3, 4, 2, 1, 5, 6, 4, 3, 5, 6, 1, 2};
+constexpr unsigned int slip2Sup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 10, 9, 7, 8, 14, 13, 11, 12, 17, 18, 16, 15};
 const unsIntList slip1Check(slip1CheckSup,slip1CheckSup+19);
 const unsIntList slip1(slip1Sup,slip1Sup+19);
 const unsIntList slip2Check(slip2CheckSup,slip2CheckSup+19);
 const unsIntList slip2(slip2Sup,slip2Sup+19);
 
 // weight coefficients for the D3Q19 lattice (universal principle of laziness)
-const double coeff[lbmDirec]={       12.0/36.0,
+constexpr double coeff[lbmDirec]={       12.0/36.0,
                                                               2.0/36.0, 2.0/36.0, 2.0/36.0, 2.0/36.0, 2.0/36.0, 2.0/36.0,
                                                               1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0,
                                                               1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0 };

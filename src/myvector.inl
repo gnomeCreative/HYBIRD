@@ -49,7 +49,7 @@ inline void tVect::reset() {
 
 // overloaded operators
 
-inline tVect tVect::operator+(const tVect& vec) const {
+inline constexpr tVect tVect::operator+(const tVect& vec) const {
     return tVect(
         x+vec.x,
         y+vec.y,
@@ -63,7 +63,7 @@ inline tVect& tVect::operator+=(const tVect& vec) {
     return *this;
 }
 
-inline tVect tVect::operator-(const tVect& vec) const {
+inline constexpr tVect tVect::operator-(const tVect& vec) const {
     return tVect(
         x-vec.x,
         y-vec.y,
@@ -77,7 +77,7 @@ inline tVect& tVect::operator-=(const tVect& vec) {
     return *this;
 }
 
-inline tVect tVect::operator*(const double& scalar) const {
+inline constexpr tVect tVect::operator*(const double& scalar) const {
     return tVect(
         x*scalar,
         y*scalar,
@@ -91,7 +91,7 @@ inline tVect& tVect::operator*=(const double& scalar) {
     return *this;
 }
 
-inline tVect tVect::operator/(const double& scalar) const {
+inline constexpr tVect tVect::operator/(const double& scalar) const {
     return tVect(
         x/scalar,
         y/scalar,
@@ -144,7 +144,7 @@ inline tVect tVect::compProd(const tVect& vec) const {
             z*vec.z);
 }
 
-inline tMat tVect::outer(const tVect& vec) const {
+inline constexpr tMat tVect::outer(const tVect& vec) const {
     return tMat(x*vec.x,x*vec.y,x*vec.z,y*vec.x,y*vec.y,y*vec.z,z*vec.x,z*vec.y,z*vec.z);
 }
 
@@ -371,7 +371,7 @@ inline void tinyMatrix::show() const {
 
 // overloaded operators
 
-inline tMat tinyMatrix::operator+(const tMat& mat) const {
+inline tMat constexpr tinyMatrix::operator+(const tMat& mat) const {
     return tMat(
         m00+mat.m00,
         m01+mat.m01,
@@ -397,7 +397,7 @@ inline tMat& tinyMatrix::operator+=(const tMat& mat){
     return *this;
 }
 
-inline tMat tinyMatrix::operator-(const tMat& mat) const {
+inline tMat constexpr tinyMatrix::operator-(const tMat& mat) const {
     return tMat(
         m00-mat.m00,
         m01-mat.m01,
@@ -423,7 +423,7 @@ inline tMat& tinyMatrix::operator-=(const tMat& mat){
     return *this;
 }
 
-inline tMat tinyMatrix::operator*(const double& scalar) const {
+inline tMat constexpr tinyMatrix::operator*(const double& scalar) const {
     return tMat(
         m00*scalar,
         m01*scalar,
@@ -449,7 +449,7 @@ inline tMat& tinyMatrix::operator*=(const double& scalar){
     return *this;
 }
 
-inline tMat tinyMatrix::operator/(const double& scalar) const {
+inline tMat constexpr tinyMatrix::operator/(const double& scalar) const {
     return tMat(
         m00/scalar,
         m01/scalar,

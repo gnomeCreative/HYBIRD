@@ -85,17 +85,11 @@ class tVect {
 public:
     double x,y,z;
 public:
-    tVect(){
-        x=0.0;
-        y=0.0;
-        z=0.0;
-    }
+    constexpr tVect()
+        : x(0), y(0), z(0){}
     //tinyVector(double a, double b, double c){
-    tVect(const double& a, const double& b, const double& c){
-        x=a;
-        y=b;
-        z=c;
-    }
+    constexpr tVect(const double& a, const double& b, const double& c)
+        : x(a), y(b), z(c){}
     void get(std::ifstream& inputFile);
     void show() const;
     void printLine(std::ofstream& outputFile) const;
@@ -105,13 +99,13 @@ public:
     double max() const;
     void reset();
     // overloaded operators
-    tVect operator+(const tVect& vec) const;
+    constexpr tVect operator+(const tVect& vec) const;
     tVect& operator+=(const tVect& vec);
-    tVect operator-(const tVect& vec) const;
+    constexpr tVect operator-(const tVect& vec) const;
     tVect& operator-=(const tVect& vec);
-    tVect operator*(const double& scalar) const;
+    constexpr tVect operator*(const double& scalar) const;
     tVect& operator*=(const double& scalar);
-    tVect operator/(const double& scalar) const;
+    constexpr tVect operator/(const double& scalar) const;
     tVect& operator/=(const double& scalar);
     //friend tVect operator*(const double& scalar, const tVect& vec);
     // mathematical operations
@@ -121,7 +115,7 @@ public:
     double dot2(const tVect& vec) const;
     tVect cross(const tVect& vec) const;
     tVect compProd(const tVect& vec) const;
-    tMat outer(const tVect& vec) const;
+    constexpr tMat outer(const tVect& vec) const;
     double norm() const;
     double norm2() const;
     int linearizePosition(double cellWidth[], unsigned int nCells[]) const;
@@ -192,45 +186,28 @@ class tinyMatrix {
 private:
     double m00,m01,m02,m10,m11,m12,m20,m21,m22;
 public:
-    tinyMatrix(){
-        m00=m01=m02=0.0;
-        m10=m11=m12=0.0;
-        m20=m21=m22=0.0;
-    }
-    tinyMatrix(double a00, double a01, double a02,
-                         double a10, double a11, double a12,
-                         double a20, double a21, double a22){
-        m00=a00;
-        m01=a01;
-        m02=a02;
-        m10=a10;
-        m11=a11;
-        m12=a12;
-        m20=a20;
-        m21=a21;
-        m22=a22;
-    }
-    tinyMatrix(tVect v1, tVect v2){
-        tMat matrix=v1.outer(v2);
-        m00=matrix.m00;
-        m01=matrix.m01;
-        m02=matrix.m02;
-        m10=matrix.m10;
-        m11=matrix.m11;
-        m12=matrix.m12;
-        m20=matrix.m20;
-        m21=matrix.m21;
-        m22=matrix.m22;
-    }
+    constexpr tinyMatrix()
+        : m00(0), m01(0), m02(0)
+        , m10(0), m11(0), m12(0)
+        , m20(0), m21(0), m22(0){}
+    constexpr tinyMatrix(double a00, double a01, double a02,
+               double a10, double a11, double a12,
+               double a20, double a21, double a22)
+        : m00(a00), m01(a01), m02(a02)
+        , m10(a10), m11(a11), m12(a12)
+        , m20(a20), m21(a21), m22(a22){}
+
+    constexpr tinyMatrix(const tVect &v1, const tVect &v2)
+        : tinyMatrix(v1.outer(v2)) {}
     void show() const;
     // overloaded operators
-    tMat operator+(const tMat& mat) const;
+    constexpr tMat operator+(const tMat& mat) const;
     tMat& operator+=(const tMat& mat);
-    tMat operator-(const tMat& mat) const;
+    constexpr tMat operator-(const tMat& mat) const;
     tMat& operator-=(const tMat& mat);
-    tMat operator*(const double& scalar) const;
+    constexpr tMat operator*(const double& scalar) const;
     tMat& operator*=(const double& scalar);
-    tMat operator/(const double& scalar) const;
+    constexpr tMat operator/(const double& scalar) const;
     tMat& operator/=(const double& scalar);
     friend tMat operator*(const double& scalar, const tMat& mat);
     // mathematical operations
