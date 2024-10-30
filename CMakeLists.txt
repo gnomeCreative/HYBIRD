@@ -33,6 +33,7 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/myvector.inl
     ${PROJECT_SOURCE_DIR}/src/node.h
     ${PROJECT_SOURCE_DIR}/src/utils.h
+    ${PROJECT_SOURCE_DIR}/src/MeasureUnits.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.h
     )
@@ -78,7 +79,8 @@ if(HYBIRD_ENABLE_OPENMP)
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             if(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
                 # Visual Studio 2019+ has experimental flag for OMP3.0 support
-                set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "-openmp:experimental")
+                set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:C,CXX>:-openmp:experimental>")
+                # Todo how to enable OpenMP in cuda files?/Is it desired/required?
                 # CMake 3.30 alt: set(OpenMP_RUNTIME_MSVC "experimental")
             endif()
         endif()

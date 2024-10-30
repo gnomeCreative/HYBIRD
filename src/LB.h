@@ -143,7 +143,7 @@ public:
     // conversion units /////////////////////////////////////////////////////////////////////////
     // fluid and granular matter are solved in different measure units
     // for a reference, check Feng, Han, Owen, 2007
-    measureUnits unit;
+    MeasureUnits unit;
     // problem-specific stuff ///////////////////////////////
     // stuff for shear cell
     double maxVisc = 0.0;

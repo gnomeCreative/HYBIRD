@@ -103,7 +103,7 @@ public:
     // list with ghost elements
     ghostList ghosts;
     // true if indices for the LB need to be regenerated
-    bool newNeighborList;
+    mutable bool newNeighborList;
     //couple elongation list
     elongVector elongTable;
     elongVector elongTableWall;
