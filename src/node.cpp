@@ -31,7 +31,7 @@ void node::initialize(const double& density, const tVect& velocity, const double
     u = velocity; //FORCE PART  lbF / 2.0 / n+
     visc = viscosity;
     friction = 0.0;
-    age = ageHere;
+    age = static_cast<float>(ageHere);
 
     
     const tVect coriolisAcceleration = computeCoriolis(u, rotationSpeed);
@@ -63,7 +63,7 @@ void node::copy(const node*& copyNode) {
     }
 }
 
-void node::scatterMass(double& extraMass) {
+void node::scatterMass(double& _extraMass) {
 
     nodeList scatterNodes;
     scatterNodes.clear();
@@ -75,12 +75,12 @@ void node::scatterMass(double& extraMass) {
             }
         }
     }
-    const unsigned int totNodes = scatterNodes.size();
+    const unsigned int totNodes = static_cast<unsigned int>(scatterNodes.size());
     if (totNodes > 0) {
-        for (int n = 0; n < totNodes; n++) {
-            scatterNodes[n]->extraMass+=extraMass/double(totNodes);
+        for (unsigned int i = 0; i < totNodes; ++i) {
+            scatterNodes[i]->extraMass+=_extraMass/double(totNodes);
         }
-        extraMass=0.0;
+        _extraMass=0.0;
     }
     // otherwise mass is not redistributed, but rather given to the global redistribution function
 }
@@ -99,24 +99,24 @@ void node::restart(const double& restDensity, const tVect& restVelocity, const d
     }
 }
 
-void node::setEquilibrium(const tVect& F, const double& nHere, const tVect& velHere) {
+void node::setEquilibrium(const tVect& /*F*/, const double& nHere, const tVect& velHere) {
     static double C1 = 3.0;
     static double C2 = 4.5;
     static double C3 = 1.5;
-    static double F1 = 3.0;
-    static double F2 = 9.0;
+    // static double F1 = 3.0;
+    // static double F2 = 9.0;
 
-    const double tauF = 0.5 + visc*3.0; // = tau-0.5
-    //cout<<visc<<endl;
-    const double omegaF = 1.0 - 0.5 / tauF;
+    // const double tauF = 0.5 + visc*3.0; // = tau-0.5
+    // cout<<visc<<endl;
+    // const double omegaF = 1.0 - 0.5 / tauF;
 
     const double usq = velHere.norm2();
-    tVect vmu, forcePart;
+
     for (int j = 0; j < lbmDirec; ++j) {
         // the following lines initialize f to be the local equilibrium values
         const double vu = velHere.dot(v[j]);
-        const tVect vmu = v[j]-velHere; // FORCE PART
-        forcePart = F1 * vmu + F2 * vu * v[j]; //FORCE PART
+        // const tVect vmu = v[j]-velHere; // FORCE PART
+        // const tVect forcePart = F1 * vmu + F2 * vu * v[j]; //FORCE PART
         //                dummyNode.f[j]=dummyNode.fs[j]=coeff[j]*dummyNode.n*(1.0+3.0*vu+4.5*vu*vu-1.5*usq)-2.0*(tau-0.5)*coeff[j]*forcePart.dot(F); //FORCE PART ((tau-0.5)=omegaf/omega)
         //                f[j]=fs[j]=coeff[j]*n*(1.0+C1*vu+C2*vu*vu-C3*usq)-coeff[j]*forcePart.dot(F); //FORCE PART ((tau-0.5)=omegaf/omega)
         f[j] = fs[j] = coeff[j] * nHere * (1.0 + C1 * vu + C2 * vu * vu - C3 * usq);// - omegaF * coeff[j] * forcePart.dot(F); //FORCE PART ((tau-0.5)=omegaf/omega)

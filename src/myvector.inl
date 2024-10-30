@@ -157,10 +157,10 @@ inline double tVect::norm2() const {
 }
 
 inline int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) const  {
-    const int xc=floor(x/cellWidth[0])+1;
-    const int yc=floor(y/cellWidth[1])+1;
-    const int zc=floor(z/cellWidth[2])+1;
-    const int index=xc+nCells[0]*(yc+ nCells[1]*zc );
+    const int xc = static_cast<int>(floor(x/cellWidth[0])+1);
+    const int yc = static_cast<int>(floor(y/cellWidth[1])+1);
+    const int zc = static_cast<int>(floor(z/cellWidth[2])+1);
+    const int index = static_cast<int>(xc+nCells[0]*(yc+ nCells[1]*zc));
     return index;
     cout<<"x="<<x<<endl;
     cout<<"y="<<y<<endl;
