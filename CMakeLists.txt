@@ -8,6 +8,18 @@ project(HYBIRD LANGUAGES CXX)
 # Installation target is not required
 set(CMAKE_SKIP_INSTALL_RULES TRUE)
 
+# Optional CUDA support
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    option(HYBIRD_ENABLE_CUDA "If enabled CUDA support will be used" ON)
+    if(HYBIRD_ENABLE_CUDA)
+        enable_language(CUDA)
+        # @todo Set CMAKE_CUDA_ARCHITECTURES correctly, now CUDA is enabled.
+        # @see https://github.com/FLAMEGPU/FLAMEGPU2/blob/master/cmake/CUDAArchitectures.cmake
+    endif()
+endif()
+
 # Define headers
 set(HYBIRD_INCLUDE 
     ${PROJECT_SOURCE_DIR}/src/DEM.h
@@ -21,6 +33,8 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/myvector.inl
     ${PROJECT_SOURCE_DIR}/src/node.h
     ${PROJECT_SOURCE_DIR}/src/utils.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/LB2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/Node2.h
     )
     
 # Define source files
@@ -32,10 +46,17 @@ set(HYBIRD_SRC
     ${PROJECT_SOURCE_DIR}/src/LB.cpp
     ${PROJECT_SOURCE_DIR}/src/node.cpp
     ${PROJECT_SOURCE_DIR}/src/utils.cpp
+    # @todo How can we compile these as cpp when CUDA is disabled?
+    # e.g. set_source_files_properties(test.cu PROPERTIES LANGUAGE CXX)
+    ${PROJECT_SOURCE_DIR}/src/gpu/LB2.cu
+    ${PROJECT_SOURCE_DIR}/src/gpu/Node2.cu
     )
 
 # Define the target we wish to build
 add_executable(hybird ${HYBIRD_INCLUDE} ${HYBIRD_SRC})
+
+# Allow includes relative to src root
+target_include_directories(hybird PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
 # Use C++17
 target_compile_features(hybird PUBLIC cxx_std_17)
