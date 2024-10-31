@@ -1948,7 +1948,7 @@ void DEM::evaluateForces() {
                 elmts[n].x2.y = 0.0;
                 elmts[n].x2.z -= AelmtsPlane;
 
-                if (elmts[n].index == 0 && elmts[n].size>1){ // immersed cylinder case
+                if (elmts[n].index == 0){// && elmts[n].size>1){ // immersed cylinder case
                     elmts[n].x2.x = 0.0;
                     elmts[n].x2.y = 0.0;
                     elmts[n].x2.z = 0.0;
