@@ -1,10 +1,15 @@
  
 #include "LB.h"
 
+namespace {
+// extra mass due to bounce-back and moving walls
+// This is a reduction variable used by LB::streaming()
+// It is defined here so it can be shared by OpenMP threads nested inside a big OpenMP parallel block
+double extraMass = 0.0;
+}
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
  // PUBLIC FUNCTIONS
  //////////////////////////////////////////////////////////////////////////////////////////////////////*/
-
 void LB::LBShow() const {
     cout << "LATTICE CHARACTERISTICS (lattice units):" << endl;
     cout << "directions=" << lbmDirec << ";" << endl;
@@ -595,9 +600,7 @@ void LB::latticeBolzmannInit(cylinderList& cylinders, wallList& walls, particleL
     }
     cout << "Done with initialization" << endl;
 }
-
 void LB::latticeBolzmannStep(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects) {
-
     // Lattice Boltzmann core steps
 
     // measure time for performance check (begin)
@@ -2334,7 +2337,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
     #pragma omp single
     {
         // extra mass due to bounce-back and moving walls
-        this->extraMass = 0.0;
+        extraMass = 0.0;
         // initializing wall forces
         for (int iw = 0; iw < walls.size(); ++iw) {
             walls[iw].FHydro.reset();

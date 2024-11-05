@@ -169,13 +169,9 @@ public:
     // age coefficients for new nodes
     const double maxAge=200.0;
     const double ageRatio=1.0/maxAge;
-    // extra mass due to bounce-back and moving walls
-    // This is a reduction variable used by LB::streaming()
-    // It is defined at a class level so it can be shared by OpenMP threads
-    double extraMass = 0.0;
-    // standard constructor
-public:
 
+ public:
+    // standard constructor
     LB() {
         boundary.resize(6);
         ne.resize(lbmDirec);
