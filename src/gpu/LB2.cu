@@ -248,8 +248,9 @@ void LB2::findNewActive<CPU>() {
     }
 }
 #else
-__global__ void d_findNewActive(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
+__global__ void d_findNewActive(unsigned int threadCount, Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     const unsigned int n_i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (n_i >= threadCount) return;
     const unsigned int a_i = d_nodes->activeI[n_i];
     if (d_nodes->p[a_i]) {
         const tVect nodePosition = d_nodes->getPosition(a_i);
@@ -288,7 +289,7 @@ void LB2::findNewActive<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewActive<<<gridSize, blockSize>>>(d_nodes, d_particles, d_elements);
+    d_findNewActive<<<gridSize, blockSize>>>(h_nodes.activeCount, d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
 #endif
@@ -338,8 +339,9 @@ void LB2::findNewSolid<CPU>() {
     }
 }
 #else
-__global__ void d_findNewSolid(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
+__global__ void d_findNewSolid(unsigned int threadCount, Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     const unsigned int n_i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (n_i >= threadCount) return;
     const unsigned int a_i = d_nodes->activeI[n_i];
     if (d_nodes->isInsideParticle(a_i)) {  // If node is inside particle
         // solid index to identify cluster
@@ -387,7 +389,7 @@ void LB2::findNewSolid<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewSolid, 0, h_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewSolid<<<gridSize, blockSize>>>(d_nodes, d_particles, d_elements);
+    d_findNewSolid<<<gridSize, blockSize>>>(h_nodes.activeCount, d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
 #endif
@@ -421,34 +423,45 @@ void LB2::checkNewInterfaceParticles<CPU>() {
     }
 }
 #else
+__global__ void d_checkNewInterfaceParticles(unsigned int threadCount, Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
+    const unsigned int m = blockIdx.x * blockDim.x + threadIdx.x;
+    if (m >= threadCount) return;
 
-template<>
-void LB2::checkNewInterfaceParticles<CUDA>() {
     // INITIAL PARTICLE POSITION ////////////////////////
-    for (int m = 0; m < d_elements->count; ++m) {
-        if (d_elements->FHydro[m].norm2() == 0.0) {
-            const unsigned int first_component = d_elements->componentsIndex[m];
-            const unsigned int last_component = d_elements->componentsIndex[m + 1];
-            for (unsigned int n = first_component; n < last_component; ++n) {
-                const unsigned short componentIndex = d_elements->componentsData[n];
-                const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
-                // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-                const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+    if (d_elements->FHydro[m].norm2() == 0.0) {
+        const unsigned int first_component = d_elements->componentsIndex[m];
+        const unsigned int last_component = d_elements->componentsIndex[m + 1];
+        for (unsigned int n = first_component; n < last_component; ++n) {
+            const unsigned short componentIndex = d_elements->componentsData[n];
+            const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
+            // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
+            const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
 #pragma omp parallel for
-                for (int it = 0; it < d_nodes->interfaceCount; ++it) {
-                    const unsigned int nodeHere = d_nodes->interfaceI[it];
-                    if (!d_nodes->isInsideParticle(nodeHere)) {
-                        // checking if node is inside a particle
-                        const tVect nodePosition = d_nodes->getPosition(nodeHere);
-                        if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
-                            d_nodes->setInsideParticle(nodeHere, true);
-                            d_nodes->solidIndex[nodeHere] = componentIndex;
-                        }
+            for (int it = 0; it < d_nodes->interfaceCount; ++it) {
+                const unsigned int nodeHere = d_nodes->interfaceI[it];
+                if (!d_nodes->isInsideParticle(nodeHere)) {
+                    // checking if node is inside a particle
+                    const tVect nodePosition = d_nodes->getPosition(nodeHere);
+                    if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
+                        d_nodes->setInsideParticle(nodeHere, true);
+                        d_nodes->solidIndex[nodeHere] = componentIndex;
                     }
                 }
             }
         }
     }
+}
+template<>
+void LB2::checkNewInterfaceParticles<CUDA>() {
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_checkNewInterfaceParticles, 0, h_elements.count);
+    // Round up to accommodate required threads
+    gridSize = (h_elements.count + blockSize - 1) / blockSize;
+    d_checkNewInterfaceParticles<<<gridSize, blockSize>>>(h_elements.count, d_nodes, d_particles, d_elements);
+    CUDA_CHECK();
 }
 #endif
 void LB2::latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& elmts, const particleList& particles) {
