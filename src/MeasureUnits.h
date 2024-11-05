@@ -17,22 +17,25 @@ public:
     // inverted unit length for efficiency
     double invLength;
     // constructor
-    MeasureUnits() {
-        Volume = 1.0;
-        Length = 1.0;
-        Time = 1.0;
-        Density = 1.0;
-        Speed = 1.0;
-        Accel = 1.0;
-        AngVel = 1.0;
-        Force = 1.0;
-        Torque = 1.0;
-        Mass = 1.0;
-        KinVisc = 1.0;
-        DynVisc = 1.0;
-        Stress = 1.0;
-        Pressure = 1.0;
-    }
+    constexpr MeasureUnits()
+        : Length(1.0)
+        , Time(1.0)
+        , Density(1.0)
+        , Volume(1.0)
+        , Speed(1.0)
+        , Accel(1.0)
+        , AngVel(1.0)
+        , Force(1.0)
+        , Torque(1.0)
+        , Mass(1.0)
+        , KinVisc(1.0)
+        , DynVisc(1.0)
+        , Stress(1.0)
+        , Pressure(1.0)
+        , FlowRate(0)
+        , Energy(0)
+        , invLength(0) { }
+
     void setComposite();
 };
 

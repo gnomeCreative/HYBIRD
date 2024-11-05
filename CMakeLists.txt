@@ -34,8 +34,12 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/node.h
     ${PROJECT_SOURCE_DIR}/src/utils.h
     ${PROJECT_SOURCE_DIR}/src/MeasureUnits.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/cuda_helper.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/Element2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/Particle2.h
     )
     
 # Define source files
@@ -51,6 +55,7 @@ set(HYBIRD_SRC
     # e.g. set_source_files_properties(test.cu PROPERTIES LANGUAGE CXX)
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.cu
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.cu
+    ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.cu
     )
 
 # Define the target we wish to build
@@ -63,7 +68,7 @@ target_include_directories(hybird PRIVATE "${PROJECT_SOURCE_DIR}/src")
 target_compile_features(hybird PUBLIC cxx_std_17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#Enable OpenMP
+# Enable OpenMP
 option(HYBIRD_ENABLE_OPENMP "If Off OpenMP support will not be enabled" ON)
 if(HYBIRD_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -89,6 +94,19 @@ if(HYBIRD_ENABLE_OPENMP)
     endif()
 else()
     message(STATUS "Build configured without OpenMP support.")
+endif()
+
+if(CMAKE_CUDA_COMPILER AND HYBIRD_ENABLE_CUDA)
+# Notify the build that we are building for cuda
+    target_compile_definitions(hybird PRIVATE USE_CUDA)
+else()
+    # Or set .cu files to be compiled as .cpp
+    foreach(HYBIRD_SRC_FILE HYBIRD_SRC)
+        get_filename_component(HYBIRD_SRC_FILE_EXT HYBIRD_SRC_FILE LAST_EXT)
+        if(HYBIRD_SRC_FILE_EXT STREQUAL ".cu")
+            set_source_files_properties(HYBIRD_SRC_FILE PROPERTIES LANGUAGE CXX)
+        endif()
+    endforeach()
 endif()
 
 # Default to release builds

@@ -22,6 +22,8 @@
 #include <iomanip>
 #include <map>
 
+#include "gpu/cuda_helper.h"
+
 using namespace std;
 enum ProblemName {NONE, SHEARCELL, AVALANCHE, DRUM, NET, BARRIER, 
     ZHOU, OPENBARRIER, HONGKONG, STVINCENT, STAVA, NIGRO, CAROLINE, DAMBREAK, GRAY_DAMBREAK, GRAY_DAMBREAK_2D, INCLINEFLOW,
@@ -117,13 +119,13 @@ public:
     tVect compProd(const tVect& vec) const;
     constexpr tMat outer(const tVect& vec) const;
     double norm() const;
-    double norm2() const;
+    __host__ __device__ double norm2() const;
     int linearizePosition(double cellWidth[], unsigned int nCells[]) const;
     //friend tVect newtonAcc(tVect moment, tVect I, tVect wBf);
     //friend tQuat vec2quat(tVect vec);
     //friend tVect project(tVect& vec, tQuat quat);
     // geometric position functions
-    bool insideSphere(const tVect& center, const double& radius) const;
+    __host__ __device__ bool insideSphere(const tVect& center, const double& radius) const;
     bool insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const;
     bool insidePlane(const tVect& p, const tVect& n) const;
     double distance2Plane(const tVect& p, const tVect& n) const;

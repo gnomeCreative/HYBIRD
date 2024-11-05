@@ -3,9 +3,11 @@
 
 #include <array>
 
-#include "lattice.h"
-#include "MeasureUnits.h"
+#include "LBParams.h"
+#include "myvector.h"
 #include "Node2.h"
+#include "Particle2.h"
+#include "Element2.h"
 
 class DEM;
 
@@ -17,34 +19,6 @@ class DEM;
 enum Implementation {CPU, CUDA};
 class LB2 {
     public:
-    /**
-     * Lattice Boltzmann model parameters
-     * These should not change during after initialisation
-     */
-    struct Params {
-        // hydrodynamic radius (see Kumnar et al., Mechanics of granular column collapse in fluid at varying slope angles)
-        double hydrodynamicRadius;
-        // LB::lbSize
-        std::array<unsigned int, 3> lbSize = {1,1,1};
-        /**
-         * standard neighbors shifting
-         */
-        // LB::ne
-        std::array<int, lbmDirec> ne = {};
-        // LB::shift
-        std::array<unsigned int, 3> shift = {1,1,1};
-        // LB::domain
-        std::array<int, 3> domain = {1,1,1};
-        /**
-         * Initialise dynamic lattice params that scale with the model configuration
-         * @see lattice.h for the static lattice params
-         */
-        void latticeDefinition();
-        // conversion units /////////////////////////////////////////////////////////////////////////
-        // fluid and granular matter are solved in different measure units
-        // for a reference, check Feng, Han, Owen, 2007
-        MeasureUnits unit;
-    };
 
     // @todo how do we init params from config?
     LB2() = default;
@@ -68,13 +42,44 @@ class LB2 {
      * @param particles The DEM particles
      */
     void latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& eltms, const particleList& particles);
+
+    /**
+     * Sync DEM particle list to h_particles/d_particles
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncParticles(const particleList& particles);
+    /**
+     * Sync DEM elements list to h_elements/d_elements
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    bool syncElements(const elmtList& elements);
     /**
      * @brief Update all Node2::solid_index to the contained particle
-     * @param particles The host buffer of DEM particles.
      * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has been defined
      */
     template<int impl>
-    void initializeParticleBoundaries(const particleList& particles);
+    void initializeParticleBoundaries();
+    /**
+     * @brief Update Node2::p from true to false, if the node is no longer within a particle
+     * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has not been defined
+     */
+    template<int impl>
+    void findNewActive();
+    /**
+     * @brief Find new nodes that are inside particles
+     * Checks whether nodes that are neighbouring active nodes marked as inside particle
+     * are also inside any particles within that same particles cluster.
+     * If so they are marked as inside particle with their solid index updated
+     */
+    template<int impl>
+    void findNewSolid();
+    /**
+     * @brief ??
+     */
+    template<int impl>
+    void checkNewInterfaceParticles();
     /**
      * Initialise dynamic lattice params that scale with the model configuration
      * @see lattice.h for the static lattice params
@@ -90,10 +95,27 @@ class LB2 {
      * In CPU builds, <name> should always point to h_<name>
      * In CUDA builds, <name> will point to device memory, and h_<name> may not have current data at all times
      */
+
     private:
-        // The actual node storage
-        Node2 h_nodes, d_nodes;
-        Params h_params;  // @see PARAMS
+    // The actual node storage
+    // Host copy of node buffers, may not always be current whilst in CUDA mode
+    Node2 h_nodes;
+    // Host copy of device node buffer pointers
+    Node2 hd_nodes;
+    // Pointer to device copy of device node buffer pointers
+    // In CPU, this is a pointer to h_nodes
+    Node2 *d_nodes;
+
+
+    // The temporary host, and device particle storage
+    // Until DEM model is moved to CUDA, host copy only acts as a location to build data before copying to device
+    Particle2 h_particles, hd_particles, *d_particles;
+    Element2 h_elements, hd_elements, *d_elements;
+    
+    LBParams h_params;  // Host copy of PARAMS
+
+    // switchers for force field, non-Newtonian and everything
+    bool freeSurface = false;
 };
 
 #endif // LB2_H

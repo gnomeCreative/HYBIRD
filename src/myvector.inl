@@ -152,7 +152,7 @@ inline double tVect::norm() const {
     return sqrt(x*x+y*y+z*z);
 }
 
-inline double tVect::norm2() const {
+inline __host__ __device__ double tVect::norm2() const {
     return x*x+y*y+z*z;
 }
 
@@ -175,7 +175,7 @@ inline int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) c
 
 // geometric position functions
 
-inline bool tVect::insideSphere(const tVect& center, const double& radius) const {
+inline __host__ __device__ bool tVect::insideSphere(const tVect& center, const double& radius) const {
     //distance between center of the sphere and point
     tVect dist=*this -center;
 //    return ((z-center.z)*(z-center.z)+(y-center.y)*(y-center.y)+(x-center.x)*(x-center.x)<radius*radius);
