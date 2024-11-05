@@ -843,7 +843,7 @@ GetPot::_parse_argument_vector(const STRING_VECTOR& ARGV)
 inline STRING_VECTOR
 GetPot::_read_in_file(const std::string& FileName)
 {
-    std::ifstream  i(FileName.c_str());
+    std::ifstream  i(FileName.c_str(), std::ios::binary);
     if( ! i ) return STRING_VECTOR();
     // argv[0] == the filename of the file that was read in
     return _read_in_stream(i);
@@ -923,7 +923,6 @@ GetPot::_skip_whitespace(std::istream& istr)
 	    tmp = istr.get();
 	    if( ! istr ) return;
 	}
-
 	// -- look if characters match the comment starter string
 	const std::istream::pos_type  Pos = istr.tellg();
 	unsigned    i=0;
@@ -931,7 +930,7 @@ GetPot::_skip_whitespace(std::istream& istr)
 	    if( tmp != _comment_start[i] ) {
 		istr.seekg(Pos);
 		// -- one step more backwards, since 'tmp' already at non-whitespace
-		istr.unget();
+		istr.unget(); // MSVC bugfix!
 		return;
 	    }
 
