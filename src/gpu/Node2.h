@@ -6,6 +6,12 @@
 #include "cuda_helper.h"
 #include "myvector.h"
 
+/**
+ * @brief A node is a discrete cell within the LBM model's environment.
+ *
+ * As the LBM environment is sparse, with many cells containing air
+ * Nodes are stored compactly, rather than in a dense array
+ */
 struct Node2 {
     // The total number of active nodes
     size_t activeCount = 0;

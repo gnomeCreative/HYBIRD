@@ -44,13 +44,13 @@ class LB2 {
     void latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& eltms, const particleList& particles);
 
     /**
-     * Sync DEM particle list to h_particles/d_particles
+     * @brief Sync DEM particle list to h_particles/d_particles
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
     void syncParticles(const particleList& particles);
     /**
-     * Sync DEM elements list to h_elements/d_elements
+     * @brief Sync DEM elements list to h_elements/d_elements
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
@@ -62,7 +62,7 @@ class LB2 {
     template<int impl>
     void initializeParticleBoundaries();
     /**
-     * @brief Update Node2::p from true to false, if the node is no longer within a particle
+     * @brief Check and update whether active nodes are still inside particles
      * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has not been defined
      */
     template<int impl>

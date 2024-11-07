@@ -460,6 +460,7 @@ void LB2::checkNewInterfaceParticles<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_checkNewInterfaceParticles, 0, h_elements.count);
     // Round up to accommodate required threads
     gridSize = (h_elements.count + blockSize - 1) / blockSize;
+    // @todo Are there more elements or interface nodes? This may want to be inverted
     d_checkNewInterfaceParticles<<<gridSize, blockSize>>>(h_elements.count, d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
