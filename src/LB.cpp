@@ -3290,11 +3290,6 @@ void LB::computeSurfaceNormal() {
             }
         }
         surfaceNormalHere /= surfaceNormalHere.norm();
-        interfaceNodes[it]->surfaceNormal = surfaceNormalHere;
-    }
-#pragma omp parallel for
-    for (int it = 0; it < fluidNodes.size(); ++it) {
-        fluidNodes[it]->surfaceNormal = Zero;
     }
 
     // measure time for performance check (end)
