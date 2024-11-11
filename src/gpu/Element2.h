@@ -8,7 +8,7 @@
 struct Element2 {
     // The total number of elements
     // @note This is currently fixed at runtime, but may become variable in future
-    size_t count = 0;
+    unsigned int count = 0;
 
     tVect *FHydro = nullptr;
     /**

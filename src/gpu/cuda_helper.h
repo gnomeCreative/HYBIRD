@@ -36,8 +36,11 @@ inline void gpuAssert(cudaError_t code, const char *file, int line) {
 #else
 #define IMPL Implementation::CPU
 // Define these CUDA Symbols empty when building for CPU
+#ifndef __host__
 #define __host__
 #define __device__
+#define __forceinline__
+#endif
 #endif  // USE_CUDA
 
 #endif  // CUDAHELPERH

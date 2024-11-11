@@ -10,7 +10,7 @@
 struct Particle2 {
     // The total number of particles
     // @note This is variable at runtime
-    size_t count = 0;
+    unsigned int count = 0;
     // belonging element index
     unsigned int *clusterIndex = nullptr;
     // particle radius

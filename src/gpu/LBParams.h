@@ -42,6 +42,7 @@ struct LBParams {
  * It is defined (e.g. sans 'extern') inside LBParams.cu
  * CUDA constant's can only be defined in global (or file) scope
  * Therefore, the host replacement is also defined this way
+ * @todo Current implementation relies on undefined behaviour or the host copy being accessible (see compiler warning)
  */
 #ifdef USE_CUDA
 extern __constant__ LBParams PARAMS;

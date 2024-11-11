@@ -158,42 +158,45 @@ bool LB2::syncElements<CUDA>(const elmtList& elements) {
     return componentsHasGrown;
 }
 #endif
-#ifndef USE_CUDA
-template<>
-void LB2::initializeParticleBoundaries<CPU>() {
-    // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
-    memset(d_nodes->solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int));
-    
-    for (int p_i = 0; p_i < d_particles.count; ++i) {
-        const tVect convertedPosition = d_particles->x0[p_i] / PARAMS.unit.Length;
-        const double convertedRadius = PARAMS.hydrodynamicRadius * d_particles->r[p_i] / PARAMS.unit.Length;
-#pragma omp parallel for
-        for (size_t i = 0; i < d_nodes.activeCount; ++i) {
-            // checking if node is inside a particle
-            const unsigned int a_i = d_nodes->activeI[i];
-            const tVect node_position = nodes->getPosition(a_i);
-            if (node_position.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
-                d_nodes->setInsideParticle(a_i, true);
-                d_nodes->solidIndex[a_i] = [p_i];
-            }
-        }
-    }
-}
-#else
-__global__ void d_initializeParticleBoundaries(Node2 *d_nodes, Particle2 *d_particles) {
-    const unsigned int n_i = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int a_i = d_nodes->activeI[n_i];
-    const tVect node_position = d_nodes->getPosition(a_i);
-    for (int p_i = 0; p_i < d_particles->count; ++p_i) {
-        const tVect convertedPosition = d_particles->x0[p_i] / PARAMS.unit.Length;
+
+/**
+ * initializeParticleBoundaries()
+ */
+__host__ __device__ __forceinline__ inline void common_initializeParticleBoundaries(const unsigned int an_i, Node2 *nodes, Particle2 *particles) {
+    // Fetch the index of the (active) node being processed
+    const unsigned int n_i = nodes->activeI[an_i];
+    const tVect node_position = nodes->getPosition(n_i);
+    for (int p_i = 0; p_i < particles->count; ++p_i) {
+        const tVect convertedPosition = particles->x0[p_i] / PARAMS.unit.Length;
         // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-        const double convertedRadius = d_particles->r[p_i] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+        const double convertedRadius = particles->r[p_i] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
         if (node_position.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
-            d_nodes->setInsideParticle(a_i, true);
-            d_nodes->solidIndex[a_i] = p_i;
+            nodes->setInsideParticle(n_i, true);
+            nodes->solidIndex[n_i] = p_i;
             break;
         }
     }
+}
+template<>
+void LB2::initializeParticleBoundaries<CPU>() {
+    // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
+    memset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int));
+
+    // @todo can we parallelise at a higher level?
+    #pragma omp parallel for
+    for (size_t an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
+        // Pass the active node index to the common implementation
+        common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
+    }
+}
+#ifdef USE_CUDA
+__global__ void d_initializeParticleBoundaries(Node2 *d_nodes, Particle2 *d_particles) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (an_i >= d_nodes->activeCount) return;
+    // Pass the active node index to the common implementation
+    common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
 }
 template<>
 void LB2::initializeParticleBoundaries<CUDA>() {
@@ -212,71 +215,58 @@ void LB2::initializeParticleBoundaries<CUDA>() {
     CUDA_CHECK();
 }
 #endif
-#ifndef USE_CUDA
-template<>
-void LB2::findNewActive<CPU>() {
-    // SOLID TO ACTIVE CHECK
-    // cycling through particle nodes
-    for (size_t i = 0; i < h_nodes.activeCount; ++i) {
-        const unsigned int a_i = d_nodes->activeI[i];
-        if (d_nodes->isInsideParticle(a_i)) {  // If node is inside particle
-            const tVect nodePosition = d_nodes->getPosition(a_i);
-            // solid index to identify cluster
-            const unsigned int particleIndex = d_nodes->solidIndex[a_i];
-            const unsigned int clusterIndex = d_particles->clusterIndex[particleIndex];
-            // in this case check if it has been uncovered (must be out of all particles of the cluster) - we start with a true hypothesis
-            // cycling through component particles
-            const unsigned int first_component = d_elements->componentsIndex[clusterIndex];
-            const unsigned int last_component = d_elements->componentsIndex[clusterIndex + 1];
-            for (unsigned int j = first_component; j < last_component; ++j) {
-                // getting indexes from particle composing the cluster
-                const unsigned int componentIndex = d_elements->componentsData[j];
-                // checking if it has been uncovered in component j of the cluster
-                // radius need to be increased by half a lattice unit
-                // this is because solid boundaries are located halfway between solid and fluid nodes
-                // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length?
-                if (nodePosition.insideSphere(particles[componentIndex].x0 / PARAMS.unit.Length, particles[componentIndex].r * PARAMS.hydrodynamicRadius / PARAMS.unit.Length)) { //-0.5?
-                    // if the node is still inside the element, the hypothesis of new active is not true anymore
-                    d_nodes->isInsideParticle(a_i) = false;
-                    // and we can get out of the cycle
-                    break;
-                }
-            }
-        }
-    }
-}
-#else
-__global__ void d_findNewActive(unsigned int threadCount, Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
-    const unsigned int n_i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (n_i >= threadCount) return;
-    const unsigned int a_i = d_nodes->activeI[n_i];
-    if (d_nodes->p[a_i]) {
-        const tVect nodePosition = d_nodes->getPosition(a_i);
+
+/**
+ * findNewActive()
+ */
+__host__ __device__ __forceinline__ inline void common_findNewActive(const unsigned int an_i, Node2 *nodes, Particle2 *particles, Element2 *elements) {
+    // Fetch the index of the (active) node being processed
+    const unsigned int n_i = nodes->activeI[an_i];
+    if (nodes->p[n_i]) {
+        const tVect nodePosition = nodes->getPosition(n_i);
         // solid index to identify cluster
-        const unsigned int particleIndex = d_nodes->solidIndex[a_i];
-        const unsigned int clusterIndex = d_particles->clusterIndex[particleIndex];
+        const unsigned int particleIndex = nodes->solidIndex[n_i];
+        const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // in this case check if it has been uncovered (must be out of all particles of the cluster) - we start with a true hypothesis
         // cycling through component particles
-        const unsigned int first_component = d_elements->componentsIndex[clusterIndex];
-        const unsigned int last_component = d_elements->componentsIndex[clusterIndex + 1];
+        const unsigned int first_component = elements->componentsIndex[clusterIndex];
+        const unsigned int last_component = elements->componentsIndex[clusterIndex + 1];
         for (unsigned int j = first_component; j < last_component; ++j) {
             // getting indexes from particle composing the cluster
-            const unsigned int componentIndex = d_elements->componentsData[j];
+            const unsigned int componentIndex = elements->componentsData[j];
             // checking if it has been uncovered in component j of the cluster
             // radius need to be increased by half a lattice unit
             // this is because solid boundaries are located halfway between solid and fluid nodes
-            const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
+            const tVect convertedPosition = particles->x0[componentIndex] / PARAMS.unit.Length;
             // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-            const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
-            if (nodePosition.insideSphere(convertedPosition, convertedRadius)){ //-0.5?
+            const double convertedRadius = particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+            if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
                 // if the node is still inside the element, the hypothesis of new active is not true anymore
                 // and we can get out of the cycle
                 return;
             }
         }
         // turning up the cell as we didn't exit early
-        d_nodes->setInsideParticle(a_i, false);
+        nodes->setInsideParticle(n_i, false);
     }
+}
+template<>
+void LB2::findNewActive<CPU>() {
+    // @todo can we parallelise at a higher level?
+#pragma omp parallel for
+    for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
+        // Pass the active node index to the common implementation
+        common_findNewActive(an_i, d_nodes, d_particles, d_elements);
+    }
+}
+#ifdef USE_CUDA
+__global__ void d_findNewActive(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (an_i >= d_nodes->activeCount) return;
+    // Pass the active node index to the common implementation
+    common_findNewActive(an_i, d_nodes, d_particles, d_elements);
 }
 template<>
 void LB2::findNewActive<CUDA>() {
@@ -287,88 +277,44 @@ void LB2::findNewActive<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewActive<<<gridSize, blockSize>>>(h_nodes.activeCount, d_nodes, d_particles, d_elements);
+    d_findNewActive<<<gridSize, blockSize>>>(d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
 #endif
-#ifndef USE_CUDA
-template<>
-void LB2::findNewSolid<CPU>() {
-    // ACTIVE TO SOLID CHECK
-    // we check only first order neighbors of particle nodes. This is done in order to avoid cycling through all active cells
-    for (size_t i = 0; i < h_nodes.activeCount; ++i) {
-        const unsigned int a_i = d_nodes->activeI[i];
-        if (d_nodes->isInsideParticle(a_i)) {  // If node is inside particle
-            // solid index to identify cluster
-            const unsigned int particleIndex = d_nodes->solidIndex[a_i];
-            const unsigned int clusterIndex = d_particles->clusterIndex[particleIndex];
-            // cycle through first neighbors
-            const unsigned int nodeCount = d_nodes->count;
-            for (int k = 1; k < lbmMainDirec; ++k) {
-                const unsigned int l_i = d_nodes->d[nodeCount * k + a_i];
-                if (l_i != std::numeric_limits<unsigned int>::max()) {
-                    // checking if solid particle is close to an active one -> we have an active node to check
-                    if (!d_nodes->isInsideParticle(l_i) && d_nodes->isActive(l_i)) {
-                        const tVect linkPosition = d_nodes->getPosition(l_i);
-                        // check if neighbors has been covered (by any of the particles of the cluster) - we start with a false hypothesis
-                        // cycling through all components of the cluster
-                        const unsigned int first_component = d_elements->componentsIndex[clusterIndex];
-                        const unsigned int last_component = d_elements->componentsIndex[clusterIndex + 1];
-                        for (unsigned int j = first_component; j < last_component; ++j) {
-                            // getting component particle index
-                            unsigned int componentIndex = d_elements->componentsData[j];
-                            // check if it getting inside
-                            // radius need to be increased by half a lattice unit
-                            // this is because solid boundaries are located halfway between solid and fluid nodes
-                            // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-                            if (linkPosition.insideSphere(d_particles->x0[componentIndex] / PARAMS.unit.Length, d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length)) { //-0.5?
-                                // if so, then the false hypothesis does not hold true anymore
-                                d_nodes->solidIndex[l_i] = componentIndex;
-                                // By setting particle to inside, it won't be checked again, newSolidNodes hence becomes redundant
-                                d_nodes->setInsideParticle(l_i, true);
-                                // and we exit the cycle
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-#else
-__global__ void d_findNewSolid(unsigned int threadCount, Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
-    const unsigned int n_i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (n_i >= threadCount) return;
-    const unsigned int a_i = d_nodes->activeI[n_i];
-    if (d_nodes->isInsideParticle(a_i)) {  // If node is inside particle
+
+/**
+ * findNewSolid()
+ */
+__host__ __device__ __forceinline__ inline void common_findNewSolid(const unsigned int an_i, Node2 *nodes, Particle2 *particles, Element2 *elements) {
+    const unsigned int a_i = nodes->activeI[an_i];
+    if (nodes->isInsideParticle(a_i)) {  // If node is inside particle
         // solid index to identify cluster
-        const unsigned int particleIndex = d_nodes->solidIndex[a_i];
-        const unsigned int clusterIndex = d_particles->clusterIndex[particleIndex];
+        const unsigned int particleIndex = nodes->solidIndex[a_i];
+        const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // cycle through first neighbors
-        const unsigned int nodeCount = d_nodes->count;
+        const unsigned int nodeCount = nodes->count;
         for (int k = 1; k < lbmMainDirec; ++k) {
-            const unsigned int l_i = d_nodes->d[nodeCount * k + a_i];
+            const unsigned int l_i = nodes->d[nodeCount * k + a_i];
             if (l_i != std::numeric_limits<unsigned int>::max()) {
                 // checking if solid particle is close to an active one -> we have an active node to check
-                if (!d_nodes->isInsideParticle(l_i) && d_nodes->isActive(l_i)) {
-                    const tVect linkPosition = d_nodes->getPosition(l_i);
+                if (!nodes->isInsideParticle(l_i) && nodes->isActive(l_i)) {
+                    const tVect linkPosition = nodes->getPosition(l_i);
                     // check if neighbors has been covered (by any of the particles of the cluster) - we start with a false hypothesis
                     // cycling through all components of the cluster
-                    const unsigned int first_component = d_elements->componentsIndex[clusterIndex];
-                    const unsigned int last_component = d_elements->componentsIndex[clusterIndex + 1];
+                    const unsigned int first_component = elements->componentsIndex[clusterIndex];
+                    const unsigned int last_component = elements->componentsIndex[clusterIndex + 1];
                     for (unsigned int j = first_component; j < last_component; ++j) {
                         // getting component particle index
-                        unsigned int componentIndex = d_elements->componentsData[j];
+                        const unsigned int componentIndex = elements->componentsData[j];
                         // check if it getting inside
                         // radius need to be increased by half a lattice unit
                         // this is because solid boundaries are located halfway between solid and fluid nodes
                         // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-                        if (linkPosition.insideSphere(d_particles->x0[componentIndex] / PARAMS.unit.Length, d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length)) { //-0.5?
+                        if (linkPosition.insideSphere(particles->x0[componentIndex] / PARAMS.unit.Length, particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length)) { //-0.5?
                             // if so, then the false hypothesis does not hold true anymore
-                            d_nodes->solidIndex[l_i] = componentIndex;
+                            nodes->solidIndex[l_i] = componentIndex;
                             // By setting particle to inside, it won't be checked again, newSolidNodes hence becomes redundant
-                            d_nodes->setInsideParticle(l_i, true);
+                            nodes->setInsideParticle(l_i, true);
                             // and we exit the cycle
                             break;
                         }
@@ -379,6 +325,25 @@ __global__ void d_findNewSolid(unsigned int threadCount, Node2* d_nodes, Particl
     }
 }
 template<>
+void LB2::findNewSolid<CPU>() {
+    // @todo can we parallelise at a higher level?
+#pragma omp parallel for
+    for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
+        // Pass the active node index to the common implementation
+        common_findNewSolid(an_i, d_nodes, d_particles, d_elements);
+    }
+}
+
+#ifdef USE_CUDA
+__global__ void d_findNewSolid(Node2 *d_nodes, Particle2 *d_particles, Element2 *d_elements) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (an_i >= d_nodes->activeCount) return;
+    // Pass the active node index to the common implementation
+    common_findNewSolid(an_i, d_nodes, d_particles, d_elements);
+}
+template<>
 void LB2::findNewSolid<CUDA>() {
     // Launch cuda kernel to update
     int blockSize = 0;  // The launch configurator returned block size
@@ -387,67 +352,53 @@ void LB2::findNewSolid<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewSolid, 0, h_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewSolid<<<gridSize, blockSize>>>(h_nodes.activeCount, d_nodes, d_particles, d_elements);
+    d_findNewSolid<<<gridSize, blockSize>>>(d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
 #endif
-#ifndef USE_CUDA
-template<>
-void LB2::checkNewInterfaceParticles<CPU>() {
+
+/**
+ * checkNewInterfaceParticles()
+ */
+__host__ __device__ __forceinline__ inline void common_checkNewInterfaceParticles(const unsigned int e_i, Node2 *nodes, Particle2 *particles, Element2 *elements) {
     // INITIAL PARTICLE POSITION ////////////////////////
-    for (int m = 0; m < d_elements->count; ++m) {
-        if (d_elements->FHydro[m].norm2() == 0.0) {
-            const unsigned int first_component = d_elements->componentsIndex[m];
-            const unsigned int last_component = d_elements->componentsIndex[m + 1];
-            for (unsigned int n = first_component; n < last_component; ++n) {
-                const unsigned int componentIndex = d_elements->componentsData[n];
-                const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
-                // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-                const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
-#pragma omp parallel for
-                for (int it = 0; it < d_nodes->interfaceCount; ++it) {
-                    const unsigned int nodeHere = d_nodes->interfaceI[it];
-                    if (!d_nodes->isInsideParticle(nodeHere)) {
-                        // checking if node is inside a particle
-                        const tVect nodePosition = d_nodes->getPosition(nodeHere);
-                        if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
-                            d_nodes->setInsideParticle(nodeHere, true);
-                            d_nodes->solidIndex[nodeHere] = componentIndex;
-                        }
+    if (elements->FHydro[e_i].norm2() == 0.0) {
+        const unsigned int first_component = elements->componentsIndex[e_i];
+        const unsigned int last_component = elements->componentsIndex[e_i + 1];
+        for (unsigned int n = first_component; n < last_component; ++n) {
+            const unsigned int componentIndex = elements->componentsData[n];
+            const tVect convertedPosition = particles->x0[componentIndex] / PARAMS.unit.Length;
+            // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
+            const double convertedRadius = particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+            for (int i_i = 0; i_i < nodes->interfaceCount; ++i_i) {
+                const unsigned int nodeHere = nodes->interfaceI[i_i];
+                if (!nodes->isInsideParticle(nodeHere)) {
+                    // checking if node is inside a particle
+                    const tVect nodePosition = nodes->getPosition(nodeHere);
+                    if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
+                        nodes->setInsideParticle(nodeHere, true);
+                        nodes->solidIndex[nodeHere] = componentIndex;
                     }
                 }
             }
         }
     }
 }
-#else
-__global__ void d_checkNewInterfaceParticles(unsigned int threadCount, Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
-    const unsigned int m = blockIdx.x * blockDim.x + threadIdx.x;
-    if (m >= threadCount) return;
-
-    // INITIAL PARTICLE POSITION ////////////////////////
-    if (d_elements->FHydro[m].norm2() == 0.0) {
-        const unsigned int first_component = d_elements->componentsIndex[m];
-        const unsigned int last_component = d_elements->componentsIndex[m + 1];
-        for (unsigned int n = first_component; n < last_component; ++n) {
-            const unsigned int componentIndex = d_elements->componentsData[n];
-            const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
-            // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-            const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+template<>
+void LB2::checkNewInterfaceParticles<CPU>() {
 #pragma omp parallel for
-            for (int it = 0; it < d_nodes->interfaceCount; ++it) {
-                const unsigned int nodeHere = d_nodes->interfaceI[it];
-                if (!d_nodes->isInsideParticle(nodeHere)) {
-                    // checking if node is inside a particle
-                    const tVect nodePosition = d_nodes->getPosition(nodeHere);
-                    if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
-                        d_nodes->setInsideParticle(nodeHere, true);
-                        d_nodes->solidIndex[nodeHere] = componentIndex;
-                    }
-                }
-            }
-        }
+    for (unsigned int e_i = 0; e_i < d_elements->count; ++e_i) {
+        common_checkNewInterfaceParticles(e_i, d_nodes, d_particles, d_elements);
     }
+}
+#ifdef USE_CUDA
+__global__ void d_checkNewInterfaceParticles(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
+    // Get unique CUDA thread index, which corresponds to element 
+    const unsigned int e_i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (e_i >= d_elements->count) return;
+    // Pass the active node index to the common implementation
+    common_findNewSolid(e_i, d_nodes, d_particles, d_elements);
 }
 template<>
 void LB2::checkNewInterfaceParticles<CUDA>() {
@@ -458,11 +409,12 @@ void LB2::checkNewInterfaceParticles<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_checkNewInterfaceParticles, 0, h_elements.count);
     // Round up to accommodate required threads
     gridSize = (h_elements.count + blockSize - 1) / blockSize;
-    // @todo Are there more elements or interface nodes? This may want to be inverted
-    d_checkNewInterfaceParticles<<<gridSize, blockSize>>>(h_elements.count, d_nodes, d_particles, d_elements);
+    // @todo Are there more elements or particles? This may want to be inverted, and we can go straight to particles rather than components?
+    d_checkNewInterfaceParticles<<<gridSize, blockSize>>>(d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
 #endif
+
 void LB2::latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& elmts, const particleList& particles) {
     // Sync DEM data to structure of arrays format (and device memory)
     syncParticles<IMPL>(particles);
@@ -474,6 +426,12 @@ void LB2::latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& e
     // 2) the second is checking for new solid nodes.
     // this automatically check also for the hideous case of particle to particle double transition
 
+    /**
+     * @todo The parallelisation of each of these methods should be reviewed
+     *       Most are 2D loops, the range of each being unclear
+     *       Likewise, can OpenMP parallel block be moved outside of each member?
+     */
+
     // first we check if a new neighbour table has been defined. In that case, the indexing needs to be reinitialised
     if (newNeighbourList) {
         cout << endl << "New neighbour list" << endl;
@@ -484,8 +442,6 @@ void LB2::latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& e
         // @note Calling this directly after initializeParticleBoundaries() is redundant, hence else
         this->findNewActive<IMPL>();
     }
-
-    // @todo Surely d_nodes->activeI needs to be rebuilt here, after we've updated which particles are inside spheres?
 
     // ACTIVE TO SOLID CHECK
     this->findNewSolid<IMPL>();

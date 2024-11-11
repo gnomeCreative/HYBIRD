@@ -17,15 +17,15 @@ struct Node2 {
     // The total number of active nodes
     // A node is active whilst it contains either fluid or interface
     // A node is inactive whilst it contains gas.
-    size_t activeCount = 0;
+    unsigned int activeCount = 0;
     // Index of nodes marked as active (@todo when is this generated?)
     unsigned int *activeI = nullptr;
     // The total number of interface nodes
-    size_t interfaceCount = 0;
+    unsigned int interfaceCount = 0;
     // Index of nodes marked as interface (@todo when is this generated?)
     unsigned int* interfaceI = nullptr;
     // The total number of nodes
-    size_t count = 0;
+    unsigned int count = 0;
     /**
      * @brief linear coordinate of node
      */
