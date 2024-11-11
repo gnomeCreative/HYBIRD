@@ -161,9 +161,8 @@ bool LB2::syncElements<CUDA>(const elmtList& elements) {
 #ifndef USE_CUDA
 template<>
 void LB2::initializeParticleBoundaries<CPU>() {
-    // Reset all nodes to outside (std::numeric_limits<unsigned short>::max())
-    // (The type short is 2 bytes long, but memset requires 4 bytes, so we pass 0xff..)
-    memset(d_nodes->solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned short));
+    // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
+    memset(d_nodes->solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int));
     
     for (int p_i = 0; p_i < d_particles.count; ++i) {
         const tVect convertedPosition = d_particles->x0[p_i] / PARAMS.unit.Length;
@@ -198,9 +197,8 @@ __global__ void d_initializeParticleBoundaries(Node2 *d_nodes, Particle2 *d_part
 }
 template<>
 void LB2::initializeParticleBoundaries<CUDA>() {
-    // Reset all nodes to outside (std::numeric_limits<unsigned short>::max())
-    // (The type short is 2 bytes long, but memset requires 4 bytes, so we pass 0xff..)
-    CUDA_CALL(cudaMemset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned short)));
+    // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
+    CUDA_CALL(cudaMemset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int)));
     
     // Launch cuda kernel to update
     // @todo Try unrolling this, so 1 thread per node+particle combination (2D launch?)
@@ -318,7 +316,7 @@ void LB2::findNewSolid<CPU>() {
                         const unsigned int last_component = d_elements->componentsIndex[clusterIndex + 1];
                         for (unsigned int j = first_component; j < last_component; ++j) {
                             // getting component particle index
-                            unsigned short componentIndex = d_elements->componentsData[j];
+                            unsigned int componentIndex = d_elements->componentsData[j];
                             // check if it getting inside
                             // radius need to be increased by half a lattice unit
                             // this is because solid boundaries are located halfway between solid and fluid nodes
@@ -361,7 +359,7 @@ __global__ void d_findNewSolid(unsigned int threadCount, Node2* d_nodes, Particl
                     const unsigned int last_component = d_elements->componentsIndex[clusterIndex + 1];
                     for (unsigned int j = first_component; j < last_component; ++j) {
                         // getting component particle index
-                        unsigned short componentIndex = d_elements->componentsData[j];
+                        unsigned int componentIndex = d_elements->componentsData[j];
                         // check if it getting inside
                         // radius need to be increased by half a lattice unit
                         // this is because solid boundaries are located halfway between solid and fluid nodes
@@ -402,7 +400,7 @@ void LB2::checkNewInterfaceParticles<CPU>() {
             const unsigned int first_component = d_elements->componentsIndex[m];
             const unsigned int last_component = d_elements->componentsIndex[m + 1];
             for (unsigned int n = first_component; n < last_component; ++n) {
-                const unsigned short componentIndex = d_elements->componentsData[n];
+                const unsigned int componentIndex = d_elements->componentsData[n];
                 const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
                 // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
                 const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
@@ -432,7 +430,7 @@ __global__ void d_checkNewInterfaceParticles(unsigned int threadCount, Node2* d_
         const unsigned int first_component = d_elements->componentsIndex[m];
         const unsigned int last_component = d_elements->componentsIndex[m + 1];
         for (unsigned int n = first_component; n < last_component; ++n) {
-            const unsigned short componentIndex = d_elements->componentsData[n];
+            const unsigned int componentIndex = d_elements->componentsData[n];
             const tVect convertedPosition = d_particles->x0[componentIndex] / PARAMS.unit.Length;
             // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
             const double convertedRadius = d_particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;

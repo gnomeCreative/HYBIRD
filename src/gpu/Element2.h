@@ -2,10 +2,12 @@
 #define ELEMENT2_H
 
 /**
- * \brief ???
+ * \brief Representation of objects, such as walls, within the DEM.
+ * @todo/note original member vars wsolver, index, active are fixed at runtime
  */
 struct Element2 {
     // The total number of elements
+    // @note This is currently fixed at runtime, but may become variable in future
     size_t count = 0;
 
     tVect *FHydro = nullptr;

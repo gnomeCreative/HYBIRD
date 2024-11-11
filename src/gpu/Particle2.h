@@ -2,10 +2,14 @@
 #define PARTICLE2_H
 
 /**
- * \brief ???
+ * \brief Elements within the DEM are decomposed into spherical particles.
+ *
+ * This leads to simpler maths for elements that would contain hard edges.
+ * @todo/note original member vars coord and d are fixed at runtime
  */
 struct Particle2 {
     // The total number of particles
+    // @note This is variable at runtime
     size_t count = 0;
     // belonging element index
     unsigned int *clusterIndex = nullptr;

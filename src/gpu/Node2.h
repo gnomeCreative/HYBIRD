@@ -9,11 +9,14 @@
 /**
  * @brief A node is a discrete cell within the LBM model's environment.
  *
- * As the LBM environment is sparse, with many cells containing air
- * Nodes are stored compactly, rather than in a dense array
+ * As the LBM environment is sparse, with many inactive cells that contain
+ * gas. Nodes are stored compactly, rather than in a dense array, to reduce
+ * memory requirements.
  */
 struct Node2 {
     // The total number of active nodes
+    // A node is active whilst it contains either fluid or interface
+    // A node is inactive whilst it contains gas.
     size_t activeCount = 0;
     // Index of nodes marked as active (@todo when is this generated?)
     unsigned int *activeI = nullptr;
@@ -29,9 +32,9 @@ struct Node2 {
     unsigned int *coord = nullptr;
     /**
      * @brief The index of the particle the node is inside
-     * @note If val = std::numeric_limits<unsigned short>::max() node is outside a particle
+     * @note If val = std::numeric_limits<unsigned int>::max() node is outside a particle
      */
-    unsigned short *solidIndex = nullptr;
+    unsigned int *solidIndex = nullptr;
     /**
      * @brief neighbour node indexes
      *       Length == count*lbmDirec
