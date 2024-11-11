@@ -77,14 +77,10 @@ public:
     double fs[lbmDirec];
     // density in the node
     double n;
-    // smoothed pressure in the node
-    double smoothedPressure;
     // velocity of fluid in node
     tVect u;
     // DEM-coupling forces on the node
     tVect hydroForce;
-    // surface normal
-    tVect surfaceNormal;
     // centrifugal force on the node
     tVect centrifugalForce;
     // mass functions
@@ -119,7 +115,6 @@ public:
     // default constructor
     node(){
         n=0.0;
-        smoothedPressure=0.0;
         u.reset();
         hydroForce.reset();
         centrifugalForce.reset();
