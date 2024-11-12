@@ -5,6 +5,7 @@
 
 #include "lattice.h"
 #include "MeasureUnits.h"
+#include "node.h"
 
 /**
  * Lattice Boltzmann model parameters
@@ -13,10 +14,17 @@
  *       whilst maximising how much code can be inlined
  */
 struct LBParams {
+    // model for the fluid
+    FluidMaterial fluidMaterial = {};
+    // slip coefficient
+    double slipCoefficient = 0.0;
     // hydrodynamic radius (see Kumnar et al., Mechanics of granular column collapse in fluid at varying slope angles)
     double hydrodynamicRadius = 1;
-    // LB::lbSize
-    std::array<unsigned int, 3> lbSize = { 1,1,1 };
+    // switchers for rotating local system
+    bool solveCoriolis = false;
+    bool solveCentrifugal = false;
+    // rotation speed of the local coordinate system
+    tVect rotationSpeed = { 0,0,0 };
     /**
      * standard neighbors shifting
      */
@@ -31,6 +39,12 @@ struct LBParams {
      * @see lattice.h for the static lattice params
      */
     void latticeDefinition();
+    // switchers for force field, non-Newtonian and everything
+    bool forceField = false;
+    bool TRTsolver = false;
+    double magicNumber = 0.25;
+    // LB::lbSize
+    std::array<unsigned int, 3> lbSize = { 1,1,1 };
     // conversion units /////////////////////////////////////////////////////////////////////////
     // fluid and granular matter are solved in different measure units
     // for a reference, check Feng, Han, Owen, 2007

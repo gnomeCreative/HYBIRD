@@ -81,7 +81,7 @@ public:
     tVect I;
     // Position and derivatives
     // position of the center of mass of the element
-    tVect  x0;
+    tVect x0;
     // velocity of the center of the element
     tVect x1;
     // acceleration of the center of the element

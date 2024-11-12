@@ -35,11 +35,14 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/utils.h
     ${PROJECT_SOURCE_DIR}/src/MeasureUnits.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cuda_helper.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/cub_temp_mem.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Element2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/Object2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Particle2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/Wall2.h
     )
     
 # Define source files

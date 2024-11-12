@@ -146,9 +146,9 @@ void node::shiftVelocity(const tVect& F) {
 }
 
 void node::computeEquilibriumTRT(double feqp[], double feqm[]) {
-    static double C1 = 3.0;
-    static double C2 = 4.5;
-    static double C3 = 1.5;
+    constexpr double C1 = 3.0;
+    constexpr double C2 = 4.5;
+    constexpr double C3 = 1.5;
 
     const double usq = u.norm2();
     double posSum=0.0;
@@ -163,9 +163,9 @@ void node::computeEquilibriumTRT(double feqp[], double feqm[]) {
 }
 
 void node::computeEquilibrium(double feq[]) {
-    static double C1 = 3.0;
-    static double C2 = 4.5;
-    static double C3 = 1.5;
+    constexpr double C1 = 3.0;
+    constexpr double C2 = 4.5;
+    constexpr double C3 = 1.5;
 
     const double usq = u.norm2();
 

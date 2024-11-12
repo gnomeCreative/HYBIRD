@@ -4,6 +4,14 @@
 #include <cstdio>
 #include <cstdlib>
 
+// For use in C++ templates to specify version
+enum Implementation {
+#ifdef USE_CUDA
+    CUDA,
+#endif
+    CPU
+};
+
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
 

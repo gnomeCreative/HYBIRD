@@ -8,6 +8,8 @@
 #include "Node2.h"
 #include "Particle2.h"
 #include "Element2.h"
+#include "Object2.h"
+#include "Wall2.h"
 
 class DEM;
 
@@ -16,7 +18,6 @@ class DEM;
  * An experimental attempt to produce a combined CPU-CUDA codebase
  * which can be compiled as either CPU or GPU code with as much shared code as possible
  */
-enum Implementation {CPU, CUDA};
 class LB2 {
     public:
 
@@ -36,34 +37,62 @@ class LB2 {
      */
     void step(const DEM &dem, bool io_demSolver);
     /**
-     * @brief Identifies which nodes need to have an update due to particle movement
-     * @param newNeighbourList If a new neighbour table has been defined, the indexing will be reinitialised
-     * @param eltms ??????? Are these the walls?
-     * @param particles The DEM particles
+     * @brief Sync DEM data to structure of arrays format (and device memory)
+     * @param elmts Objects, such as walls within the DEM
+     * @param particles Spherical particles, which represent a decomposition of the elmts
+     * @param walls Wall elmts??
+     * @param objects Objects that are not walls, e.g. cylinders??
+     * @note Most of this will be removed once DEM is also moved to CUDA
      */
-    void latticeBoltzmannCouplingStep(bool &newNeighbourList, const elmtList& eltms, const particleList& particles);
-
+    void syncDEM(const elmtList &elmts, const particleList &particles, const wallList &walls, const objectList &objects);
     /**
-     * @brief Sync DEM particle list to h_particles/d_particles
-     * @note Should be redundant once DEM is also ported to CUDA
+     * @brief Following the DEM model being stepped, this updates impacted LBM nodes
+     * @param newNeighbourList If a new neighbour table has been defined, the indexing will be reinitialised
      */
-    template<int impl>
-    void syncParticles(const particleList& particles);
+    void latticeBoltzmannCouplingStep(bool &newNeighbourList);
+    /**
+     * @brief The main LBM step
+     */
+    void latticeBoltzmannStep();
     /**
      * @brief Sync DEM elements list to h_elements/d_elements
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
-    bool syncElements(const elmtList& elements);
+    bool syncElements(const elmtList &elements);
+    /**
+     * @brief Sync DEM particle list to h_particles/d_particles
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncParticles(const particleList &particles);
+    /**
+     * @brief Sync DEM wall list to h_elements/d_elements
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncWalls(const wallList &walls);
+    /**
+     * @brief Sync DEM object list to h_objects/d_objects
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncObjects(const objectList &objects);
+
+    //
+    // latticeBoltzmannCouplingStep() subroutines
+    //
     /**
      * @brief Update all Node2::solid_index to the contained particle
      * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has been defined
+     * @see latticeBoltzmannCouplingStep()
      */
     template<int impl>
     void initializeParticleBoundaries();
     /**
      * @brief Check and update whether active nodes are still inside particles
      * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has not been defined
+     * @see latticeBoltzmannCouplingStep()
      */
     template<int impl>
     void findNewActive();
@@ -72,14 +101,42 @@ class LB2 {
      * Checks whether nodes that are neighbouring active nodes marked as inside particle
      * are also inside any particles within that same particles cluster.
      * If so they are marked as inside particle with their solid index updated
+     * @see latticeBoltzmannCouplingStep()
      */
     template<int impl>
     void findNewSolid();
     /**
      * @brief ??
+     * @see latticeBoltzmannCouplingStep()
      */
     template<int impl>
     void checkNewInterfaceParticles();
+
+    //
+    // latticeBoltzmannStep() subroutines
+    //
+    /**
+     * @brief combined reconstruct(), computeHydroForces(), collision()
+     * Reconstruct macroscopic variables from microscopic distribution
+     * Compute interaction forces with DEM elmts
+     * Collision step
+     * @see latticeBoltzmannStep()
+     */
+    template<int impl>
+    void reconstructHydroCollide();
+    /**
+     * @brief Streaming operator
+     * @see latticeBoltzmannStep()
+     */
+    template<int impl>
+    void streaming();
+    /**
+     * @brief Shift element/wall/object forces and torques to physical units
+     * @see latticeBoltzmannStep()
+     */
+    template<int impl>
+    void shiftToPhysical();
+
     /**
      * Initialise dynamic lattice params that scale with the model configuration
      * @see lattice.h for the static lattice params
@@ -111,6 +168,8 @@ class LB2 {
     // Until DEM model is moved to CUDA, host copy only acts as a location to build data before copying to device
     Particle2 h_particles, hd_particles, *d_particles;
     Element2 h_elements, hd_elements, *d_elements;
+    Wall2 h_walls, hd_walls, *d_walls;
+    Object2 h_objects, hd_objects, *d_objects;
     
     LBParams h_params;  // Host copy of PARAMS
 

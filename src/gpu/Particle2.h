@@ -17,5 +17,7 @@ struct Particle2 {
     double *r = nullptr;
     // position of the particle
     tVect *x0 = nullptr;
+    // vector connecting center of element to center of particle
+    tVect *radiusVec = nullptr;
 };
 #endif  // PARTICLE2_H
