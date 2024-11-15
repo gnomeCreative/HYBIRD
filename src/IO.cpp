@@ -2913,7 +2913,7 @@ void IO::calctemperature(const LB& lb, const DEM& dem, const elmtList& elmts, do
 
                 double posz = elmts[n].x0.dot(Zp);
 
-                double velmediax = -dem.shearVelocity * (posz - (lb.lbSize[2] - 2) * 0.5 * lb.unit.Length) / ((lb.lbSize[2] - 2) * 0.5 * lb.unit.Length);
+                double velmediax = -dem.shearVelocity * (posz - (lb.lbSize[2] - 2) * 0.5 * lb.unit.Length) / ((lb.lbSize[2] - 2) * 0.5 * lb.unit.Length) * ((lb.lbSize[2] - 2) * lb.unit.Length) / ((lb.lbSize[2] - 2) * lb.unit.Length - 2 * dem.avgParticleDiam);
                 double velmediay = 0.0;
                 double velmediaz = 0.0;
 
