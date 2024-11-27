@@ -9,6 +9,7 @@
 #include "Particle2.h"
 #include "Element2.h"
 #include "Object2.h"
+#include "Cylinder2.h"
 #include "Wall2.h"
 
 class DEM;
@@ -19,11 +20,27 @@ class DEM;
  * which can be compiled as either CPU or GPU code with as much shared code as possible
  */
 class LB2 {
+    struct NewNode {
+        types type;
+        unsigned int solidIndex = std::numeric_limits<unsigned int>::max();
+    };
     public:
 
     // @todo how do we init params from config?
     LB2() = default;
 
+    void init(cylinderList &cylinders, wallList &walls, particleList &particles, objectList &objects, bool externalSolveCoriolis, bool externalSolveCentrifugal);
+    void countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes);
+    void countTypes(std::map<unsigned int, NewNode> &newNodes, const wallList &walls, const cylinderList &cylinders, const objectList &objects);
+    void countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const wallList& walls);
+    void countObjectBoundaries(std::map<unsigned int, NewNode> &newNodes, const objectList& objects);
+    void countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, const cylinderList& cylinders);
+    void countTopography(std::map<unsigned int, NewNode> &newNodes);
+    void countInterface(std::map<unsigned int, NewNode> &newNodes);
+    void generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, std::vector<curve> &curves);
+    void initializeWalls();
+    void initializeCurved(std::vector<curve>& curves);
+    void initializeLists();
     /**
      * Execute all LB methods from hybird.cpp::goCycle()
      * 1. latticeBoltzmannCouplingStep() if io.demSolver
@@ -67,7 +84,13 @@ class LB2 {
     template<int impl>
     void syncParticles(const particleList &particles);
     /**
-     * @brief Sync DEM wall list to h_elements/d_elements
+     * @brief Sync DEM cylinder list to h_cylinders/d_cylinders
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncCylinders(const cylinderList &cylinders);
+    /**
+     * @brief Sync DEM wall list to h_walls/d_walls
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
@@ -78,6 +101,14 @@ class LB2 {
      */
     template<int impl>
     void syncObjects(const objectList &objects);
+    /**
+     * Set the LBM params
+     * This copies them to GPU storage if required
+     * @params params The LBParams structure to overwrite PARAMS with
+     * @param skip_sync If true, will not be copied to device
+     */
+    void setParams(const LBParams& params, bool skip_sync = false);
+    void syncParams();
 
     //
     // latticeBoltzmannCouplingStep() subroutines
@@ -138,15 +169,6 @@ class LB2 {
     void shiftToPhysical();
 
     /**
-     * Initialise dynamic lattice params that scale with the model configuration
-     * @see lattice.h for the static lattice params
-     */
-    void latticeDefinition(); // @todo Call Params version and copy to PARAMS?
-
-    void LBShow() { };
-
-
-    /**
      * Member variable philosophy
      * h_<name> are "host" copies of the same information pointed to by <name>
      * In CPU builds, <name> should always point to h_<name>
@@ -169,12 +191,10 @@ class LB2 {
     Particle2 h_particles, hd_particles, *d_particles;
     Element2 h_elements, hd_elements, *d_elements;
     Wall2 h_walls, hd_walls, *d_walls;
+    Cylinder2 h_cylinders, hd_cylinders, * d_cylinders;
     Object2 h_objects, hd_objects, *d_objects;
     
     LBParams h_params;  // Host copy of PARAMS
-
-    // switchers for force field, non-Newtonian and everything
-    bool freeSurface = false;
 };
 
 #endif // LB2_H

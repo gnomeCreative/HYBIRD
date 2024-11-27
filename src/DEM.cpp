@@ -2,6 +2,7 @@
 #include "DEM.h"
 #include "macros.h"
 
+#include <array>
 
 #define USE_MATH_DEFINES
 
@@ -195,7 +196,7 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
 
 }
 
-void DEM::discreteElementInit(const typeList& externalBoundary, const doubleList& externalSize, const vecList& externalBoundaryLocation,
+void DEM::discreteElementInit(const std::array<types, 6> &externalBoundary, const std::array<double, 3> &externalSize, const std::array<tVect, 6> &externalBoundaryLocation,
         const tVect externalAccel, const tVect externalRotation, const tVect externalRotationCenter, const bool externalSolveCoriolis, const bool externalSolveCentrifugal, const double& externalTimeStep) {
 
     // initializing DEM parameters from external parameters (LES or LBM))
@@ -541,7 +542,7 @@ void DEM::compositeProperties() {
 
 }
 
-void DEM::initializeWalls(const typeList& externalBoundary, const vecList& boundaryLocation) {
+void DEM::initializeWalls(const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation) {
     walls.clear();
 
     // boundary directors
@@ -1606,7 +1607,7 @@ void DEM::initializeCylinders() {
     }
 }
 
-void DEM::initializePbcs(const typeList& externalBoundary, const vecList& boundaryLocation) {
+void DEM::initializePbcs(const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation) {
 
     pbcs.clear();
 

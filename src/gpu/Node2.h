@@ -30,13 +30,23 @@ struct Node2 {
 
     // The total number of interface nodes
     unsigned int interfaceCount = 0;
-    // Index of nodes marked as interface (@todo when is this generated?)
+    // Index of nodes marked as interface
     unsigned int* interfaceI = nullptr;
 
     // The total number of fluid nodes
     unsigned int fluidCount = 0;
-    // Index of nodes marked as interface (@todo when is this generated?)
+    // Index of nodes marked as fluid
     unsigned int *fluidI = nullptr;
+
+    // The total number of wall nodes
+    unsigned int wallCount = 0;
+    // Index of nodes marked as walls
+    unsigned int *wallI = nullptr;
+
+    // The total number of curves (only really required for copying)
+    unsigned int curveCount = 0;
+    // Buffer of curves, nodes index into this via curved
+    curve *curves = nullptr;
 
     // The total number of nodes
     unsigned int count = 0;
@@ -95,6 +105,10 @@ struct Node2 {
      */
     unsigned int *d = nullptr;
     /**
+     * Index into curve databuffer, else std::numeric_limits<unsigned int>::max()
+     */
+    unsigned int* curved = nullptr;
+    /**
      * @brief Identification of node type
      * @see types
      */
@@ -104,20 +118,36 @@ struct Node2 {
      */
     bool *p;
 
+    // functions working on distribution functions
+    __host__ void initialize(unsigned int i, double density, const tVect &velocity, double massFunction, double viscosity, const tVect &F, double ageHere, const tVect &rotationSpeed);
+    __host__ void setEquilibrium(unsigned int i, double nHere, const tVect& velHere);
     
-    __host__ __device__ double liquidFraction(unsigned int i) const {
+    __host__ __device__ double liquidFraction(const unsigned int i) const {
         return mass[i] / n[i];
     }
     /**
      * @brief Return true if the node's soldIndex denotes that it's inside a DEM particle
      */
-    __host__ __device__ bool isInsideParticle(unsigned int i) const {
+    __host__ __device__ bool isInsideParticle(const unsigned int i) const {
         return p[i];
     }
-    __host__ __device__ void setInsideParticle(unsigned int i, bool t) {
+    __host__ __device__ bool isWall(const unsigned int i) const {
+        switch (type[i]) {
+        case SLIP_STAT_WALL:
+        case SLIP_DYN_WALL:
+        case STAT_WALL:
+        case DYN_WALL:
+        case CYL:
+        case OBJ:
+        case TOPO:
+            return true;
+        }
+        return false;
+    }
+    __host__ __device__ void setInsideParticle(const unsigned int i, const bool t) {
         p[i] = t;
     }
-    __host__ __device__ bool isActive(unsigned int i) const {
+    __host__ __device__ bool isActive(const unsigned int i) const {
         return type[i] == LIQUID || type[i] == INTERFACE;
     }
 
@@ -142,6 +172,11 @@ struct Node2 {
      * @param index The storage index of the specified node
      */
     __host__ __device__ tVect getPosition(unsigned int index) const;
+    /**
+     * @brief Returns the grid cell coordinate
+     * Replacement for getX(), getY(), getZ()
+     */
+    __host__ __device__ std::array<int, 3> getGridPosition(unsigned int index) const;
     /**
      * reconstruction of macroscopic variables from microscopic distribution
      * this step is necessary to proceed to the collision step
@@ -183,6 +218,31 @@ __host__ __device__ __forceinline__ inline tVect Node2::getPosition(const unsign
     z = firstDiv.quot;
 
     return { double(x) - 0.5, double(y) - 0.5, double(z) - 0.5 };
+}
+__host__ __device__ __forceinline__ inline std::array<int, 3> Node2::getGridPosition(const unsigned int index) const {
+    unsigned int x, y, z;
+
+    // index is calculated in this fashion:
+    // index = x + y*X + z*X*Y
+    // where X and Y are sizes of the lattice in x and y direction
+
+    // from this stems that
+    // x + y*X = index MOD X*Y
+    // x = x + y*X MOD X
+    // y = x + y*X DIV X
+    // z = index DIV X*Y
+
+    // see online documentation for class div_t (stdlib.h)
+    div_t firstDiv, secondDiv;
+
+    firstDiv = div(int(coord[index]), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
+    secondDiv = div(firstDiv.rem, int(PARAMS.lbSize[0]));
+
+    x = secondDiv.rem;
+    y = secondDiv.quot;
+    z = firstDiv.quot;
+
+    return { static_cast<int>(x), static_cast<int>(y), static_cast<int>(z) };
 }
 __host__ __device__ __forceinline__ inline void Node2::shiftVelocity(const unsigned int index, const tVect& F) {
     const tVect totalForce = F + this->hydroForce[index];

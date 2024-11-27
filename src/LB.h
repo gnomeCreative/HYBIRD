@@ -212,7 +212,7 @@ public:
     void initializeInterface(double totParticles);
     void restartInterface(ifstream& fluidFileID, unsigned int& totNodes);
     void initializeLists();
-    void resetLists();
+    //void resetLists();
     void initializeVariables();
     void initializeWalls(wallList& walls, cylinderList& cylinders, objectList& objects);
     // integration functions
@@ -225,9 +225,9 @@ public:
     void computeHydroForces(node* nodeHere, elmtList& elmts, particleList& particles);
     void findNewActive(nodeList& newPopUpNodes, elmtList& elmts, particleList& particles);
     void findNewSolid(nodeList& newSolidNodes, elmtList& elmts, particleList& particles);
-    void activeToSolid(unsIntList& newSolidNodes, elmtList& elmts, double& massSurplus);
-    void solidToActive(unsIntList& newPopUpNodes, elmtList& elmts, double& massSurplus);
-    void updateBoundary(unsIntList& newPopUpNodes, unsIntList& newSolidNodes, elmtList& elmts);
+    //void activeToSolid(unsIntList& newSolidNodes, elmtList& elmts, double& massSurplus);
+   // void solidToActive(unsIntList& newPopUpNodes, elmtList& elmts, double& massSurplus);
+   // void updateBoundary(unsIntList& newPopUpNodes, unsIntList& newSolidNodes, elmtList& elmts);
     //    void updateBoundaryOld(intList& newPopUpNodes, intList& newSolidNodes, particle& dummyParticle);
     // interface functions
     void updateMass();

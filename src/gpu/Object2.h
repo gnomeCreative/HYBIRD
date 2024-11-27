@@ -5,6 +5,13 @@
 struct Object2 {
     unsigned int count;
 
+    // particle radius
+    double *r = nullptr;
+    // position of the object
+    tVect *x0 = nullptr;
+    // velocity of the object
+    tVect *x1 = nullptr;
+    // force on the object
     tVect *FHydro = nullptr;
 
     template<int impl>

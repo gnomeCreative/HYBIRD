@@ -6,6 +6,733 @@
 
 #include "DEM.h"
 
+void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
+    // Convert from AoS format to SoA and copy to device
+    syncCylinders<>(cylinders);
+    syncWalls<>(walls);
+    syncParticles<>(particles);
+    syncObjects<>(objects);
+
+    //  Lattice Boltzmann initialization steps
+
+    // switchers for apparent accelerations
+    h_PARAMS.solveCoriolis = externalSolveCoriolis;
+    h_PARAMS.solveCentrifugal = externalSolveCentrifugal;
+
+    // first comes the initialization of the data structures
+    cout << "Initializing nodes containers and types" << endl;
+    // total number of nodes
+    h_PARAMS.totPossibleNodes = h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1] * h_PARAMS.lbSize[2];
+
+    // Count the number of nodes to be created, so memory can be pre-allocated
+    std::map<unsigned int, NewNode> newNodes;
+    // application of lattice boundaries
+    countLatticeBoundaries(newNodes);
+    // then the initial node type must be identified for every node (if not specified, it is already Fluid)
+    countTypes(newNodes, walls, cylinders, objects);
+
+    // Build a temporary buffer of curves
+    std::vector<curve> curves;
+
+    ifstream fluidFileID;
+    if (h_PARAMS.lbRestart) {
+        // open fluid restart file
+        fluidFileID.open(h_PARAMS.lbRestartFile.c_str(), ios::in);
+        ASSERT(fluidFileID.is_open());
+        // check if the restart file size is ok
+        unsigned int restartX, restartY, restartZ, restartNodes;
+        fluidFileID >> restartX;
+        fluidFileID >> restartY;
+        fluidFileID >> restartZ;
+        fluidFileID >> restartNodes;
+        ASSERT(restartX == h_PARAMS.lbSize[0]);
+        ASSERT(restartY == h_PARAMS.lbSize[1]);
+        ASSERT(restartZ == h_PARAMS.lbSize[2]);
+        // read active nodes from file and generate
+        // @todo
+        throw std::exception("lbRestart is not yet supported.");
+        // restartInterface(fluidFileID, restartNodes);
+    } else {
+        // initialize interface
+        countInterface(newNodes);
+        // Create and initialize active nodes
+        generateInitialNodes(newNodes, curves);
+    }
+
+    // initialize variables for wall nodes
+    initializeWalls();
+
+    // initializing curved properties
+    initializeCurved(curves);
+
+    // Allocate the curves storage
+    h_nodes.curveCount = curves.size();
+    h_nodes.curves = static_cast<curve*>(malloc(h_nodes.curveCount * sizeof(curve)));
+    memcpy(h_nodes.curves, curves.data(), h_nodes.curveCount * sizeof(curve));
+
+    // initialize h_nodes's fluid, interface and active lists
+    initializeLists();
+
+    // application of particle initial position
+    initializeParticleBoundaries<>();
+
+    // in case mass needs to be kept constant, compute it here
+    h_PARAMS.totalMass = 0.0;
+    if (h_PARAMS.imposeFluidVolume) {
+        // volume and mass is the same in lattice units
+        h_PARAMS.totalMass = h_PARAMS.imposedFluidVolume / h_PARAMS.unit.Volume;
+    } else {
+        switch (problemName) {
+        case DRUM:
+        {
+            h_PARAMS.totalMass = h_PARAMS.fluidMass / h_PARAMS.unit.Mass;
+            break;
+        }
+        case STAVA:
+        {
+            h_PARAMS.totalMass = 200000.0 / h_PARAMS.unit.Volume;
+            break;
+        }
+        default:
+        {
+            for (int i = 0; h_nodes.activeCount; ++i) {
+                const unsigned int a_i = h_nodes.activeI[i];
+                if (!h_nodes.isInsideParticle(a_i)) {
+                    h_PARAMS.totalMass += h_nodes.mass[a_i];
+                }
+            }
+            break;
+        }
+        }
+    }
+    if (h_PARAMS.increaseVolume) {
+        h_PARAMS.deltaVolume /= h_PARAMS.unit.Volume;
+        h_PARAMS.deltaTime /= h_PARAMS.unit.Time;
+    }
+
+    syncParams();
+
+    cout << "Done with initialization" << endl;
+}
+
+void LB2::countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes) {
+    // Based on initialiseLatticeBoundaries()
+    // XY
+    for (int x = 0; x < h_params.lbSize[0]; ++x) {
+        for (int y = 0; y < h_params.lbSize[1]; ++y) {
+            // bottom
+            newNodes.emplace(h_params.getIndex(x, y, 0), NewNode{ h_params.boundary[4] });
+            // top
+            newNodes.emplace(h_params.getIndex(x, y, h_params.lbSize[2] - 1), NewNode{ h_params.boundary[5] });
+        }
+    }
+
+    // YZ
+    for (int y = 0; y < h_params.lbSize[1]; ++y) {
+        for (int z = 0; z < h_params.lbSize[2]; ++z) {
+            // bottom
+            newNodes.emplace(h_params.getIndex(0, y, z), NewNode{ h_params.boundary[0] });
+            // top
+            newNodes.emplace(h_params.getIndex(h_params.lbSize[0] - 1, y, z), NewNode{ h_params.boundary[1] });
+        }
+    }
+
+    // ZX
+    for (int z = 0; z < h_params.lbSize[2]; ++z) {
+        for (int x = 0; x < h_params.lbSize[0]; ++x) {
+            // bottom
+            newNodes.emplace(h_params.getIndex(x, 0, z), NewNode{ h_params.boundary[2] };
+            // top
+            newNodes.emplace(h_params.getIndex(x, h_params.lbSize[1] - 1, z), NewNode{ h_params.boundary[3] });
+        }
+    }
+}
+void LB2::countTypes(std::map<unsigned int, NewNode> &newNodes, const wallList& walls, const cylinderList& cylinders, const objectList& objects) {
+    countWallBoundaries(newNodes, walls);
+    // application of solid cylinders
+    countCylinderBoundaries(newNodes, cylinders);
+    // application of objects
+    countObjectBoundaries(newNodes, objects);
+    // initializing topography if one is present
+    countTopography(newNodes);
+}
+void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const wallList& walls) {
+    // Based on initializeWallBoundaries()
+    const double wallThickness = 2.0 * h_params.unit.Length;
+    // SOLID WALLS ////////////////////////
+    for (int iw = 0; iw < walls.size(); ++iw) {
+        const tVect convertedWallp = walls[iw].p / h_params.unit.Length;
+        const tVect normHere = walls[iw].n;
+        const unsigned short int indexHere = walls[iw].index;
+        const bool slipHere = walls[iw].slip;
+        const bool movingHere = walls[iw].moving;
+        for (int it = 0; it < h_params.totPossibleNodes; ++it) {
+            // check if the node is solid
+            // all walls have max thickness 2 nodes
+            const tVect pos = h_params.getPosition(it);
+            const double wallDistance = pos.distance2Plane(convertedWallp, normHere);
+            if (wallDistance>-2.0 && wallDistance < 0.0) {
+                //check for borders in limted walls
+                if (walls[iw].limited) {
+                    const double xHere = pos.x * h_params.unit.Length;
+                    const double yHere = pos.y * h_params.unit.Length;
+                    const double zHere = pos.z * h_params.unit.Length;
+                    // check if beyond limits
+                    if (xHere < walls[iw].xMin || xHere > walls[iw].xMax ||
+                            yHere < walls[iw].yMin || yHere > walls[iw].yMax ||
+                            zHere < walls[iw].zMin || zHere > walls[iw].zMax) {
+                        continue;
+                    }
+                }
+            }
+            // setting type: 5-6=slip, 7-8=no-slip
+            if (slipHere) {
+                // setting type for slip: 5=static, 6=moving
+                if (movingHere) {
+                    newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, indexHere });
+                } else {
+                    newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, indexHere });
+                }
+            } else {
+                // setting type for no-slip: 7=static, 8=moving
+                if (movingHere) {
+                    newNodes.emplace(it, NewNode{ DYN_WALL, indexHere });
+                } else {
+                    newNodes.emplace(it, NewNode{ STAT_WALL, indexHere });
+                }
+            }
+        }
+    }
+
+}
+void LB2::countObjectBoundaries(std::map<unsigned int, NewNode> &newNodes, const objectList& objects) {
+    // Based on initializeObjectBoundaries()
+    // SOLID WALLS ////////////////////////
+    for (int io = 0; io < objects.size(); ++io) {
+        const tVect convertedPosition = objects[io].x0 / h_params.unit.Length;
+        const double convertedRadius = objects[io].r / h_params.unit.Length;
+        const unsigned int indexHere = objects[io].index;
+        for (int it = 0; it < h_params.totPossibleNodes; ++it) {
+            const tVect nodePosition = h_params.getPosition(it);
+            if (nodePosition.insideSphere(convertedPosition, convertedRadius)) {
+                newNodes.emplace(it, NewNode{ OBJ, indexHere });
+            }
+        }
+    }
+}
+void LB2::countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, const cylinderList& cylinders) {
+    // Based on initializeCylinderBoundaries()
+    // SOLID CYLINDERS ////////////////////////
+    for (int ic = 0; ic < cylinders.size(); ++ic) {
+
+        const tVect convertedCylinderp1 = cylinders[ic].p1 / h_params.unit.Length;
+        const tVect naxesHere = cylinders[ic].naxes;
+        const double convertedRadius = cylinders[ic].R / h_params.unit.Length;
+        const unsigned int indexHere = cylinders[ic].index;
+        const bool slipHere = cylinders[ic].slip;
+        const bool movingHere = cylinders[ic].moving;
+        for (int it = 0; it < h_params.totPossibleNodes; ++it) {
+            // creating solid cells
+            const bool isOutside = h_params.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, convertedRadius, convertedRadius + 3.0);
+            const bool isInside = h_params.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, max(convertedRadius - 3.0, 0.0), convertedRadius);
+            if ((cylinders[ic].type == FULL && isInside) ||
+                (cylinders[ic].type == EMPTY && isOutside)) {
+                //check for borders in limted walls
+                if (cylinders[ic].limited) {
+                    const tVect here = h_params.getPosition(it) * h_params.unit.Length;
+                    // check if beyond limits
+                    if (here.x < cylinders[ic].xMin || here.x > cylinders[ic].xMax ||
+                        here.y < cylinders[ic].yMin || here.y > cylinders[ic].yMax ||
+                        here.z < cylinders[ic].zMin || here.z > cylinders[ic].zMax) {
+                        continue;
+                    }
+                }
+                // setting type: 5-6=slip, 7-8=no-slip
+                if (slipHere) {
+                    // setting type for slip: 5=static, 6=moving
+                    if (movingHere) {
+                        newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, indexHere });
+                    } else {
+                        newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, indexHere });
+                    }
+                } else {
+                    // setting type for no-slip: 7=static, 8=moving
+                    if (movingHere) {
+                        newNodes.emplace(it, NewNode{ DYN_WALL, indexHere });
+                    } else {
+                        newNodes.emplace(it, NewNode{ STAT_WALL, indexHere });
+                    }
+                }
+            }
+        }
+    }
+}
+void LB2::countTopography(std::map<unsigned int, NewNode> &newNodes) {
+    // Based on initializeTopography()
+    
+    const double surfaceThickness = 1.75 * h_params.unit.Length;
+
+    // TOPOGRAPHY ////////////////////////
+    if (h_params.lbTopography) {
+        h_params.lbTop.readFromFile(h_params.lbTopographyFile, h_params.translateTopographyX, h_params.translateTopographyY, h_params.translateTopographyZ);
+        h_params.lbTop.show();
+        // check if topography grid contains the fluid domain
+        ASSERT(h_params.lbTop.coordX[0] < h_params.unit.Length);
+        ASSERT(h_params.lbTop.coordY[0] < h_params.unit.Length);
+
+        cout << "lbTop.coordX[lbTop.sizeX - 1]=" << h_params.lbTop.coordX[h_params.lbTop.sizeX - 1] << endl;
+        cout << "lbSize[0]) * unit.Length=" << h_params.lbSize[0] * h_params.unit.Length << endl;
+        ASSERT(h_params.lbTop.coordX[h_params.lbTop.sizeX - 1] > h_params.lbSize[0] * h_params.unit.Length);
+        cout << "lbTop.coordY[lbTop.sizeY - 1]=" << h_params.lbTop.coordY[h_params.lbTop.sizeY - 1] << endl;
+        cout << "lbSize[1]) * unit.Length=" << h_params.lbSize[1] * h_params.unit.Length << endl;
+        ASSERT(h_params.lbTop.coordY[h_params.lbTop.sizeY - 1] > h_params.lbSize[1] * h_params.unit.Length);
+
+
+        for (int ix = 1; ix < h_params.lbSize[0] - 1; ++ix) {
+            for (int iy = 1; iy < h_params.lbSize[1] - 1; ++iy) {
+                for (int iz = 1; iz < h_params.lbSize[2] - 1; ++iz) {
+                    const tVect nodePosition = tVect(ix, iy, iz) * h_params.unit.Length;
+                    const double distanceFromTopography = h_params.lbTop.distance(nodePosition);
+                    
+                    if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
+                        const unsigned int it = ix + iy * h_params.lbSize[0] + iz * h_params.lbSize[0] * h_params.lbSize[1];
+                        newNodes.emplace(it, NewNode{ TOPO });
+                    }
+                }
+            }
+        }
+    }
+}
+void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
+    // Based on initializeInterface()
+    // @Currently only default case is supported
+    // creates an interface electing interface cells from active cells
+    if (h_params.lbTopographySurface) {
+        // Formerly setTopographySurface()
+        for (int it = 0; it < h_params.totPossibleNodes; ++it) {
+            if (newNodes.find(it) == newNodes.end()) {
+                // control is done in real coordinates
+                const tVect nodePosition = h_params.getPosition(it) * h_params.unit.Length;
+                const double surfaceIsoparameterHere = h_params.lbTop.surfaceIsoparameter(nodePosition);
+                if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
+                    newNodes.emplace(it, NewNode{ LIQUID });
+                }
+            }
+        }
+    } else {
+        switch (problemName) {
+            default:
+            {
+                cout << "X=(" << double(h_params.freeSurfaceBorders[0]) * h_params.unit.Length << ", " << double(h_params.freeSurfaceBorders[1]) * h_params.unit.Length << ")" << endl;
+                cout << "Y=(" << double(h_params.freeSurfaceBorders[2]) * h_params.unit.Length << ", " << double(h_params.freeSurfaceBorders[3]) * h_params.unit.Length << ")" << endl;
+                cout << "Z=(" << double(h_params.freeSurfaceBorders[4]) * h_params.unit.Length << ", " << double(h_params.freeSurfaceBorders[5]) * h_params.unit.Length << ")" << endl;
+                for (int it = 0; it < h_params.totPossibleNodes; ++it) {
+                    if (newNodes.find(it) == newNodes.end()) {
+                        // creating fluid cells
+                        const tVect pos = h_params.getPosition(it);
+                        if ((pos.x > h_params.freeSurfaceBorders[0]) &&
+                            (pos.x < h_params.freeSurfaceBorders[1]) &&
+                            (pos.y > h_params.freeSurfaceBorders[2]) &&
+                            (pos.y < h_params.freeSurfaceBorders[3]) &&
+                            (pos.z > h_params.freeSurfaceBorders[4]) &&
+                            (pos.z < h_params.freeSurfaceBorders[5])) {
+                            newNodes.emplace(it, NewNode{ LIQUID });
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
+void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, std::vector<curve> &curves) {
+    // Allocate enough memory for these nodes
+    assert(h_nodes.count == 0);  // No nodes should exist at the time this is called
+    h_nodes.count = newNodes.size();
+    // Allocate host buffers
+    h_nodes.coord = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
+    h_nodes.f = static_cast<double*>(malloc(h_nodes.count * lbmDirec * sizeof(double)));
+    h_nodes.fs = static_cast<double*>(malloc(h_nodes.count * lbmDirec * sizeof(double)));
+    h_nodes.n = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.u = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
+    h_nodes.hydroForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
+    h_nodes.centrifugalForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
+    h_nodes.mass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.visc = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.basal = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
+    h_nodes.friction = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.age = static_cast<float*>(malloc(h_nodes.count * sizeof(float)));
+    h_nodes.solidIndex = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
+    h_nodes.d = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
+    h_nodes.type = static_cast<types*>(malloc(h_nodes.count * sizeof(types)));
+    h_nodes.p = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
+    // Zero initialisation
+    memset(h_nodes.f, 0, h_nodes.count * lbmDirec * sizeof(double));
+    memset(h_nodes.fs, 0, h_nodes.count * lbmDirec * sizeof(double));
+    memset(h_nodes.n, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.u, 0, h_nodes.count * sizeof(tVect));
+    memset(h_nodes.hydroForce, 0, h_nodes.count * sizeof(tVect));
+    memset(h_nodes.mass, 0, h_nodes.count * sizeof(double));
+    //h_nodes.visc?
+    memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
+    memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
+    memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
+    // Perform the generateNode() loop for each item in newNodes
+    std::map<unsigned int, unsigned int> idIndexMap;
+    {
+        unsigned int i = 0;
+        for (const auto& [id, nn] : newNodes) {
+            idIndexMap.emplace(id, i);
+            h_nodes.coord[i] = id;
+            h_nodes.type[i] = nn.type;
+            h_nodes.solidIndex[i] = nn.solidIndex;
+            // set centrifugal acceleration
+            h_nodes.centrifugalForce[i] = computeCentrifugal(h_nodes.getPosition(i), PARAMS.rotationCenter, PARAMS.rotationSpeed);
+            ++i;
+        }
+    }
+    // Perform a second pass for handling neighbours
+    for (int i = 0; i < h_nodes.count; ++i) {
+        // findNeighbors()
+        std::array<unsigned int, lbmDirec> neighbourCoord;
+        neighbourCoord.fill(std::numeric_limits<unsigned int>::max());
+        for (int j = 0; j < lbmDirec; ++j) {
+            neighbourCoord[j] = h_nodes.coord[i] + PARAMS.ne[j];
+        }
+        // Boundary conditions
+        if (h_nodes.isWall(i)) {
+            const std::array<int, 3> pos = h_nodes.getGridPosition(i);// getPosition() adds + 0.5x
+            if (pos[0] == 0) {
+                for (int j = 1; j < lbmDirec; ++j) {
+                    if (v[j].dot(Xp) < 0.0) {
+                        neighbourCoord[j] = h_nodes.coord[i];
+                    }
+                }
+            } else if (pos[0] == PARAMS.lbSize[0] - 1) {
+                for (int j = 1; j < lbmDirec; ++j) {
+                    if (v[j].dot(Xp) > 0.0) {
+                        neighbourCoord[j] = h_nodes.coord[i];
+                    }
+                }
+            }
+            if (pos[1] == 0) {
+                for (int j = 1; j < lbmDirec; ++j) {
+                    if (v[j].dot(Yp) < 0.0) {
+                        neighbourCoord[j] = h_nodes.coord[i];
+                    }
+                }
+            } else if (pos[1] == PARAMS.lbSize[1] - 1) {
+                for (int j = 1; j < lbmDirec; ++j) {
+                    if (v[j].dot(Yp) > 0.0) {
+                        neighbourCoord[j] = h_nodes.coord[i];
+                    }
+                }
+            }
+            if (pos[2] == 0) {
+                for (int j = 1; j < lbmDirec; ++j) {
+                    if (v[j].dot(Zp) < 0.0) {
+                        neighbourCoord[j] = h_nodes.coord[i];
+                    }
+                }
+            } else if (pos[2] == PARAMS.lbSize[2] - 1) {
+                for (int j = 1; j < lbmDirec; ++j) {
+                    if (v[j].dot(Zp) > 0.0) {
+                        neighbourCoord[j] = h_nodes.coord[i];
+                    }
+                }
+            }
+        } else if (h_nodes.isActive(i)) {
+            /*
+            // PERIODICITY ////////////////////////////////////////////////
+            // assigning periodicity conditions (this needs to be done after applying boundary conditions)
+            // runs through free cells and identifies neighboring cells. If neighbor cell is
+            // a special cell (periodic) then the proper neighboring condition is applied
+            // calculates the effect of periodicity
+            */
+            // 
+            // neighboring and periodicity vector for boundary update
+            std::array<unsigned int, lbmDirec> pbc = {};
+
+            auto f = idIndexMap.find(neighbourCoord[1]);
+            if (f != idIndexMap.end()) {
+                if (h_nodes.type[f->second] == PERIODIC) {
+                    for (int j = 1; j < lbmDirec; ++j) {
+                        if (v[j].dot(Xp) > 0.0) {
+                            pbc[j] -= PARAMS.domain[0];
+                        }
+                    }
+                }
+            }
+            f = idIndexMap.find(neighbourCoord[2]);
+            if (f != idIndexMap.end()) {
+                if (h_nodes.type[f->second] == PERIODIC) {
+                    for (int j = 1; j < lbmDirec; ++j) {
+                        if (v[j].dot(Xp) < 0.0) {
+                            pbc[j] += PARAMS.domain[0];
+                        }
+                    }
+                }
+            }
+            f = idIndexMap.find(neighbourCoord[3]);
+            if (f != idIndexMap.end()) {
+                if (h_nodes.type[f->second] == PERIODIC) {
+                    for (int j = 1; j < lbmDirec; ++j) {
+                        if (v[j].dot(Yp) > 0.0) {
+                            pbc[j] -= PARAMS.domain[1];
+                        }
+                    }
+                }
+            }
+            f = idIndexMap.find(neighbourCoord[4]);
+            if (f != idIndexMap.end()) {
+                if (h_nodes.type[f->second] == PERIODIC) {
+                    for (int j = 1; j < lbmDirec; ++j) {
+                        if (v[j].dot(Yp) < 0.0) {
+                            pbc[j] += PARAMS.domain[1];
+                        }
+                    }
+                }
+            }
+            f = idIndexMap.find(neighbourCoord[5]);
+            if (f != idIndexMap.end()) {
+                if (h_nodes.type[f->second] == PERIODIC) {
+                    for (int j = 1; j < lbmDirec; ++j) {
+                        if (v[j].dot(Zp) > 0.0) {
+                            pbc[j] -= PARAMS.domain[2];
+                        }
+                    }
+                }
+            }
+            f = idIndexMap.find(neighbourCoord[6]);
+            if (f != idIndexMap.end()) {
+                if (h_nodes.type[f->second] == PERIODIC) {
+                    for (int j = 1; j < lbmDirec; ++j) {
+                        if (v[j].dot(Zp) < 0.0) {
+                            pbc[j] += PARAMS.domain[2];
+                        }
+                    }
+                }
+            }
+
+            // apply periodicity
+            for (int j = 1; j < lbmDirec; ++j) {
+                neighbourCoord[j] += pbc[j];
+            }
+        }
+        // assign neighbour nodes
+        for (int j = 0; j < lbmDirec; ++j) {
+            auto f = idIndexMap.find(neighbourCoord[j]);
+            // check if node at that location exists
+            if (f != idIndexMap.end()) {
+                const unsigned int l_i = f->second;
+                // assign neighbor for local node
+                h_nodes.d[j*count + i] = l_i;
+                // if neighbor node is also active, link it to local node
+                if (h_nodes.isActive(i)) {
+                    h_nodes.d[opp[j] * count + l_i] = i;
+                    // if the neighbor is a curved wall, set parameters accordingly
+                    if (h_nodes.type[l_i] == TOPO) {
+                        //@todo curved
+                        if (h_nodes.curved[i] == std::numeric_limits<unsigned int>::max()) {
+                            h_nodes.curved[i] = curves.size();
+                            curves.emplace_back();
+                        }
+                        // set curved
+                        const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(i);
+                        // xf - xw
+                        const double topographyDistance = 1.0 * PARAMS.lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
+                        // wall normal
+                        curves.back().wallNormal = PARAMS.lbTop.surfaceNormal(nodePosHere);
+                        //cout << topographyDistance << endl;
+                        const double deltaHere = topographyDistance / vNorm[j];
+                        curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
+                        curves.back().computeCoefficients();
+                    }
+                    if (h_nodes.isWall(l_i)) {
+                        h_nodes.basal[i] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Formerly initializeVariables()    
+    cout << "Initializing variables" << endl;
+    // note that interface is not defined here. All fluid, interface and gas cells are uninitialized at the moment
+    // calculate maximum height of the fluid
+
+    // find "taller" and "deepest" points
+    double minProjection = std::numeric_limits<double>::max();
+    double maxProjection = -std::numeric_limits<double>::max();
+        
+    if (!PARAMS.solveCentrifugal) {
+        for (int i = 0; i < h_nodes.count; ++i) {
+            if (h_nodes.isActive(i)) {
+                const tVect position = h_nodes.getPosition(i);
+                const double projection = position.dot(PARAMS.lbF);
+                minProjection = std::min(minProjection, projection);
+                maxProjection = std::max(maxProjection, projection);
+            }
+        }
+        cout << "minProjection = " << minProjection << endl;
+    } else {
+        for (int i = 0; i < h_nodes.count; ++i) {
+            if (h_nodes.isActive(i)) {
+                const tVect position = h_nodes.getPosition(i);
+                const double projection = position.dot(h_nodes.centrifugalForce[i]);
+                minProjection = std::min(minProjection, projection);
+                maxProjection = std::max(maxProjection, projection);
+            }
+        }
+        cout << "minProjection = " << minProjection << endl;
+    }
+
+    // checking for boundary between gas and fluid and assigning interface properties
+    // at this point fluid cells contain actual fluid cells and potential interface cells, so we create the node anyway
+    double massFluid = 0.0;
+    double massInterface = 0.0;
+    for (int i = 0; i < h_nodes.count; ++i) {
+        if (h_nodes.type[i] == LIQUID) {
+            // check if it is interface
+            for (int j = 1; j < lbmDirec; ++j) {
+                unsigned int linkNode = h_nodes.d[j * h_nodes.count + i];
+                if (linkNode == std::numeric_limits<unsigned int>::max()) {
+                    h_nodes.type[i] = INTERFACE;
+                    break;
+                }
+            }
+        }
+        // now assign macroscopic quantities accordingly
+        // FLUID NODES ////
+        if (h_nodes.type[i] == LIQUID) {
+            massFluid += 1.0;
+            // setting macroscopic variables
+            // density is calculated using hydrostatic profile
+            const tVect position = h_nodes.getPosition(i);
+            if (!PARAMS.solveCentrifugal) {
+                const double projection = position.dot(PARAMS.lbF);
+                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity + 3.0 * PARAMS.fluidMaterial.initDensity * (projection-minProjection), PARAMS.initVelocity, PARAMS.fluidMaterial.initDensity, PARAMS.fluidMaterial.initDynVisc, PARAMS.lbF, 1.0, Zero);
+            } else {
+                const double projection = position.dot(h_nodes.centrifugalForce[i]);
+                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity + 3.0 * PARAMS.fluidMaterial.initDensity * (projection-minProjection), PARAMS.initVelocity, PARAMS.fluidMaterial.initDensity, PARAMS.fluidMaterial.initDynVisc, PARAMS.lbF, 1.0, PARAMS.rotationSpeed);
+            }
+        }// INTERFACE NODES ////
+        else if (h_nodes.type[i] == INTERFACE) {
+            massInterface += 0.5;
+            // setting macroscopic variables
+            h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity, PARAMS.initVelocity, 0.5 * PARAMS.fluidMaterial.initDensity, PARAMS.fluidMaterial.initDynVisc, PARAMS.lbF, 1.0, PARAMS.rotationSpeed);
+        }
+
+    }
+    cout << "Approximate volume = " << massFluid * PARAMS.unit.Volume << " (fluid body), " << massInterface * PARAMS.unit.Volume << " (interface), " << (massFluid + massInterface) * PARAMS.unit.Volume << " (tot), " << endl;
+}
+void LB2::initializeWalls() {
+    cout << "Initializing wall nodes" << endl;
+    const double zero = 0.0;
+
+    std::vector<unsigned int> wallNodes;
+
+    // initializing wall nodes
+    // note that, in the hypothesis that these walls are not evolving, only nodes at the interface need creation
+    for (unsigned int i = 0; i < h_nodes.count; ++i) {
+        if (h_nodes.isWall(i)) {
+            // initialize node
+            // STATIC WALL NODES ////
+            if (h_nodes.type[i] == STAT_WALL ||
+                h_nodes.type[i] == SLIP_STAT_WALL ||
+                h_nodes.type[i] ==  OBJ ||
+                h_nodes.type[i] == TOPO) {
+                // reset velocity and mass (useful for plotting)
+                // density=0.0; velocity=(0.0,0.0,0.0), mass=0.0; viscosity=0.0; force=(0.0,0.0,0.0)
+                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity, Zero, zero, zero, Zero, 1.0, Zero);
+            }// DYNAMIC WALL NODES ////
+            else if (h_nodes.type[i] == DYN_WALL || 
+                     h_nodes.type[i] == SLIP_DYN_WALL || 
+                     h_nodes.type[i] == CYL) {
+                // need to define velocity. It could be part of a cylinder or wall, we check both
+                tVect solidVelocity;
+                const tVect nodePosition = h_nodes.getPosition(i);
+                unsigned int solidIndex = h_nodes.solidIndex[i];
+                // wall
+                if (solidIndex < h_walls.count && nodePosition.insidePlane(h_walls.p[solidIndex] / PARAMS.unit.Length, h_walls.n[solidIndex])) {
+                    solidVelocity = h_walls.getSpeed(solidIndex, nodePosition * PARAMS.unit.Length) / PARAMS.unit.Speed;
+                }// cylinder
+                else if (solidIndex < h_cylinders.count && !nodePosition.insideCylinder(h_cylinders.p1[solidIndex] / PARAMS.unit.Length, h_cylinders.naxes[solidIndex], 0.0, h_cylinders.R[solidIndex] / PARAMS.unit.Length)) {
+                    solidVelocity = h_cylinders.getSpeed(solidIndex, nodePosition * PARAMS.unit.Length) / PARAMS.unit.Speed;
+                }// objects
+                else if (solidIndex < h_objects.count && nodePosition.insideSphere(h_objects.x0[solidIndex] / PARAMS.unit.Length, h_objects.r[solidIndex] / PARAMS.unit.Length)) {
+                    solidVelocity = h_objects.x1[solidIndex] / PARAMS.unit.Speed;
+                }
+                // reset velocity and mass (useful for plotting)
+                // density=0.0; velocity=solidVelocity, mass=0.0; viscosity=0.0; force=(0.0,0.0,0.0)
+                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity, solidVelocity, zero, zero, Zero, 1.0, PARAMS.rotationSpeed);
+            }
+            // add node to list
+            wallNodes.push_back(i);
+        }
+    }
+    // Allocate the wall nodes storage
+    h_nodes.wallCount = wallNodes.size();
+    h_nodes.wallI = static_cast<unsigned int*>(malloc(h_nodes.wallCount * sizeof(unsigned int)));
+    memcpy(h_nodes.wallI, wallNodes.data(), h_nodes.wallCount * sizeof(unsigned int));    
+}
+void LB2::initializeCurved(std::vector<curve> &curves) {
+    cout << "Initializing curved boundaries" << endl;
+    for (int i = 0; i < h_nodes.wallCount; ++i) {
+        const unsigned int w_i = h_nodes.wallI[i];
+        if (h_nodes.type[w_i] == CYL) {
+            assert(h_nodes.curved[w_i] == std::numeric_limits<unsigned int>::max());
+            h_nodes.curved[w_i] = curves.size();
+            curves.emplace_back();
+            const tVect nodePos = PARAMS.unit.Length * h_nodes.getPosition(w_i);
+            for (int j = 1; j < lbmDirec; ++j) {
+                curves.back().delta[j] = 1.0 - h_cylinders.segmentIntercept(0, nodePos, PARAMS.unit.Length * v[j]);
+                curves.back().computeCoefficients();
+            }
+        }
+    }
+}
+void LB2::initializeLists() {
+    cout << "Resetting lists ...";
+
+    // note that interface is not defined here. All fluid, interface and gas cells are 0 at the moment
+    std::vector<unsigned int> fluidNodes;
+    std::vector<unsigned int> interfaceNodes;
+
+    // creating list and initialize macroscopic variables for all nodes except walls
+    for (int i = 0; i < h_nodes.count; ++i) {
+        if (h_nodes.type[i] == LIQUID) {
+            fluidNodes.push_back(i);
+        } else if (h_nodes.type[i] == INTERFACE) {
+            interfaceNodes.push_back(i);
+        }
+
+    }
+
+    // Array to Buffer
+    assert(!h_nodes.fluidI);
+    h_nodes.fluidCount = fluidNodes.size();
+    h_nodes.fluidI = static_cast<unsigned int*>(malloc(h_nodes.fluidCount * sizeof(unsigned int)));
+    memcpy(h_nodes.fluidI, fluidNodes.data(), h_nodes.fluidCount * sizeof(unsigned int));
+
+    assert(!h_nodes.interfaceI);
+    h_nodes.interfaceCount = interfaceNodes.size();
+    h_nodes.interfaceI = static_cast<unsigned int*>(malloc(h_nodes.interfaceCount * sizeof(unsigned int)));
+    memcpy(h_nodes.interfaceI, interfaceNodes.data(), h_nodes.interfaceCount * sizeof(unsigned int));
+
+    // Build a sorted active nodes list
+    fluidNodes.insert(fluidNodes.end(), interfaceNodes.begin(), interfaceNodes.end());
+    std::sort(fluidNodes.begin(), fluidNodes.end());
+
+    // Array to buffer
+    assert(!h_nodes.activeI);
+    h_nodes.activeCount = fluidNodes.size();
+    h_nodes.activeI = static_cast<unsigned int*>(malloc(h_nodes.activeCount * sizeof(unsigned int)));
+    memcpy(h_nodes.activeI, fluidNodes.data(), h_nodes.activeCount * sizeof(unsigned int));
+    
+    cout << " done" << endl;
+}
 void LB2::step(const DEM &dem, bool io_demSolver) {
     this->syncDEM(dem.elmts, dem.particles, dem.walls, dem.objects);
 
@@ -17,10 +744,10 @@ void LB2::step(const DEM &dem, bool io_demSolver) {
         // @todo elmts/particles sync only occurs if io_demSolver = true
         this->latticeBoltzmannStep();
 
-        // Lattice Boltzmann core steps
-        if (this->freeSurface) {
-            this->latticeBoltzmannFreeSurfaceStep();
-        }
+        // Lattice Boltzmann core steps @todo after latticeBoltzmannStep() has been tested
+        // if (this->freeSurface) {
+        //     this->latticeBoltzmannFreeSurfaceStep();
+        // }
     }
 }
 
@@ -110,36 +837,91 @@ void LB2::syncParticles<CPU>(const particleList &particles) {
     }
 }
 template<>
+void LB2::syncCylinders<CPU>(const cylinderList &cylinders) {
+    if (h_cylinders.count < cylinders.size()) {
+        // Grow host buffers
+        if (h_cylinders.p1) {
+            free(h_cylinders.p1);
+            free(h_cylinders.p2);
+            free(h_cylinders.R);
+            free(h_cylinders.naxes);
+            free(h_cylinders.omega);
+            free(h_cylinders.moving);
+        }
+        h_cylinders.p1 = (tVect*)malloc(cylinders.size() * sizeof(tVect));
+        h_cylinders.p2 = (tVect*)malloc(cylinders.size() * sizeof(tVect));
+        h_cylinders.R = (double*)malloc(cylinders.size() * sizeof(double));
+        h_cylinders.naxes = (tVect*)malloc(cylinders.size() * sizeof(tVect));
+        h_cylinders.omega = (tVect*)malloc(cylinders.size() * sizeof(tVect));
+        h_cylinders.moving = (bool*)malloc(cylinders.size() * sizeof(bool));
+    }
+    // Update size
+    h_cylinders.count = cylinders.size();
+    // Repackage host particle data from array of structures, to structure of arrays
+    for (int i = 0; i < h_cylinders.count; ++i) {
+        h_cylinders.p1[i] = cylinders[i].p1;
+        h_cylinders.p2[i] = cylinders[i].p2;
+        h_cylinders.R[i] = cylinders[i].R;
+        h_cylinders.naxes[i] = cylinders[i].naxes;
+        h_cylinders.omega[i] = cylinders[i].omega;
+        h_cylinders.moving[i] = cylinders[i].moving;
+    }
+}
+template<>
 void LB2::syncWalls<CPU>(const wallList &walls) {
     if (h_walls.count < walls.size()) {
         // Grow host buffers
-        if (h_walls.FHydro) {
+        if (h_walls.n) {
+            free(h_walls.n);
+            free(h_walls.p);
+            free(h_walls.rotCenter);
+            free(h_walls.omega);
+            free(h_walls.vel);
             free(h_walls.FHydro);
         }
+        h_walls.n = (tVect*)malloc(walls.size() * sizeof(tVect));
+        h_walls.p = (tVect*)malloc(walls.size() * sizeof(tVect));
+        h_walls.rotCenter = (tVect*)malloc(walls.size() * sizeof(tVect));
+        h_walls.omega = (tVect*)malloc(walls.size() * sizeof(tVect));
+        h_walls.vel = (tVect*)malloc(walls.size() * sizeof(tVect));
         h_walls.FHydro = (tVect*)malloc(walls.size() * sizeof(tVect));
     }
     // Update size
     h_walls.count = walls.size();
     // Repackage host particle data from array of structures, to structure of arrays
-    // for (int i = 0; i < h_walls.count; ++i) {
+    for (int i = 0; i < h_walls.count; ++i) {
+        h_walls.n[i] = walls[i].n;
+        h_walls.p[i] = walls[i].p;
+        h_walls.rotCenter[i] = walls[i].rotCenter;
+        h_walls.omega[i] = walls[i].omega;
+        h_walls.vel[i] = walls[i].vel;
         // h_walls.FHydro[i] = walls[i].FHydro; // Zero'd before use in streaming()
-    // }
+    }
 }
 template<>
 void LB2::syncObjects<CPU>(const objectList &objects) {
     if (h_objects.count < objects.size()) {
         // Grow host buffers
-        if (h_objects.FHydro) {
+        if (h_objects.r) {
+            free(h_objects.r);
+            free(h_objects.x0);
+            free(h_objects.x1);
             free(h_objects.FHydro);
         }
+        h_objects.r = (double*)malloc(objects.size() * sizeof(double));
+        h_objects.x0 = (tVect*)malloc(objects.size() * sizeof(tVect));
+        h_objects.x1 = (tVect*)malloc(objects.size() * sizeof(tVect));
         h_objects.FHydro = (tVect*)malloc(objects.size() * sizeof(tVect));
     }
     // Update size
     h_objects.count = objects.size();
     // Repackage host particle data from array of structures, to structure of arrays
-    // for (int i = 0; i < h_objects.count; ++i) {
+    for (int i = 0; i < h_objects.count; ++i) {
+        h_objects.r[i] = objects[i].r;
+        h_objects.x0[i] = objects[i].x0;
+        h_objects.x1[i] = objects[i].x1;
         // h_objects.FHydro[i] = objects[i].FHydro; // Zero'd before use in streaming()
-    // }
+    }
 }
 #ifdef USE_CUDA
 template<>
@@ -181,10 +963,10 @@ bool LB2::syncElements<CUDA>(const elmtList &elements) {
     hd_elements.count = elements.size();
     if (updateDeviceStruct) {
         // Copy updated device pointers to device (@todo When/where is d_elements allocated??)
-        CUDA_CALL(cudaMemcpy(d_elements, &h_elements, sizeof(Element2), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(d_elements, &hd_elements, sizeof(Element2), cudaMemcpyHostToDevice));
     } else {
         // Copy updated device pointers to device (@todo When/where is d_elements allocated??)
-        CUDA_CALL(cudaMemcpy(&d_elements->count, &h_elements.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(&d_elements->count, &hd_elements.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
     }
     // Copy data to device buffers
     CUDA_CALL(cudaMemcpy(hd_elements.x1, &h_elements.x1, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
@@ -230,6 +1012,45 @@ void LB2::syncParticles<CUDA>(const particleList &particles) {
     CUDA_CALL(cudaMemcpy(hd_particles.radiusVec, h_particles.radiusVec, h_particles.count * sizeof(tVect), cudaMemcpyHostToDevice));
 }
 template<>
+void LB2::syncCylinders<CUDA>(const cylinderList &cylinders) {
+    // Copy latest particle data from HOST DEM to the device
+    // @todo Can these copies be done ahead of time async?
+    // @todo These copies will be redundant when DEM is moved to CUDA
+    this->syncCylinders<CPU>(cylinders);
+    if (hd_cylinders.count < cylinders.size()) {
+        // Grow device buffers
+        if (hd_cylinders.p1) {
+            CUDA_CALL(cudaFree(hd_cylinders.p1));
+            CUDA_CALL(cudaFree(hd_cylinders.p2));
+            CUDA_CALL(cudaFree(hd_cylinders.R));
+            CUDA_CALL(cudaFree(hd_cylinders.naxes));
+            CUDA_CALL(cudaFree(hd_cylinders.omega));
+            CUDA_CALL(cudaFree(hd_cylinders.moving));
+        }
+        CUDA_CALL(cudaMalloc(&hd_cylinders.p1, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.p2, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.R, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.naxes, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.omega, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.moving, h_cylinders.count * sizeof(bool)));
+        hd_cylinders.count = h_cylinders.count;
+        // Copy updated device pointers to device
+        CUDA_CALL(cudaMemcpy(d_cylinders, &hd_cylinders, sizeof(Cylinder2), cudaMemcpyHostToDevice));
+    } else if(hd_cylinders.count != cylinders.size()) {
+        // Buffer has shrunk, so just update size
+        hd_cylinders.count = cylinders.size();
+        // Copy updated particle count to device (@todo When/where is d_elements allocated??)
+        CUDA_CALL(cudaMemcpy(&d_cylinders->count, &h_walls.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+    }
+    // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_cylinders.p1, h_cylinders.p1, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.p2, h_cylinders.p2, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.R, h_cylinders.R, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.naxes, h_cylinders.naxes, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.omega, h_cylinders.omega, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.moving, h_cylinders.moving, h_cylinders.count * sizeof(bool), cudaMemcpyHostToDevice));
+}
+template<>
 void LB2::syncWalls<CUDA>(const wallList &walls) {
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
@@ -237,20 +1058,35 @@ void LB2::syncWalls<CUDA>(const wallList &walls) {
     this->syncWalls<CPU>(walls);
     if (hd_walls.count < walls.size()) {
         // Grow device buffers
-        if (hd_walls.FHydro) {
+        if (hd_walls.n) {
+            CUDA_CALL(cudaFree(hd_walls.n));
+            CUDA_CALL(cudaFree(hd_walls.p));
+            CUDA_CALL(cudaFree(hd_walls.rotCenter));
+            CUDA_CALL(cudaFree(hd_walls.omega));
+            CUDA_CALL(cudaFree(hd_walls.vel));
             CUDA_CALL(cudaFree(hd_walls.FHydro));
         }
+        CUDA_CALL(cudaMalloc(&hd_walls.n, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.p, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.rotCenter, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.omega, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.vel, h_walls.count * sizeof(tVect)));
         CUDA_CALL(cudaMalloc(&hd_walls.FHydro, h_walls.count * sizeof(tVect)));
         hd_walls.count = h_walls.count;
         // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_walls, &h_walls, sizeof(Wall2), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(d_walls, &hd_walls, sizeof(Wall2), cudaMemcpyHostToDevice));
     } else if(hd_walls.count != walls.size()) {
         // Buffer has shrunk, so just update size
         hd_walls.count = walls.size();
-        // Copy updated particle count to device (@todo When/where is d_elements allocated??)
+        // Copy updated particle count to device (@todo When/where is d_walls allocated??)
         CUDA_CALL(cudaMemcpy(&d_walls->count, &h_walls.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
     }
     // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_walls.n, h_walls.n, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.p, h_walls.p, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.rotCenter, h_walls.rotCenter, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.omega, h_walls.omega, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.vel, h_walls.vel, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
     // CUDA_CALL(cudaMemcpy(hd_walls.FHydro, h_walls.FHydro, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice)); // Zero'd before use in streaming()
 }
 template<>
@@ -261,20 +1097,29 @@ void LB2::syncObjects<CUDA>(const objectList &walls) {
     this->syncObjects<CPU>(walls);
     if (hd_objects.count < walls.size()) {
         // Grow device buffers
-        if (hd_objects.FHydro) {
+        if (hd_objects.r) {
+            CUDA_CALL(cudaFree(hd_objects.r));
+            CUDA_CALL(cudaFree(hd_objects.x0));
+            CUDA_CALL(cudaFree(hd_objects.x1));
             CUDA_CALL(cudaFree(hd_objects.FHydro));
         }
+        CUDA_CALL(cudaMalloc(&hd_objects.r, h_objects.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_objects.x0, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.x1, h_objects.count * sizeof(tVect)));
         CUDA_CALL(cudaMalloc(&hd_objects.FHydro, h_objects.count * sizeof(tVect)));
         hd_objects.count = h_objects.count;
         // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_objects, &h_objects, sizeof(Wall2), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(d_objects, &hd_objects, sizeof(Wall2), cudaMemcpyHostToDevice));
     } else if(hd_objects.count != walls.size()) {
         // Buffer has shrunk, so just update size
         hd_objects.count = walls.size();
-        // Copy updated particle count to device (@todo When/where is d_elements allocated??)
+        // Copy updated particle count to device (@todo When/where is d_objects allocated??)
         CUDA_CALL(cudaMemcpy(&d_objects->count, &h_objects.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
     }
     // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_objects.r, h_objects.r, h_objects.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.x0, h_objects.x0, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.x1, h_objects.x1, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
     // CUDA_CALL(cudaMemcpy(hd_objects.FHydro, h_objects.FHydro, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice)); // Zero'd before use in streaming()
 }
 #endif
@@ -285,6 +1130,18 @@ void LB2::syncDEM(const elmtList &elmts, const particleList &particles, const wa
     syncParticles<IMPL>(particles);
     syncWalls<IMPL>(walls);
     syncObjects<IMPL>(objects);
+}
+void LB2::setParams(const LBParams& params, bool skip_sync) {
+    // CPU
+    h_PARAMS = params;
+    // CUDA
+    if (!skip_sync)
+        syncParams();
+}
+void LB2::syncParams() {
+#ifdef USE_CUDA
+    CUDA_CALL(cudaMemcpyToSymbol(d_PARAMS, &h_PARAMS, sizeof(LBParams)));
+#endif
 }
 
 /**
@@ -834,7 +1691,7 @@ __host__ __device__ void common_streaming(const unsigned int an_i, Node2 *nodes,
                     pos = nodes->getPosition(ln_i);
                     printf("(%f, %f, %f) %s TYPE ERROR\n", pos.x, pos.y, pos.z, typeString(nodes->type[ln_i]));
                     // @todo aborting from CUDA is harder, especially if the printf() is to be saved
-#ifdef __CUDA_ARCH__
+#ifndef __CUDA_ARCH__
                     std::abort();
 #endif
                     return;

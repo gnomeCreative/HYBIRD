@@ -36,6 +36,7 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/MeasureUnits.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cuda_helper.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cub_temp_mem.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/Cylinder2.h    
     ${PROJECT_SOURCE_DIR}/src/gpu/Element2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.h
