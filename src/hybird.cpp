@@ -15,6 +15,7 @@
 #include "DEM.h"
 #include "gpu/LB2.h"
 #include "gpu/LBParams.h"
+#include "gpu/ValidationIO.h"
 
 /*
  *      HYBIRD
@@ -478,6 +479,7 @@ int main(int argc, char** argv) {
     GetPot commandLine(argc, argv);
     commandLine.print();
     parseCommandLine(io, commandLine);
+    ValidationIO vio(io.workDirectory);
 
     // parsing LBM input file
     GetPot configFile(io.configFileName);
@@ -528,7 +530,8 @@ int main(int argc, char** argv) {
     }
         
     // initial output
-    io.outputStep(lb, dem);
+    vio.output(lb);
+    //io.outputStep(lb, dem);
 
     // CYCLE /////////////////////////////
     // integrate in time
@@ -542,7 +545,9 @@ int main(int argc, char** argv) {
             exit_code = SUCCESS;
         } else {
             // core of the code, performs time steps
-            goCycle(io, dem, lb);
+            lb.step(dem, io.demSolver);
+            vio.output(lb);
+            //io.outputStep();
 
             //            // exit abnormally if a serious problem has occurred
             //            if (io.problem) {

@@ -168,13 +168,14 @@ class LB2 {
     template<int impl>
     void shiftToPhysical();
 
+    Node2 &getNodes();
+
     /**
      * Member variable philosophy
      * h_<name> are "host" copies of the same information pointed to by <name>
      * In CPU builds, <name> should always point to h_<name>
      * In CUDA builds, <name> will point to device memory, and h_<name> may not have current data at all times
      */
-
     private:
     // The actual node storage
     // Host copy of node buffers, may not always be current whilst in CUDA mode

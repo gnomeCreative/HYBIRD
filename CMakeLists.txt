@@ -43,6 +43,7 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Object2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Particle2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/ValidationIO.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Wall2.h
     )
     

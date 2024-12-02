@@ -1867,3 +1867,95 @@ void LB2::latticeBoltzmannStep() {
     this->shiftToPhysical<IMPL>();
 }
 #endif
+
+Node2 &LB2::getNodes() {
+#ifdef USE_CUDA
+    // If using CUDA, data is on device by default, so sync back.
+    if (hd_nodes.count > h_nodes.count) {
+        // Resize main buffers
+        if (h_nodes.f) free(h_nodes.f);
+        h_nodes.f = static_cast<double*>(malloc(hd_nodes.count * lbmDirec * sizeof(double)));
+        if (h_nodes.fs) free(h_nodes.fs);
+        h_nodes.fs = static_cast<double*>(malloc(hd_nodes.count * lbmDirec * sizeof(double)));
+        if (h_nodes.n) free(h_nodes.n);
+        h_nodes.n = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
+        if (h_nodes.u) free(h_nodes.u);
+        h_nodes.u = static_cast<tVect*>(malloc(hd_nodes.count * sizeof(tVect)));
+        if (h_nodes.hydroForce) free(h_nodes.hydroForce);
+        h_nodes.hydroForce = static_cast<tVect*>(malloc(hd_nodes.count * sizeof(tVect)));
+        if (h_nodes.centrifugalForce) free(h_nodes.centrifugalForce);
+        h_nodes.centrifugalForce = static_cast<tVect*>(malloc(hd_nodes.count * sizeof(tVect)));
+        if (h_nodes.mass) free(h_nodes.mass);
+        h_nodes.mass = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
+        if (h_nodes.visc) free(h_nodes.visc);
+        h_nodes.visc = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
+        if (h_nodes.basal) free(h_nodes.basal);
+        h_nodes.basal = static_cast<bool*>(malloc(hd_nodes.count * sizeof(bool)));
+        if (h_nodes.friction) free(h_nodes.friction);
+        h_nodes.friction = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
+        if (h_nodes.age) free(h_nodes.age);
+        h_nodes.age = static_cast<float*>(malloc(hd_nodes.count * sizeof(float)));
+        if (h_nodes.solidIndex) free(h_nodes.solidIndex);
+        h_nodes.solidIndex = static_cast<unsigned int*>(malloc(hd_nodes.count * sizeof(unsigned int)));
+        if (h_nodes.d) free(h_nodes.d);
+        h_nodes.d = static_cast<unsigned int*>(malloc(hd_nodes.count * lbmDirec * sizeof(unsigned int)));
+        if (h_nodes.curved) free(h_nodes.curved);
+        h_nodes.curved = static_cast<unsigned int*>(malloc(hd_nodes.count * sizeof(unsigned int)));
+        if (h_nodes.type) free(h_nodes.type);
+        h_nodes.type = static_cast<types*>(malloc(hd_nodes.count * sizeof(types)));
+        if (h_nodes.p) free(h_nodes.p);
+        h_nodes.p = static_cast<bool*>(malloc(hd_nodes.count * sizeof(bool)));
+    }
+    h_nodes.count = hd_nodes.count;
+    // Resize misc buffers
+    if (hd_nodes.activeCount > h_nodes.activeAlloc) {
+        if (h_nodes.activeI) free(h_nodes.activeI);
+        h_nodes.activeI = static_cast<unsigned int*>(malloc(hd_nodes.activeCount * sizeof(unsigned int)));
+    }
+    h_nodes.activeCount = hd_nodes.activeCount;
+    if (hd_nodes.interfaceCount > h_nodes.interfaceCount) {
+        if (h_nodes.interfaceI) free(h_nodes.interfaceI);
+        h_nodes.interfaceI = static_cast<unsigned int*>(malloc(hd_nodes.interfaceCount * sizeof(unsigned int)));
+    }
+    h_nodes.interfaceCount = hd_nodes.interfaceCount;
+    if (hd_nodes.fluidCount > h_nodes.fluidCount) {
+        if (h_nodes.fluidI) free(h_nodes.fluidI);
+        h_nodes.fluidI = static_cast<unsigned int*>(malloc(hd_nodes.fluidCount * sizeof(unsigned int)));
+    }
+    h_nodes.fluidCount = hd_nodes.fluidCount;
+    if (hd_nodes.wallCount > h_nodes.wallCount) {
+        if (h_nodes.wallI) free(h_nodes.wallI);
+        h_nodes.wallI = static_cast<unsigned int*>(malloc(hd_nodes.wallCount * sizeof(unsigned int)));
+    }
+    h_nodes.wallCount = hd_nodes.wallCount;
+    if (hd_nodes.curveCount > h_nodes.curveCount) {
+        if (h_nodes.curves) free(h_nodes.curves);
+        h_nodes.curves = static_cast<curve*>(malloc(hd_nodes.curveCount * sizeof(curve)));
+    }
+    h_nodes.curveCount = hd_nodes.curveCount;
+    // Copy main buffers back to host
+    CUDA_CALL(cudaMemcpy(h_nodes.coord, hd_nodes.coord, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, h_nodes.count * lbmDirec * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.fs, hd_nodes.fs, h_nodes.count * lbmDirec * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.n, hd_nodes.n, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.u, hd_nodes.u, h_nodes.count * sizeof(tVect), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.hydroForce, hd_nodes.hydroForce, h_nodes.count * sizeof(tVect), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.centrifugalForce, hd_nodes.centrifugalForce, h_nodes.count * sizeof(tVect), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.mass, hd_nodes.mass, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.visc, hd_nodes.visc, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.basal, hd_nodes.basal, h_nodes.count * sizeof(bool), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.friction, hd_nodes.friction, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.age, hd_nodes.age, h_nodes.count * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.solidIndex, hd_nodes.solidIndex, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.d, hd_nodes.d, h_nodes.count * lbmDirec * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.type, hd_nodes.type, h_nodes.count * sizeof(types), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.p, hd_nodes.p, h_nodes.count * sizeof(bool), cudaMemcpyDeviceToHost));
+    // Copy misc buffers back to host
+    CUDA_CALL(cudaMemcpy(h_nodes.activeI, hd_nodes.activeI, h_nodes.activeCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.interfaceI, hd_nodes.interfaceI, h_nodes.interfaceCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.fluidI, hd_nodes.fluidI, h_nodes.fluidCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.wallI, hd_nodes.wallI, h_nodes.wallCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.curves, hd_nodes.curves, h_nodes.curveCount * sizeof(curve), cudaMemcpyDeviceToHost));    
+#endif
+    return h_nodes;
+}
