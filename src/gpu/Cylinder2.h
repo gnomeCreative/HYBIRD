@@ -32,7 +32,7 @@ struct Cylinder2 {
         }
         return tVect(0.0, 0.0, 0.0);
     }
-    double cylinder::segmentIntercept(const unsigned int i, const tVect& start, const tVect& dir) const {
+    double segmentIntercept(const unsigned int i, const tVect& start, const tVect& dir) const {
         /// Line segment VS cylinder
         // - cylinder (A, B, r) (start point, end point, radius) -> in our case (p1, p2, R)
         // - line has starting point (x0, y0, z0) and ending point (x0+ux, y0+uy, z0+uz) ((ux, uy, uz) is "direction")

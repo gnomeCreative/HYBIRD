@@ -50,21 +50,25 @@ public:
     // earth pressure coefficient for static load on structures 
     double earthPressureCoeff;
             // default constructor
-    FluidMaterial(){
-        initDensity=1.0;
-        initDynVisc=(1.0-0.5)/3.0;
-        rheologyModel=NEWTONIAN;
-        yieldStress=0.0;
-        plasticVisc=0.0;
-        frictionCoefFluid=0.0;
-        basalFrictionCoefFluid=0.0;
-        turbulenceOn=false;
-        turbConst=0.0;
-        particleDiameter=0.0;
-        baseInertial=0.0;
-        deltaFriction=0.0;
-        earthPressureCoeff=1.0;
-    }
+    constexpr FluidMaterial()
+        : lbMinVisc(0)
+        , lbMaxVisc(0)
+        , initDensity(1.0)
+        , initDynVisc((1.0 - 0.5) / 3.0)
+        , rheologyModel(NEWTONIAN)
+        , yieldStress(0.0)
+        , plasticVisc(0.0)
+        , frictionCoefFluid(0.0)
+        , basalFrictionCoefFluid(0.0)
+        , deltaFriction(0.0)
+        , baseInertial(0.0)
+        , particleDiameter(0.0)
+        , rhod2(0)
+        , particleDensity(0)
+        , minimumPressure(0)
+        , turbulenceOn(false)
+        , turbConst(0.0)
+        , earthPressureCoeff(1.0) { }
 };
 
 class node{

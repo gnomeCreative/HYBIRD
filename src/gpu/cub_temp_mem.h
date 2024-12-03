@@ -21,6 +21,7 @@
  * The purpose of this class is to manage a shared, singleton, for that buffer
  */
 class CubTempMem {
+    friend std::unique_ptr<CubTempMem>std::make_unique();
  public:
     /**
      * Singletons should not be cloneable.

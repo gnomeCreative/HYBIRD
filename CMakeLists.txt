@@ -104,6 +104,8 @@ endif()
 if(CMAKE_CUDA_COMPILER AND HYBIRD_ENABLE_CUDA)
 # Notify the build that we are building for cuda
     target_compile_definitions(hybird PRIVATE USE_CUDA)
+    target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-rdc=true>)
+    target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 else()
     # Or set .cu files to be compiled as .cpp
     foreach(HYBIRD_SRC_FILE HYBIRD_SRC)

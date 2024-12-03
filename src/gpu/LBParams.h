@@ -47,11 +47,11 @@ struct LBParams {
     // rotation speed of the local coordinate system
     tVect rotationSpeed = { 0,0,0 };
     // cebnter of rotation of the local coordinate system
-    tVect rotationCenter;  // t
+    tVect rotationCenter = {};  // t
     // total number of nodes
     unsigned int totPossibleNodes = 0; // t
     // total mass (initial)
-    double totalMass;
+    double totalMass = 0;
     // standard neighbors shifting
     std::array<int, lbmDirec> ne = {};
     std::array<unsigned int, 3> shift = { 1,1,1 };
@@ -64,7 +64,7 @@ struct LBParams {
     // switcher for restart
     bool lbRestart = false;  // t
     // restart file
-    std::string lbRestartFile;  // t
+    //std::string lbRestartFile = "";  // t //@todo
     // switcher for imposed volume, and imposed volume
     bool imposeFluidVolume = false;  // t
     double imposedFluidVolume = 0.0;  // t
@@ -81,9 +81,9 @@ struct LBParams {
     double translateTopographyY = 0.0;  // t
     double translateTopographyZ = 0.0;  // t
     // topography file
-    string lbTopographyFile = "";  // t
+    //string lbTopographyFile = "";  // t //@todo
     // topography container
-    topography lbTop = {};  // t
+    //topography lbTop = {};  // t
     // switchers for force field, non-Newtonian and everything
     bool freeSurface = false;
     bool forceField = false;
@@ -95,7 +95,7 @@ struct LBParams {
     // absolute time
     unsigned int time = 0;
     // lbm size in cell units
-    std::array<unsigned int, 3> lbSize = { 1,1,1 };  // t
+    std::array<unsigned int, 3> lbSize = { 1,1,1 };
     // lbm size in physical units (with boundaries)
     std::array<double, 3> lbPhysicalSize = { -1,-1,-1 };  // t
     // lbm size in physical units (without boundaries)
@@ -130,7 +130,7 @@ struct LBParams {
     double hourglassOutletHeight = 0.0;  // t
     // HEAP: continuum heap (mirrors in DEM)
     double heapBaseLevel = 0.0;  // t
-
+    
     // functions for linearized index management
     __host__ __device__ __forceinline__ unsigned int getIndex(const unsigned int& x, const unsigned int& y, const unsigned int& z) {
         return x + y * lbSize[0] + z * lbSize[0] * lbSize[1];
@@ -148,6 +148,13 @@ struct LBParams {
         // y = x + y*X DIV X
         // z = index DIV X*Y
 
+#ifdef __CUDA_ARCH__
+        // div() does not exist in device code
+        z = index / (lbSize[0] * lbSize[1]);
+        const int t = index % (lbSize[0] * lbSize[1]);
+        y = t / lbSize[0];
+        x = t % lbSize[0];
+#else
         // see online documentation for class div_t (stdlib.h)
         div_t firstDiv, secondDiv;
 
@@ -157,7 +164,7 @@ struct LBParams {
         x = secondDiv.rem;
         y = secondDiv.quot;
         z = firstDiv.quot;
-
+#endif
         return tVect(double(x) - 0.5, double(y) - 0.5, double(z) - 0.5);
     }
 };

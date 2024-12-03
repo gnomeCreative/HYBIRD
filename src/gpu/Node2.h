@@ -7,6 +7,7 @@
 
 #include "cuda_helper.h"
 #include "cub_temp_mem.h"
+#include "LBParams.h"
 #include "myvector.h"
 #include "node.h"
 
@@ -107,7 +108,7 @@ struct Node2 {
     /**
      * Index into curve databuffer, else std::numeric_limits<unsigned int>::max()
      */
-    unsigned int* curved = nullptr;
+    unsigned int *curved = nullptr;
     /**
      * @brief Identification of node type
      * @see types
@@ -207,6 +208,13 @@ __host__ __device__ __forceinline__ inline tVect Node2::getPosition(const unsign
     // y = x + y*X DIV X
     // z = index DIV X*Y
 
+#ifdef __CUDA_ARCH__
+    // div() does not exist in device code
+    z = index / (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
+    const int t = index % (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
+    y = t / PARAMS.lbSize[0];
+    x = t % PARAMS.lbSize[0];
+#else
     // see online documentation for class div_t (stdlib.h)
     div_t firstDiv, secondDiv;
 
@@ -216,6 +224,7 @@ __host__ __device__ __forceinline__ inline tVect Node2::getPosition(const unsign
     x = secondDiv.rem;
     y = secondDiv.quot;
     z = firstDiv.quot;
+#endif
 
     return { double(x) - 0.5, double(y) - 0.5, double(z) - 0.5 };
 }
@@ -231,7 +240,13 @@ __host__ __device__ __forceinline__ inline std::array<int, 3> Node2::getGridPosi
     // x = x + y*X MOD X
     // y = x + y*X DIV X
     // z = index DIV X*Y
-
+#ifdef __CUDA_ARCH__
+    // div() does not exist in device code
+    z = index / (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
+    const int t = index % (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
+    y = t / PARAMS.lbSize[0];
+    x = t % PARAMS.lbSize[0];
+#else
     // see online documentation for class div_t (stdlib.h)
     div_t firstDiv, secondDiv;
 
@@ -241,6 +256,7 @@ __host__ __device__ __forceinline__ inline std::array<int, 3> Node2::getGridPosi
     x = secondDiv.rem;
     y = secondDiv.quot;
     z = firstDiv.quot;
+#endif
 
     return { static_cast<int>(x), static_cast<int>(y), static_cast<int>(z) };
 }
@@ -423,7 +439,7 @@ __host__ __device__ __forceinline__ inline void Node2::addForce(const unsigned i
     for (int j = 0; j < lbmDirec; j++) {
         const tVect vmu = v[j] - this->u[index];
         const tVect forcePart = feq[j]*F1*vmu / this->n[index];
-        f[j] +=  omegaf * forcePart.dot(this->mass[index]*totalForce);
+        _f[j] +=  omegaf * forcePart.dot(this->mass[index]*totalForce);
     }
 }
 __host__ __device__ __forceinline__ inline void Node2::addForceTRT(const unsigned int index, const tVect& F) {
@@ -460,8 +476,12 @@ inline void Node2::store<CPU>() {
 #ifdef USE_CUDA
 template <>
 inline void Node2::store<CUDA>() {
+#ifdef __CUDA_ARCH__
+    memcpy(fs, f, sizeof(double) * lbmDirec * count);
+#else
     // Saving in streaming support variables f->fs
     cudaMemcpy(fs, f, sizeof(double) * lbmDirec * count, cudaMemcpyDeviceToDevice);
+#endif
 }
 #endif
 __host__ __device__ __forceinline__ inline void Node2::reconstruct(const unsigned int index) {
@@ -583,7 +603,7 @@ inline void Node2::cleanLists<CUDA>() {
     // Actually perform the sort
     cub::DeviceRadixSort::SortKeys(ctm.getPtr(), ctm.getSize(), activeI, static_cast<unsigned int*>(ctb.getPtr()), activeCount, 0, max_bit);
     // Swap the input and output buffers
-    activeAlloc = ctb.swapPtr(activeI, activeAlloc * sizeof(unsigned int)) / sizeof(unsigned int);
+    activeAlloc = static_cast<unsigned int>(ctb.swapPtr(activeI, activeAlloc * sizeof(unsigned int)) / sizeof(unsigned int));
 }
 #endif
 #endif  // NODE2_H

@@ -28,7 +28,7 @@ constexpr double sqrt_2 = 1.4142135623730950488;
 
 // direction vectors of the lattice D3Q19
 // order is O,x,y,z,xy,yz,zx.
-constexpr tVect v[lbmDirec]={    tVect(0.0,0.0,0.0), //0
+__host__device__ constexpr tVect v[lbmDirec]={    tVect(0.0,0.0,0.0), //0
                                   //
                                  tVect(1.0,0.0,0.0), // 1
                                  tVect(-1.0,0.0,0.0), // 2
@@ -108,7 +108,7 @@ constexpr double vNorm[lbmDirec]={    0.0, //0
 
 
 // tensor v_i x v_i
-constexpr tMat vv[lbmDirec]={    tMat(v[0],v[0]),
+__host__device__ constexpr tMat vv[lbmDirec]={    tMat(v[0],v[0]),
                                     tMat(v[1],v[1]),
                                     tMat(v[2],v[2]),
                                     tMat(v[3],v[3]),
@@ -127,9 +127,8 @@ constexpr tMat vv[lbmDirec]={    tMat(v[0],v[0]),
                                     tMat(v[16],v[16]),
                                     tMat(v[17],v[17]),
                                     tMat(v[18],v[18]) };
-
 // opposed directions (used for bounce back)
-constexpr unsigned int opp[lbmDirec]={0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
+__host__device__ constexpr unsigned int opp[lbmDirec]={0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
 
 constexpr unsigned int two_dim[lbmDirec2D]={0, 1, 2, 3, 4, 7, 8, 9, 10};
 
@@ -137,17 +136,14 @@ constexpr unsigned int main1[lbmDirec]={0, 1, 2, 3, 4, 5, 6, 1, 2, 2, 1, 3, 4, 3
 constexpr unsigned int main2[lbmDirec]={0, 1, 2, 3, 4, 5, 6, 3, 4, 3, 4, 5, 6, 5, 6, 5, 6, 6, 5};
 
 // slip directions (used for slip walls)
-constexpr unsigned int slip1CheckSup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 3, 4, 5, 6, 1, 2, 6, 5};
-constexpr unsigned int slip1Sup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 9, 10, 8, 7, 13, 14, 12, 11, 18, 17, 15, 16};
-constexpr unsigned int slip2CheckSup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 3, 4, 2, 1, 5, 6, 4, 3, 5, 6, 1, 2};
-constexpr unsigned int slip2Sup[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 10, 9, 7, 8, 14, 13, 11, 12, 17, 18, 16, 15};
-const unsIntList slip1Check(slip1CheckSup,slip1CheckSup+19);
-const unsIntList slip1(slip1Sup,slip1Sup+19);
-const unsIntList slip2Check(slip2CheckSup,slip2CheckSup+19);
-const unsIntList slip2(slip2Sup,slip2Sup+19);
+__host__device__ constexpr unsigned int slip1Check[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 3, 4, 5, 6, 1, 2, 6, 5};
+__host__device__ constexpr unsigned int slip1[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 9, 10, 8, 7, 13, 14, 12, 11, 18, 17, 15, 16};
+__host__device__ constexpr unsigned int slip2Check[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 3, 4, 2, 1, 5, 6, 4, 3, 5, 6, 1, 2};
+__host__device__ constexpr unsigned int slip2[lbmDirec]={0, 0, 0, 0, 0, 0, 0, 10, 9, 7, 8, 14, 13, 11, 12, 17, 18, 16, 15};
+
 
 // weight coefficients for the D3Q19 lattice (universal principle of laziness)
-constexpr double coeff[lbmDirec]={       12.0/36.0,
+__host__device__ constexpr double coeff[lbmDirec]={       12.0/36.0,
                                                               2.0/36.0, 2.0/36.0, 2.0/36.0, 2.0/36.0, 2.0/36.0, 2.0/36.0,
                                                               1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0,
                                                               1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0 };

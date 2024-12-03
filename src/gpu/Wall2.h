@@ -29,7 +29,7 @@ struct Wall2 {
             // distance rotation center
             const tVect distFromCenter = pt - rotCenter[i];
             // distance from axes
-            const tVect distFromAxes = distFromCenter - (distFromCenter.dot(n)) * n;
+            const tVect distFromAxes = distFromCenter - (distFromCenter.dot(n[i])) * n[i];
             // tangential velocity
             return vel[i] + omega[i].cross(distFromAxes);
         } else {

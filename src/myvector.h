@@ -32,7 +32,7 @@ enum ProblemName {NONE, SHEARCELL, AVALANCHE, DRUM, NET, BARRIER,
     
 enum types : unsigned char {LIQUID, UNUSED, GAS, INTERFACE, PERIODIC, SLIP_STAT_WALL, SLIP_DYN_WALL, STAT_WALL, DYN_WALL, CYL, OBJ, TOPO, OUTLET};
 
-inline const char* typeString(types v)
+__host__ __device__ inline const char* typeString(types v)
 {
     switch (v)
     {
@@ -99,23 +99,23 @@ public:
     void printFixedLine(std::ofstream& outputFile) const;
     void printFixed(std::ofstream& outputFile) const;
     double max() const;
-    void reset();
+    __host__ __device__ void reset();
     // overloaded operators
-    constexpr tVect operator+(const tVect& vec) const;
-    tVect& operator+=(const tVect& vec);
-    constexpr tVect operator-(const tVect& vec) const;
-    tVect& operator-=(const tVect& vec);
-    constexpr tVect operator*(const double& scalar) const;
-    tVect& operator*=(const double& scalar);
-    constexpr tVect operator/(const double& scalar) const;
-    tVect& operator/=(const double& scalar);
-    //friend tVect operator*(const double& scalar, const tVect& vec);
+    __host__ __device__ constexpr tVect operator+(const tVect& vec) const;
+    __host__ __device__ tVect& operator+=(const tVect& vec);
+    __host__ __device__ constexpr tVect operator-(const tVect& vec) const;
+    __host__ __device__ tVect& operator-=(const tVect& vec);
+    __host__ __device__ constexpr tVect operator*(const double& scalar) const;
+    __host__ __device__ tVect& operator*=(const double& scalar);
+    __host__ __device__ constexpr tVect operator/(const double& scalar) const;
+    __host__ __device__ tVect& operator/=(const double& scalar);
+    //friend __host__ __device__ tVect operator*(const double& scalar, const tVect& vec);
     // mathematical operations
     tVect transport() const;
     tVect abs() const;
-    double dot(const tVect& vec) const;
+    __host__ __device__ double dot(const tVect& vec) const;
     double dot2(const tVect& vec) const;
-    tVect cross(const tVect& vec) const;
+    __host__ __device__ tVect cross(const tVect& vec) const;
     tVect compProd(const tVect& vec) const;
     constexpr tMat outer(const tVect& vec) const;
     double norm() const;
@@ -148,11 +148,11 @@ class quaternion{
 public:
     double q0,q1,q2,q3;
 public:
-    quaternion(){
+    __host__ __device__ quaternion(){
         q0=1.0;
         q1=q2=q3=0.0;
     }
-    quaternion(double a, double b, double c, double d){
+    __host__ __device__ quaternion(double a, double b, double c, double d){
         q0=a;
         q1=b;
         q2=c;
@@ -166,7 +166,7 @@ public:
     tQuat operator-(const tQuat& quat) const;
     tQuat operator*(const double& scalar) const;
     tQuat operator/(const double& scalar) const;
-    friend tQuat operator*(const double& scalar, const tQuat& quat);
+    friend __host__ __device__ tQuat operator*(const double& scalar, const tQuat& quat);
     // mathematical operations
     void normalize();
     void forceStability(tQuat& q0);
@@ -203,24 +203,24 @@ public:
         : tinyMatrix(v1.outer(v2)) {}
     void show() const;
     // overloaded operators
-    constexpr tMat operator+(const tMat& mat) const;
-    tMat& operator+=(const tMat& mat);
-    constexpr tMat operator-(const tMat& mat) const;
-    tMat& operator-=(const tMat& mat);
-    constexpr tMat operator*(const double& scalar) const;
-    tMat& operator*=(const double& scalar);
-    constexpr tMat operator/(const double& scalar) const;
-    tMat& operator/=(const double& scalar);
-    friend tMat operator*(const double& scalar, const tMat& mat);
+    __host__ __device__ constexpr tMat operator+(const tMat& mat) const;
+    __host__ __device__ tMat& operator+=(const tMat& mat);
+    __host__ __device__ constexpr tMat operator-(const tMat& mat) const;
+    __host__ __device__ tMat& operator-=(const tMat& mat);
+    __host__ __device__ constexpr tMat operator*(const double& scalar) const;
+    __host__ __device__ tMat& operator*=(const double& scalar);
+    __host__ __device__ constexpr tMat operator/(const double& scalar) const;
+    __host__ __device__ tMat& operator/=(const double& scalar);
+    friend __host__ __device__ tMat operator*(const double& scalar, const tMat& mat);
     // mathematical operations
-    double magnitude() const;
+    __host__ __device__ double magnitude() const;
 };
 
 // INTER-CLASS FUNCTIONS
 // overloaded operators
-tVect operator*(const double& scalar, const tVect& vec);
-tQuat operator*(const double& scalar, const tQuat& quat);
-tMat operator*(const double& scalar, const tMat& mat);
+__host__ __device__ tVect operator*(const double& scalar, const tVect& vec);
+__host__ __device__ tQuat operator*(const double& scalar, const tQuat& quat);
+__host__ __device__ tMat operator*(const double& scalar, const tMat& mat);
 // mathematical operations
 tVect quat2vec(tQuat quat);
 tQuat vec2quat(tVect vec);
@@ -228,8 +228,8 @@ tVect project(tVect vec, tQuat quat);
 tVect newtonAcc(tVect moment, tVect I, tVect wBf);
 tQuat quatAcc(tVect waBf, tQuat Q1);
 
-tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed);
-tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed);
+__host__ __device__ tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed);
+__host__ __device__ tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed);
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // COMPOSITE TYPE DEFINITIONS

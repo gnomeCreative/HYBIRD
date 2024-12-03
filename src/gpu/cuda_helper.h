@@ -51,4 +51,10 @@ inline void gpuAssert(cudaError_t code, const char *file, int line) {
 #endif
 #endif  // USE_CUDA
 
+// Constexpr arrays in lattice.h require marking as __host__device__ to build available to both host and device code
+#ifdef __CUDA_ARCH__
+#define __host__device__ __device__
+#else
+#define __host__device__ 
+#endif
 #endif  // CUDAHELPERH

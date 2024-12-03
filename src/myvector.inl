@@ -41,7 +41,7 @@ inline double tVect::max() const {
     return std::max(std::abs(x),std::max(std::abs(y),std::abs(z)));
 }
 
-inline void tVect::reset() {
+__host__ __device__ inline void tVect::reset() {
     x=0.0;
     y=0.0;
     z=0.0;
@@ -49,63 +49,63 @@ inline void tVect::reset() {
 
 // overloaded operators
 
-inline constexpr tVect tVect::operator+(const tVect& vec) const {
+__host__ __device__ inline constexpr tVect tVect::operator+(const tVect& vec) const {
     return tVect(
         x+vec.x,
         y+vec.y,
         z+vec.z);
 }
 
-inline tVect& tVect::operator+=(const tVect& vec) {
+__host__ __device__ inline tVect& tVect::operator+=(const tVect& vec) {
     x+=vec.x;
     y+=vec.y;
     z+=vec.z;
     return *this;
 }
 
-inline constexpr tVect tVect::operator-(const tVect& vec) const {
+__host__ __device__ inline constexpr tVect tVect::operator-(const tVect& vec) const {
     return tVect(
         x-vec.x,
         y-vec.y,
         z-vec.z);
 }
 
-inline tVect& tVect::operator-=(const tVect& vec) {
+__host__ __device__ inline tVect& tVect::operator-=(const tVect& vec) {
     x-=vec.x;
     y-=vec.y;
     z-=vec.z;
     return *this;
 }
 
-inline constexpr tVect tVect::operator*(const double& scalar) const {
+__host__ __device__ inline constexpr tVect tVect::operator*(const double& scalar) const {
     return tVect(
         x*scalar,
         y*scalar,
         z*scalar);
 }
 
-inline tVect& tVect::operator*=(const double& scalar) {
+__host__ __device__ inline tVect& tVect::operator*=(const double& scalar) {
     x*=scalar;
     y*=scalar;
     z*=scalar;
     return *this;
 }
 
-inline constexpr tVect tVect::operator/(const double& scalar) const {
+__host__ __device__ inline constexpr tVect tVect::operator/(const double& scalar) const {
     return tVect(
         x/scalar,
         y/scalar,
         z/scalar);
 }
 
-inline tVect& tVect::operator/=(const double& scalar) {
+__host__ __device__ inline tVect& tVect::operator/=(const double& scalar) {
     x/=scalar;
     y/=scalar;
     z/=scalar;
     return *this;
 }
 
-inline tVect operator *(const double& scalar, const tVect& vec) {
+__host__ __device__ inline tVect operator *(const double& scalar, const tVect& vec) {
     return tVect(
         vec.x*scalar,
         vec.y*scalar,
@@ -122,7 +122,7 @@ inline tVect tVect::abs() const {
     return tVect(std::abs(x),std::abs(y),std::abs(z));
 }
 
-inline double tVect::dot(const tVect& vec) const {
+__host__ __device__ inline double tVect::dot(const tVect& vec) const {
     return x*vec.x+y*vec.y+z*vec.z;
 }
 
@@ -130,7 +130,7 @@ inline double tVect::dot2(const tVect& vec) const {
     return pow(this->dot(vec),2.0);
 }
 
-inline tVect tVect::cross(const tVect& vec) const {
+__host__ __device__ inline tVect tVect::cross(const tVect& vec) const {
     return tVect(
             y*vec.z-z*vec.y,
             z*vec.x-x*vec.z,
@@ -175,7 +175,7 @@ inline int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) c
 
 // geometric position functions
 
-inline __host__ __device__ bool tVect::insideSphere(const tVect& center, const double& radius) const {
+__host__ __device__ inline bool tVect::insideSphere(const tVect& center, const double& radius) const {
     //distance between center of the sphere and point
     tVect dist=*this -center;
 //    return ((z-center.z)*(z-center.z)+(y-center.y)*(y-center.y)+(x-center.x)*(x-center.x)<radius*radius);
@@ -239,8 +239,8 @@ inline void quaternion::print(std::ofstream& outputFile) const {
     outputFile<<q0<<"\t"<<q1<<"\t"<<q2<<"\t"<<q3<<"\t";
 }
 
-inline void quaternion::forceStability(tQuat& quat){
-    const static double relax=0.0;
+inline void quaternion::forceStability(tQuat& /*quat*/){
+    //const static double relax=0.0;
     q0=q0;//-1.0*this->dot(quat)/quat.q0;
     q1=q1;//-relax*this->dot(quat)/quat.q1;
     q2=q2;//-relax*this->dot(quat)/quat.q2;
@@ -296,7 +296,7 @@ inline tQuat quaternion::operator/(const double& scalar) const {
         q3/scalar);
 }
 
-inline tQuat operator *(const double& scalar, const tQuat& quat){
+__host__ __device__ inline tQuat operator *(const double& scalar, const tQuat& quat){
     return tQuat(
         quat.q0*scalar,
         quat.q1*scalar,
@@ -371,7 +371,7 @@ inline void tinyMatrix::show() const {
 
 // overloaded operators
 
-inline tMat constexpr tinyMatrix::operator+(const tMat& mat) const {
+__host__ __device__ inline tMat constexpr tinyMatrix::operator+(const tMat& mat) const {
     return tMat(
         m00+mat.m00,
         m01+mat.m01,
@@ -384,7 +384,7 @@ inline tMat constexpr tinyMatrix::operator+(const tMat& mat) const {
         m22+mat.m22);
 }
 
-inline tMat& tinyMatrix::operator+=(const tMat& mat){
+__host__ __device__ inline tMat& tinyMatrix::operator+=(const tMat& mat){
     m00+=mat.m00;
     m01+=mat.m01;
     m02+=mat.m02;
@@ -397,7 +397,7 @@ inline tMat& tinyMatrix::operator+=(const tMat& mat){
     return *this;
 }
 
-inline tMat constexpr tinyMatrix::operator-(const tMat& mat) const {
+__host__ __device__ inline tMat constexpr tinyMatrix::operator-(const tMat& mat) const {
     return tMat(
         m00-mat.m00,
         m01-mat.m01,
@@ -410,7 +410,7 @@ inline tMat constexpr tinyMatrix::operator-(const tMat& mat) const {
         m22-mat.m22);
 }
 
-inline tMat& tinyMatrix::operator-=(const tMat& mat){
+__host__ __device__ inline tMat& tinyMatrix::operator-=(const tMat& mat){
     m00-=mat.m00;
     m01-=mat.m01;
     m02-=mat.m02;
@@ -423,7 +423,7 @@ inline tMat& tinyMatrix::operator-=(const tMat& mat){
     return *this;
 }
 
-inline tMat constexpr tinyMatrix::operator*(const double& scalar) const {
+__host__ __device__ inline tMat constexpr tinyMatrix::operator*(const double& scalar) const {
     return tMat(
         m00*scalar,
         m01*scalar,
@@ -436,7 +436,7 @@ inline tMat constexpr tinyMatrix::operator*(const double& scalar) const {
         m22*scalar);
 }
 
-inline tMat& tinyMatrix::operator*=(const double& scalar){
+__host__ __device__ inline tMat& tinyMatrix::operator*=(const double& scalar){
     m00*=scalar;
     m01*=scalar;
     m02*=scalar;
@@ -449,7 +449,7 @@ inline tMat& tinyMatrix::operator*=(const double& scalar){
     return *this;
 }
 
-inline tMat constexpr tinyMatrix::operator/(const double& scalar) const {
+__host__ __device__ inline tMat constexpr tinyMatrix::operator/(const double& scalar) const {
     return tMat(
         m00/scalar,
         m01/scalar,
@@ -462,7 +462,7 @@ inline tMat constexpr tinyMatrix::operator/(const double& scalar) const {
         m22/scalar);
 }
 
-inline tMat& tinyMatrix::operator/=(const double& scalar){
+__host__ __device__ inline tMat& tinyMatrix::operator/=(const double& scalar){
     m00/=scalar;
     m01/=scalar;
     m02/=scalar;
@@ -475,7 +475,7 @@ inline tMat& tinyMatrix::operator/=(const double& scalar){
     return *this;
 }
 
-inline tMat operator *(const double& scalar, const tMat& mat){
+__host__ __device__ inline tMat operator*(const double& scalar, const tMat& mat){
     return tMat(
         mat.m00*scalar,
         mat.m01*scalar,
@@ -490,7 +490,7 @@ inline tMat operator *(const double& scalar, const tMat& mat){
 
 // mathematical functions
 
-inline double tinyMatrix::magnitude() const {
+__host__ __device__ inline double tinyMatrix::magnitude() const {
 //    return 2.0*sqrt((m01*m10+m20*m02+m12*m21-(m00*m11+m11*m22+m22*m00))); // this gives nan
     return sqrt(0.5*(m00*m00+m11*m11+m22*m22+2.0*(m01*m10+m20*m02+m12*m21))); // this WORKS
 //    return 2.0*sqrt(m00*m00+m11*m11+m22*m22+2.0*(m01*m10+m20*m02+m12*m21)); // this does not work
@@ -543,7 +543,7 @@ inline tQuat quatAcc(tVect waBf, tQuat Q1){
     return waQuat;
 }
 
-inline tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed) {
+__host__ __device__ inline tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed) {
     
     // Calculate the centrifugal acceleration
     // vector from rotating center to the particle position
@@ -557,7 +557,7 @@ inline tVect computeCentrifugal(const tVect& position, const tVect& rotationCent
 
 }
 
-inline tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed) {
+__host__ __device__ inline tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed) {
 
     // Calculate Coriolis acceleration
     // Get Coriolis acceleration: -2 w X v
