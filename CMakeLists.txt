@@ -51,7 +51,9 @@ set(HYBIRD_INCLUDE
 set(HYBIRD_SRC 
     ${PROJECT_SOURCE_DIR}/src/DEM.cpp
     ${PROJECT_SOURCE_DIR}/src/elmt.cpp
-    ${PROJECT_SOURCE_DIR}/src/hybird.cpp
+    # src/hybird.cu includes headers that require CUDA to parse correctly
+    # with some work it could be resolved to build as .cpp
+    ${PROJECT_SOURCE_DIR}/src/hybird.cu
     ${PROJECT_SOURCE_DIR}/src/IO.cpp
     ${PROJECT_SOURCE_DIR}/src/LB.cpp
     ${PROJECT_SOURCE_DIR}/src/node.cpp
@@ -104,8 +106,9 @@ endif()
 if(CMAKE_CUDA_COMPILER AND HYBIRD_ENABLE_CUDA)
 # Notify the build that we are building for cuda
     target_compile_definitions(hybird PRIVATE USE_CUDA)
-    target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-rdc=true>)
     target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+    # Enable relocatable device code
+    set_property(TARGET hybird PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 else()
     # Or set .cu files to be compiled as .cpp
     foreach(HYBIRD_SRC_FILE HYBIRD_SRC)

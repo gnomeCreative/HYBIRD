@@ -7,6 +7,12 @@
 #include "DEM.h"
 
 /**
+ * Storage for static members must be defined
+ */
+std::unique_ptr<CubTempMem> CubTempMem::_singletonT;
+std::unique_ptr<CubTempMem> CubTempMem::_singletonB;
+
+/**
  * (Temporary) DEM data synchronisation
  * Reformat DEM data to structure of arrays (for CPU), and copy it to device (for CUDA)
  */
@@ -1246,7 +1252,7 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     ifstream fluidFileID;
     if (h_PARAMS.lbRestart) {
         // open fluid restart file
-        fluidFileID.open(h_PARAMS.lbRestartFile.c_str(), ios::in);
+        fluidFileID.open(init_params.lbRestartFile.c_str(), ios::in);
         ASSERT(fluidFileID.is_open());
         // check if the restart file size is ok
         unsigned int restartX, restartY, restartZ, restartNodes;
@@ -1483,25 +1489,25 @@ void LB2::countTopography(std::map<unsigned int, NewNode> &newNodes) {
 
     // TOPOGRAPHY ////////////////////////
     if (h_params.lbTopography) {
-        h_params.lbTop.readFromFile(h_params.lbTopographyFile, h_params.translateTopographyX, h_params.translateTopographyY, h_params.translateTopographyZ);
-        h_params.lbTop.show();
+        lbTop.readFromFile(init_params.lbTopographyFile, h_params.translateTopographyX, h_params.translateTopographyY, h_params.translateTopographyZ);
+        lbTop.show();
         // check if topography grid contains the fluid domain
-        ASSERT(h_params.lbTop.coordX[0] < h_params.unit.Length);
-        ASSERT(h_params.lbTop.coordY[0] < h_params.unit.Length);
+        ASSERT(lbTop.coordX[0] < h_params.unit.Length);
+        ASSERT(lbTop.coordY[0] < h_params.unit.Length);
 
-        cout << "lbTop.coordX[lbTop.sizeX - 1]=" << h_params.lbTop.coordX[h_params.lbTop.sizeX - 1] << endl;
+        cout << "lbTop.coordX[lbTop.sizeX - 1]=" << lbTop.coordX[lbTop.sizeX - 1] << endl;
         cout << "lbSize[0]) * unit.Length=" << h_params.lbSize[0] * h_params.unit.Length << endl;
-        ASSERT(h_params.lbTop.coordX[h_params.lbTop.sizeX - 1] > h_params.lbSize[0] * h_params.unit.Length);
-        cout << "lbTop.coordY[lbTop.sizeY - 1]=" << h_params.lbTop.coordY[h_params.lbTop.sizeY - 1] << endl;
+        ASSERT(lbTop.coordX[lbTop.sizeX - 1] > h_params.lbSize[0] * h_params.unit.Length);
+        cout << "lbTop.coordY[lbTop.sizeY - 1]=" << lbTop.coordY[lbTop.sizeY - 1] << endl;
         cout << "lbSize[1]) * unit.Length=" << h_params.lbSize[1] * h_params.unit.Length << endl;
-        ASSERT(h_params.lbTop.coordY[h_params.lbTop.sizeY - 1] > h_params.lbSize[1] * h_params.unit.Length);
+        ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_params.lbSize[1] * h_params.unit.Length);
 
 
         for (unsigned int ix = 1; ix < h_params.lbSize[0] - 1; ++ix) {
             for (unsigned int iy = 1; iy < h_params.lbSize[1] - 1; ++iy) {
                 for (unsigned int iz = 1; iz < h_params.lbSize[2] - 1; ++iz) {
                     const tVect nodePosition = tVect(ix, iy, iz) * h_params.unit.Length;
-                    const double distanceFromTopography = h_params.lbTop.distance(nodePosition);
+                    const double distanceFromTopography = lbTop.distance(nodePosition);
                     
                     if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
                         const unsigned int it = ix + iy * h_params.lbSize[0] + iz * h_params.lbSize[0] * h_params.lbSize[1];
@@ -1522,7 +1528,7 @@ void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
             if (newNodes.find(it) == newNodes.end()) {
                 // control is done in real coordinates
                 const tVect nodePosition = h_params.getPosition(it) * h_params.unit.Length;
-                const double surfaceIsoparameterHere = h_params.lbTop.surfaceIsoparameter(nodePosition);
+                const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
                 if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
                     newNodes.emplace(it, NewNode{ LIQUID });
                 }
@@ -1786,9 +1792,9 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
                         // set curved
                         const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(i);
                         // xf - xw
-                        const double topographyDistance = 1.0 * PARAMS.lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
+                        const double topographyDistance = 1.0 * lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
                         // wall normal
-                        curves.back().wallNormal = PARAMS.lbTop.surfaceNormal(nodePosHere);
+                        curves.back().wallNormal = lbTop.surfaceNormal(nodePosHere);
                         //cout << topographyDistance << endl;
                         const double deltaHere = topographyDistance / vNorm[j];
                         curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
@@ -2003,9 +2009,10 @@ void LB2::syncDEM(const elmtList &elmts, const particleList &particles, const wa
     syncWalls<IMPL>(walls);
     syncObjects<IMPL>(objects);
 }
-void LB2::setParams(const LBParams& params, bool skip_sync) {
+void LB2::setParams(const LBParams& params, const LBInitParams& initParams, bool skip_sync) {
     // CPU
     h_PARAMS = params;
+    init_params = initParams;
     // CUDA
     if (!skip_sync)
         syncParams();

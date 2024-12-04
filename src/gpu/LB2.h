@@ -105,9 +105,10 @@ class LB2 {
      * Set the LBM params
      * This copies them to GPU storage if required
      * @params params The LBParams structure to overwrite PARAMS with
+     *
      * @param skip_sync If true, will not be copied to device
      */
-    void setParams(const LBParams& params, bool skip_sync = false);
+    void setParams(const LBParams& params, const LBInitParams& initParams, bool skip_sync = false);
     void syncParams();
 
     //
@@ -196,6 +197,9 @@ class LB2 {
     Object2 h_objects, hd_objects, *d_objects;
     
     LBParams h_params;  // Host copy of PARAMS
+    LBInitParams init_params; // Host only parameters used during initialisation
+    // topography container
+    topography lbTop = {};  // t
 };
 
 #endif // LB2_H

@@ -36,7 +36,22 @@ public:
         , Energy(0)
         , invLength(0) { }
 
-    void setComposite();
+    void setComposite() {
+        Volume = Length * Length * Length;
+        Speed = Length / Time; //+2
+        Accel = Length / Time / Time; // +6
+        AngVel = 1.0 / Time;
+        KinVisc = Length * Length / Time; // 0
+        DynVisc = Density * Length * Length / Time; // 0
+        Force = Density * Length * Length * Length * Length / Time / Time; // +3
+        Torque = Density * Length * Length * Length * Length * Length / Time / Time; // +1
+        Mass = Density * Length * Length * Length; // -3
+        Stress = Density * Length * Length / Time / Time;
+        Pressure = Density * Length * Length / Time / Time;
+        FlowRate = Density * Length * Length * Length / Time;
+        Energy = Density * Length * Length * Length * Length * Length / Time / Time;
+        invLength = 1.0 / Length;
+    }
 };
 
 #endif  // MEASUREUNITS_H

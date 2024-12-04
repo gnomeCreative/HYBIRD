@@ -727,22 +727,3 @@ double curve::getChi(const unsigned int& j, const double& tau) const {
         return (2.0 * delta[j] - 1.0) / (tau - 2.0);
     }
 }
-
-// UNITS ///////////////////////////////////
-
-void measureUnits::setComposite() {
-    Volume = Length * Length*Length;
-    Speed = Length / Time; //+2
-    Accel = Length / Time / Time; // +6
-    AngVel = 1.0 / Time;
-    KinVisc = Length * Length / Time; // 0
-    DynVisc = Density * Length * Length / Time; // 0
-    Force = Density * Length * Length * Length * Length / Time / Time; // +3
-    Torque = Density * Length * Length * Length * Length * Length / Time / Time; // +1
-    Mass = Density * Length * Length * Length; // -3
-    Stress = Density * Length * Length / Time / Time;
-    Pressure = Density * Length * Length / Time / Time;
-    FlowRate = Density * Length * Length * Length / Time;
-    Energy = Density * Length * Length * Length * Length * Length / Time / Time;
-    invLength=1.0/Length;
-}

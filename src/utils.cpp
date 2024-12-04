@@ -274,7 +274,6 @@ void topography::readFromFile(string& topographyFileName, double& transX, double
     }
     std::cout << "Number of lines in text file: " << totPoints<<endl;
     topographyFileID.close();
-    
     // find rows and columns
     topographyFileID.open(topographyFileName.c_str(), ios::in);
     topographyFileID.ignore(10000,'\n');
@@ -364,16 +363,17 @@ void topography::readFromFile(string& topographyFileName, double& transX, double
     
     ASSERT(spacingX > 0);
     ASSERT(spacingY > 0);
-    
 
+    // Build actual storage
+    // @todo, not sure if coordX, coordY, points, surface are actually required
 }
 
 void topography::show() {
 
     cout<<"Topography with size "<<sizeX<<" x "<<sizeY<<endl;
     cout<<"Points with spacing "<<spacingX<<" x "<<spacingY<<":"<<endl;
-    cout<<"X range: from "<<coordX[0]<<" to "<<coordX[sizeX - 1]<<endl;
-    cout<<"Y range: from "<<coordY[0]<<" to "<<coordY[sizeY - 1]<<endl;
+    //cout<<"X range: from "<<coordX[0]<<" to "<<coordX[sizeX - 1]<<endl; // @todo currently disabled
+    //cout<<"Y range: from "<<coordY[0]<<" to "<<coordY[sizeY - 1]<<endl; // @todo currently disabled
 //    for (int iy = 0; iy < sizeY; iy++) {
 //        for (int ix = 0; ix < sizeX; ix++) {
 //            cout<<"("<<ix<<","<<iy<<")"<<" "<<points[iy][ix].dot(Xp)<<" "<<points[iy][ix].dot(Yp)<<" "<<points[iy][ix].dot(Zp)<<" "<<fluidLevel[iy][ix]<<endl;

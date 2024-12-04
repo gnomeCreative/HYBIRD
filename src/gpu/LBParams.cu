@@ -51,7 +51,7 @@ void LBParams::latticeDefinition() {
 
 }
 
-void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
+void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBInitParams &initP) {
     // conversion units //////////////////////////////////////////////////////////////////////////////
     // fluid and granular matter are solved in different measure units
     // for a reference, check Feng, Han, Owen, 2007
@@ -62,7 +62,7 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
     // restart
     PARSE_CLASS_MEMBER(configFile, lbRestart, "restartFluid", false);
     if (lbRestart) {
-        PARSE_CLASS_MEMBER(configFile, lbRestartFile, "fluidRestartFile", "");
+        PARSE_CLASS_MEMBER(configFile, initP.lbRestartFile, "fluidRestartFile", "");
     }
     // imposed volume
     PARSE_CLASS_MEMBER(configFile, imposeFluidVolume, "imposeFluidVolume", false);
@@ -91,19 +91,19 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
     PARSE_CLASS_MEMBER(configFile, lbTopography, "applyTopography", false);
     if (lbTopography) {
         PARSE_CLASS_MEMBER(configFile, lbTopographySurface, "fluidFromTopography", false);
-        PARSE_CLASS_MEMBER(configFile, lbTopographyFile, "topographyFile", "");
+        PARSE_CLASS_MEMBER(configFile, initP.lbTopographyFile, "topographyFile", "");
         PARSE_CLASS_MEMBER(configFile, translateTopographyX, "translateTopographyX", 0.0);
         PARSE_CLASS_MEMBER(configFile, translateTopographyY, "translateTopographyY", 0.0);
         PARSE_CLASS_MEMBER(configFile, translateTopographyZ, "translateTopographyZ", 0.0);
     }
     if (lbTopography && !lbRestart) {
-        cout << "Using topography file for boundary and initial surface:  " << lbTopographyFile << endl;
+        cout << "Using topography file for boundary and initial surface:  " << initP.lbTopographyFile << endl;
     }
     else if (lbTopography && lbRestart) {
-        cout << "Using topography file for boundary: " << lbTopographyFile << ", and restart file for fluid:  " << lbRestartFile << endl;
+        cout << "Using topography file for boundary: " << initP.lbTopographyFile << ", and restart file for fluid:  " << initP.lbRestartFile << endl;
     }
     else if (lbRestart) {
-        cout << "Computation from LB restart file " << lbRestartFile << endl;
+        cout << "Computation from LB restart file " << initP.lbRestartFile << endl;
     }
     else {
         cout << "Computation from scratch - for interface geometry check LB::initializeInterface() " << endl;

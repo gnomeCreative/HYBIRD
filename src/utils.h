@@ -99,21 +99,16 @@ public:
 class topography {
 public:
     // index
-    unsigned int sizeX,sizeY;
+    unsigned int sizeX = 0, sizeY = 0;
     // coordinate vectors
-    doubleList coordX;
-    doubleList coordY;
-    vecSet points;
-    vecSet surface;
-    double spacingX,spacingY;
-    double corner1X,corner1Y;
-    double corner2X,corner2Y;
-    topography(){
-        coordX.clear();
-        coordY.clear();
-        points.clear();
-        surface.clear();
-    }
+    doubleList coordX = {};
+    doubleList coordY = {};
+    vecSet points = {};
+    vecSet surface = {};
+    double spacingX = 0,spacingY = 0;
+    double corner1X = 0,corner1Y = 0;
+    double corner2X = 0,corner2Y = 0;
+    constexpr topography() = default;
     void readFromFile(string& fileName, double& transX, double& transY, double& transZ);
     void show();
     // computes the distance sfrom the topographical surface

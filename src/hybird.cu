@@ -154,7 +154,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
     configFile.close();
 }
 
-void parseConfigFile(IO& io, DEM& dem, LBParams& lb, GetPot& configFile, GetPot& commandLine) {
+void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, GetPot& configFile, GetPot& commandLine) {
 
     cout << "Parsing input file" << endl;
     // PROBLEM NAME //////////////
@@ -350,7 +350,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, GetPot& configFile, GetPot&
     PARSE_CLASS_MEMBER(configFile, lb.forceField, "forceFieldSolver", 0);
 
     // getting LBM parameters
-    lb.latticeBoltzmannGet(configFile, commandLine);
+    lb.latticeBoltzmannGet(configFile, commandLine, lbi);
     // getting DEM parameters and particle initial status
     dem.discreteElementGet(configFile, commandLine);
 
@@ -462,6 +462,7 @@ int main(int argc, char** argv) {
 
     // DECLARATION OF VARIABLES - LB ///////////////
     LBParams lb_p;
+    LBInitParams lb_ip;
 
     // print some info for restorability
     time_t t = time(0); // get time now
@@ -483,7 +484,7 @@ int main(int argc, char** argv) {
 
     // parsing LBM input file
     GetPot configFile(io.configFileName);
-    parseConfigFile(io, dem, lb_p, configFile, commandLine);
+    parseConfigFile(io, dem, lb_p, lb_ip, configFile, commandLine);
 
     printUfo(commandLine, configFile);
 
@@ -523,7 +524,7 @@ int main(int argc, char** argv) {
 
     // Allocate the LB runner
     LB2 lb;
-    lb.setParams(lb_p);
+    lb.setParams(lb_p, lb_ip);
 
     if (io.lbmSolver) {
         lb.init(dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);

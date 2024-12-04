@@ -10,6 +10,17 @@
 
 class GetPot;
 
+
+/**
+ * Subset of parameters not required on the device
+ */
+struct LBInitParams {
+    // topography file
+    std::string lbTopographyFile = "";  // t
+    // restart file
+    std::string lbRestartFile = "";  // t
+};
+
 /**
  * Lattice Boltzmann model parameters
  * These should not change during after initialisation
@@ -21,7 +32,7 @@ struct LBParams {
     /**
      * Initialise struct from run args/input file
      */
-    void latticeBoltzmannGet(GetPot &configFile, GetPot &commandLine);
+    void latticeBoltzmannGet(GetPot &configFile, GetPot &commandLine, LBInitParams& initP);
     /**
      * Initialise dynamic lattice params that scale with the model configuration
      * @see lattice.h for the static lattice params
@@ -63,8 +74,6 @@ struct LBParams {
     /////////////////
     // switcher for restart
     bool lbRestart = false;  // t
-    // restart file
-    //std::string lbRestartFile = "";  // t //@todo
     // switcher for imposed volume, and imposed volume
     bool imposeFluidVolume = false;  // t
     double imposedFluidVolume = 0.0;  // t
@@ -80,10 +89,6 @@ struct LBParams {
     double translateTopographyX = 0.0;  // t
     double translateTopographyY = 0.0;  // t
     double translateTopographyZ = 0.0;  // t
-    // topography file
-    //string lbTopographyFile = "";  // t //@todo
-    // topography container
-    //topography lbTop = {};  // t
     // switchers for force field, non-Newtonian and everything
     bool freeSurface = false;
     bool forceField = false;
