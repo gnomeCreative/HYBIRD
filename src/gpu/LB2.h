@@ -116,11 +116,13 @@ class LB2 {
     //
     /**
      * @brief Update all Node2::solid_index to the contained particle
+     * @return The total mass of nodes that are inside particles
+     *
      * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has been defined
      * @see latticeBoltzmannCouplingStep()
      */
     template<int impl>
-    void initializeParticleBoundaries();
+    double initializeParticleBoundaries();
     /**
      * @brief Check and update whether active nodes are still inside particles
      * @note Called from latticeBoltzmannCouplingStep() when a new neighbour table has not been defined
@@ -170,6 +172,7 @@ class LB2 {
     void shiftToPhysical();
 
     Node2 &getNodes();
+    void initDeviceNodes();
 
     /**
      * Member variable philosophy
@@ -185,16 +188,16 @@ class LB2 {
     Node2 hd_nodes;
     // Pointer to device copy of device node buffer pointers
     // In CPU, this is a pointer to h_nodes
-    Node2 *d_nodes;
+    Node2 *d_nodes = nullptr;
 
 
     // The temporary host, and device particle storage
     // Until DEM model is moved to CUDA, host copy only acts as a location to build data before copying to device
-    Particle2 h_particles, hd_particles, *d_particles;
-    Element2 h_elements, hd_elements, *d_elements;
-    Wall2 h_walls, hd_walls, *d_walls;
-    Cylinder2 h_cylinders, hd_cylinders, * d_cylinders;
-    Object2 h_objects, hd_objects, *d_objects;
+    Particle2 h_particles, hd_particles, *d_particles = nullptr;
+    Element2 h_elements, hd_elements, *d_elements = nullptr;
+    Wall2 h_walls, hd_walls, *d_walls = nullptr;
+    Cylinder2 h_cylinders, hd_cylinders, * d_cylinders = nullptr;
+    Object2 h_objects, hd_objects, *d_objects = nullptr;
     
     LBParams h_params;  // Host copy of PARAMS
     LBInitParams init_params; // Host only parameters used during initialisation

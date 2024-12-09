@@ -187,6 +187,9 @@ void LB2::syncObjects<CPU>(const objectList &objects) {
 #ifdef USE_CUDA
 template<>
 bool LB2::syncElements<CUDA>(const elmtList &elements) {
+    if (!d_elements) {
+        CUDA_CALL(cudaMalloc(&d_elements, sizeof(Element2)));
+    }
     // @todo copy hd_elements to d_elements
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
@@ -241,6 +244,9 @@ bool LB2::syncElements<CUDA>(const elmtList &elements) {
 }
 template<>
 void LB2::syncParticles<CUDA>(const particleList &particles) {
+    if (!d_particles) {
+        CUDA_CALL(cudaMalloc(&d_particles, sizeof(Particle2)));
+    }
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
     // @todo These copies will be redundant when DEM is moved to CUDA
@@ -274,6 +280,9 @@ void LB2::syncParticles<CUDA>(const particleList &particles) {
 }
 template<>
 void LB2::syncCylinders<CUDA>(const cylinderList &cylinders) {
+    if (!d_cylinders) {
+        CUDA_CALL(cudaMalloc(&d_cylinders, sizeof(Cylinder2)));
+    }
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
     // @todo These copies will be redundant when DEM is moved to CUDA
@@ -313,6 +322,9 @@ void LB2::syncCylinders<CUDA>(const cylinderList &cylinders) {
 }
 template<>
 void LB2::syncWalls<CUDA>(const wallList &walls) {
+    if (!d_walls) {
+        CUDA_CALL(cudaMalloc(&d_walls, sizeof(Wall2)));
+    }
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
     // @todo These copies will be redundant when DEM is moved to CUDA
@@ -352,6 +364,9 @@ void LB2::syncWalls<CUDA>(const wallList &walls) {
 }
 template<>
 void LB2::syncObjects<CUDA>(const objectList &walls) {
+    if (!d_objects) {
+        CUDA_CALL(cudaMalloc(&d_objects, sizeof(Object2)));
+    }
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
     // @todo These copies will be redundant when DEM is moved to CUDA
@@ -370,7 +385,7 @@ void LB2::syncObjects<CUDA>(const objectList &walls) {
         CUDA_CALL(cudaMalloc(&hd_objects.FHydro, h_objects.count * sizeof(tVect)));
         hd_objects.count = h_objects.count;
         // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_objects, &hd_objects, sizeof(Wall2), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(d_objects, &hd_objects, sizeof(Object2), cudaMemcpyHostToDevice));
     } else if(hd_objects.count != walls.size()) {
         // Buffer has shrunk, so just update size
         hd_objects.count = static_cast<unsigned int>(walls.size());
@@ -389,7 +404,7 @@ void LB2::syncObjects<CUDA>(const objectList &walls) {
 /**
  * initializeParticleBoundaries()
  */
-__host__ __device__ __forceinline__ inline void common_initializeParticleBoundaries(const unsigned int an_i, Node2* nodes, Particle2* particles) {
+__host__ __device__ __forceinline__ inline double common_initializeParticleBoundaries(const unsigned int an_i, Node2* nodes, Particle2* particles) {
     // Fetch the index of the (active) node being processed
     const unsigned int n_i = nodes->activeI[an_i];
     const tVect node_position = nodes->getPosition(n_i);
@@ -400,35 +415,48 @@ __host__ __device__ __forceinline__ inline void common_initializeParticleBoundar
         if (node_position.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
             nodes->setInsideParticle(n_i, true);
             nodes->solidIndex[n_i] = p_i;
-            break;
+            return nodes->mass[n_i];
         }
     }
+    return 0.0;
 }
 template<>
-void LB2::initializeParticleBoundaries<CPU>() {
+double LB2::initializeParticleBoundaries<CPU>() {
     // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
     memset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int));
 
     // @todo can we parallelise at a higher level?
-#pragma omp parallel for
+    double totalParticleMass = 0;
+#pragma omp parallel for reduction(+:totalParticleMass) 
     for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
         // Pass the active node index to the common implementation
-        common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
+        totalParticleMass += common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
     }
+    return totalParticleMass;
 }
 #ifdef USE_CUDA
-__global__ void d_initializeParticleBoundaries(Node2* d_nodes, Particle2* d_particles) {
+__global__ void d_initializeParticleBoundaries(Node2* d_nodes, Particle2* d_particles, double *node_in_particle_mass) {
     // Get unique CUDA thread index, which corresponds to active node 
     const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
     if (an_i >= d_nodes->activeCount) return;
     // Pass the active node index to the common implementation
-    common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
+    const double t = common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
+
+    if (t != 0.0) {
+        atomicAdd(node_in_particle_mass, t);
+    }
 }
 template<>
-void LB2::initializeParticleBoundaries<CUDA>() {
+double LB2::initializeParticleBoundaries<CUDA>() {
     // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
     CUDA_CALL(cudaMemset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int)));
+    // Initialise reduction variable
+    auto &t = CubTempMem::GetTempSingleton();
+    t.resize(sizeof(double));
+    double *d_return = static_cast<double*>(t.getPtr());
+    double h_return = 0;
+    CUDA_CALL(cudaMemcpy(d_return, &h_return, sizeof(double), cudaMemcpyHostToDevice));
 
     // Launch cuda kernel to update
     // @todo Try unrolling this, so 1 thread per node+particle combination (2D launch?)
@@ -438,8 +466,12 @@ void LB2::initializeParticleBoundaries<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
-    d_initializeParticleBoundaries << <gridSize, blockSize >> > (d_nodes, d_particles);
+    d_initializeParticleBoundaries << <gridSize, blockSize >> > (d_nodes, d_particles, d_return);
     CUDA_CHECK();
+
+    // Copy back return value
+    CUDA_CALL(cudaMemcpy(&h_return, d_return, sizeof(double), cudaMemcpyDeviceToHost));
+    return h_return;
 }
 #endif
 
@@ -756,8 +788,7 @@ __host__ __device__ void common_streaming(const unsigned int an_i, Node2* nodes,
             const double vuj = nodes->u[an_i].dot(v[j]);
             // streaming with constant pressure interface
             nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq);
-        }
-        else {
+        } else {
             const unsigned int L_OFFSET = ln_i * lbmDirec;
             // @todo this could be greatly improved by stacking matching cases to reduce divergence
             switch (nodes->type[ln_i]) {
@@ -1209,6 +1240,7 @@ Node2& LB2::getNodes() {
     CUDA_CALL(cudaMemcpy(h_nodes.age, hd_nodes.age, h_nodes.count * sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.solidIndex, hd_nodes.solidIndex, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.d, hd_nodes.d, h_nodes.count * lbmDirec * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.curved, hd_nodes.curved, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.type, hd_nodes.type, h_nodes.count * sizeof(types), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.p, hd_nodes.p, h_nodes.count * sizeof(bool), cudaMemcpyDeviceToHost));
     // Copy misc buffers back to host
@@ -1219,6 +1251,71 @@ Node2& LB2::getNodes() {
     CUDA_CALL(cudaMemcpy(h_nodes.curves, hd_nodes.curves, h_nodes.curveCount * sizeof(curve), cudaMemcpyDeviceToHost));
 #endif
     return h_nodes;
+}
+void LB2::initDeviceNodes() {
+#ifdef USE_CUDA
+    // Allocate the main storage
+    if (d_nodes) {
+        fprintf(stderr, "LB2::initDeviceNodes() should only be called once.");
+        throw std::exception();
+    }
+    CUDA_CALL(cudaMalloc(&d_nodes, sizeof(Node2)));
+    // Build HD struct
+    hd_nodes.activeCount = h_nodes.activeCount;
+    hd_nodes.activeAlloc = h_nodes.activeCount;
+    CUDA_CALL(cudaMalloc(&hd_nodes.activeI, hd_nodes.activeCount * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.activeI, h_nodes.activeI, hd_nodes.activeCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    hd_nodes.interfaceCount = h_nodes.interfaceCount;
+    CUDA_CALL(cudaMalloc(&hd_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.interfaceI, h_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    hd_nodes.fluidCount = h_nodes.fluidCount;
+    CUDA_CALL(cudaMalloc(&hd_nodes.fluidI, hd_nodes.fluidCount * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.fluidI, h_nodes.fluidI, hd_nodes.fluidCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    hd_nodes.wallCount = h_nodes.wallCount;
+    CUDA_CALL(cudaMalloc(&hd_nodes.wallI, hd_nodes.wallCount * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.wallI, h_nodes.wallI, hd_nodes.wallCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    hd_nodes.curveCount = h_nodes.curveCount;
+    CUDA_CALL(cudaMalloc(&hd_nodes.curves, hd_nodes.curveCount * sizeof(curve)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.curves, h_nodes.curves, hd_nodes.curveCount * sizeof(curve), cudaMemcpyHostToDevice));
+    hd_nodes.count = h_nodes.count;
+    CUDA_CALL(cudaMalloc(&hd_nodes.coord, hd_nodes.count * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.coord, h_nodes.coord, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.f, hd_nodes.count * lbmDirec * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.f, h_nodes.f, hd_nodes.count * lbmDirec * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.fs, hd_nodes.count * lbmDirec * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.fs, h_nodes.fs, hd_nodes.count * lbmDirec * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.n, hd_nodes.count * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.n, h_nodes.n, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.u, hd_nodes.count * sizeof(tVect)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.u, h_nodes.u, hd_nodes.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.hydroForce, hd_nodes.count * sizeof(tVect)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.hydroForce, h_nodes.hydroForce, hd_nodes.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.centrifugalForce, hd_nodes.count * sizeof(tVect)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.centrifugalForce, h_nodes.centrifugalForce, hd_nodes.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.mass, hd_nodes.count * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.mass, h_nodes.mass, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.visc, hd_nodes.count * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.visc, h_nodes.visc, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.basal, hd_nodes.count * sizeof(bool)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.basal, h_nodes.basal, hd_nodes.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.friction, hd_nodes.count * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.friction, h_nodes.friction, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.age, hd_nodes.count * sizeof(float)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.age, h_nodes.age, hd_nodes.count * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.solidIndex, hd_nodes.count * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.solidIndex, h_nodes.solidIndex, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.d, hd_nodes.count * lbmDirec * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.d, h_nodes.d, hd_nodes.count * lbmDirec * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.curved, hd_nodes.count * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.curved, h_nodes.curved, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.type, hd_nodes.count * sizeof(unsigned int)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.type, h_nodes.type, hd_nodes.count * sizeof(types), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.p, hd_nodes.count * sizeof(bool)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.p, h_nodes.p, hd_nodes.count * sizeof(bool), cudaMemcpyHostToDevice));
+    // Copy struct containing device pointers and counts
+    CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
+#endif
+    
 }
 
 void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
@@ -1288,8 +1385,11 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     // initialize h_nodes's fluid, interface and active lists
     initializeLists();
 
+    // Setup hd_nodes, copy it to d_nodes
+    initDeviceNodes();
+
     // application of particle initial position
-    initializeParticleBoundaries<IMPL>();
+    const double inside_mass = initializeParticleBoundaries<IMPL>();
 
     // in case mass needs to be kept constant, compute it here
     h_PARAMS.totalMass = 0.0;
@@ -1310,7 +1410,8 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
         }
         default:
         {
-            for (int i = 0; h_nodes.activeCount; ++i) {
+            // @todo This needs to be calculated on device if using CUDA, h_nodes is out of date follow initializeParticleBoundaries
+            for (int i = 0; i < h_nodes.activeCount; ++i) {
                 const unsigned int a_i = h_nodes.activeI[i];
                 if (!h_nodes.isInsideParticle(a_i)) {
                     h_PARAMS.totalMass += h_nodes.mass[a_i];
@@ -1614,7 +1715,8 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     h_nodes.friction = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
     h_nodes.age = static_cast<float*>(malloc(h_nodes.count * sizeof(float)));
     h_nodes.solidIndex = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
-    h_nodes.d = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
+    h_nodes.d = static_cast<unsigned int*>(malloc(h_nodes.count * lbmDirec * sizeof(unsigned int)));
+    h_nodes.curved = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
     h_nodes.type = static_cast<types*>(malloc(h_nodes.count * sizeof(types)));
     h_nodes.p = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
     // Zero initialisation
@@ -1628,6 +1730,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
     memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
     memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
+    memset(h_nodes.curved, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
     memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
     // Perform the generateNode() loop for each item in newNodes
     std::map<unsigned int, unsigned int> idIndexMap;
@@ -1784,7 +1887,6 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
                     h_nodes.d[opp[j] * h_nodes.count + l_i] = i;
                     // if the neighbor is a curved wall, set parameters accordingly
                     if (h_nodes.type[l_i] == TOPO) {
-                        //@todo curved
                         if (h_nodes.curved[i] == std::numeric_limits<unsigned int>::max()) {
                             h_nodes.curved[i] = static_cast<unsigned int>(curves.size());
                             curves.emplace_back();
@@ -1804,6 +1906,9 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
                         h_nodes.basal[i] = true;
                     }
                 }
+            } else {
+                // Neighbour is gas
+                h_nodes.d[j * h_nodes.count + i] = std::numeric_limits<unsigned int>::max();
             }
         }
     }

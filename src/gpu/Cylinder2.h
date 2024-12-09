@@ -3,7 +3,7 @@
 #include "myvector.h"
 
 struct Cylinder2 {
-    unsigned int count;
+    unsigned int count = 0;
 
 
     // two axes point

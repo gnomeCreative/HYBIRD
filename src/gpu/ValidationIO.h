@@ -35,7 +35,7 @@ public:
     }
     void output(LB2& lb) {
         if (!fs.is_open()) {
-            fs.open(output_path, std::ios::in | std::ios::binary);
+            fs.open(output_path, std::ios::out | std::ios::binary | std::ios::trunc);
             if (!fs.is_open()) {
                 throw std::exception(("Unable to open validation file for writing: " + output_path.generic_string()).c_str());
             }

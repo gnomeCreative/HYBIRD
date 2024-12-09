@@ -3,7 +3,7 @@
 #include "myvector.h"
 
 struct Object2 {
-    unsigned int count;
+    unsigned int count = 0;
 
     // particle radius
     double *r = nullptr;

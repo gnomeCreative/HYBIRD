@@ -545,6 +545,11 @@ int main(int argc, char** argv) {
         } else if (io.energyExit) {
             exit_code = SUCCESS;
         } else {
+            // advance one step in time
+            io.realTime += h_PARAMS.unit.Time;
+            ++io.currentTimeStep;
+            ++h_PARAMS.time;
+
             // core of the code, performs time steps
             lb.step(dem, io.demSolver);
             vio.output(lb);

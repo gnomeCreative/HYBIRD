@@ -3,7 +3,7 @@
 #include "myvector.h"
 
 struct Wall2 {
-    unsigned int count;
+    unsigned int count = 0;
 
     // normal vector
     tVect *n = nullptr;
