@@ -1500,6 +1500,8 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
                         continue;
                     }
                 }
+            } else {
+                continue;
             }
             // setting type: 5-6=slip, 7-8=no-slip
             if (slipHere) {
