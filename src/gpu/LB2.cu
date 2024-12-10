@@ -1142,7 +1142,7 @@ void LB2::latticeBoltzmannStep() {
 
     // Initialise lattice boltzmann force vector
     // @note currently ignored, doesn't seem fully integrated with model
-    //if (!h_params.forceField) {
+    //if (!h_PARAMS.forceField) {
     //    lbF.reset(); // @todo, does this exist on host or device
     //}
 
@@ -1434,32 +1434,32 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
 void LB2::countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes) {
     // Based on initialiseLatticeBoundaries()
     // XY
-    for (unsigned int x = 0; x < h_params.lbSize[0]; ++x) {
-        for (unsigned int y = 0; y < h_params.lbSize[1]; ++y) {
+    for (unsigned int x = 0; x < h_PARAMS.lbSize[0]; ++x) {
+        for (unsigned int y = 0; y < h_PARAMS.lbSize[1]; ++y) {
             // bottom
-            newNodes.emplace(h_params.getIndex(x, y, 0), NewNode{ h_params.boundary[4] });
+            newNodes.emplace(h_PARAMS.getIndex(x, y, 0), NewNode{ h_PARAMS.boundary[4] });
             // top
-            newNodes.emplace(h_params.getIndex(x, y, h_params.lbSize[2] - 1), NewNode{ h_params.boundary[5] });
+            newNodes.emplace(h_PARAMS.getIndex(x, y, h_PARAMS.lbSize[2] - 1), NewNode{ h_PARAMS.boundary[5] });
         }
     }
 
     // YZ
-    for (unsigned int y = 0; y < h_params.lbSize[1]; ++y) {
-        for (unsigned int z = 0; z < h_params.lbSize[2]; ++z) {
+    for (unsigned int y = 0; y < h_PARAMS.lbSize[1]; ++y) {
+        for (unsigned int z = 0; z < h_PARAMS.lbSize[2]; ++z) {
             // bottom
-            newNodes.emplace(h_params.getIndex(0, y, z), NewNode{ h_params.boundary[0] });
+            newNodes.emplace(h_PARAMS.getIndex(0, y, z), NewNode{ h_PARAMS.boundary[0] });
             // top
-            newNodes.emplace(h_params.getIndex(h_params.lbSize[0] - 1, y, z), NewNode{ h_params.boundary[1] });
+            newNodes.emplace(h_PARAMS.getIndex(h_PARAMS.lbSize[0] - 1, y, z), NewNode{ h_PARAMS.boundary[1] });
         }
     }
 
     // ZX
-    for (unsigned int z = 0; z < h_params.lbSize[2]; ++z) {
-        for (unsigned int x = 0; x < h_params.lbSize[0]; ++x) {
+    for (unsigned int z = 0; z < h_PARAMS.lbSize[2]; ++z) {
+        for (unsigned int x = 0; x < h_PARAMS.lbSize[0]; ++x) {
             // bottom
-            newNodes.emplace(h_params.getIndex(x, 0, z), NewNode{ h_params.boundary[2] });
+            newNodes.emplace(h_PARAMS.getIndex(x, 0, z), NewNode{ h_PARAMS.boundary[2] });
             // top
-            newNodes.emplace(h_params.getIndex(x, h_params.lbSize[1] - 1, z), NewNode{ h_params.boundary[3] });
+            newNodes.emplace(h_PARAMS.getIndex(x, h_PARAMS.lbSize[1] - 1, z), NewNode{ h_PARAMS.boundary[3] });
         }
     }
 }
@@ -1474,25 +1474,25 @@ void LB2::countTypes(std::map<unsigned int, NewNode> &newNodes, const wallList& 
 }
 void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const wallList& walls) {
     // Based on initializeWallBoundaries()
-    // const double wallThickness = 2.0 * h_params.unit.Length;
+    // const double wallThickness = 2.0 * h_PARAMS.unit.Length;
     // SOLID WALLS ////////////////////////
     for (int iw = 0; iw < walls.size(); ++iw) {
-        const tVect convertedWallp = walls[iw].p / h_params.unit.Length;
+        const tVect convertedWallp = walls[iw].p / h_PARAMS.unit.Length;
         const tVect normHere = walls[iw].n;
         const unsigned int indexHere = walls[iw].index;
         const bool slipHere = walls[iw].slip;
         const bool movingHere = walls[iw].moving;
-        for (unsigned int it = 0; it < h_params.totPossibleNodes; ++it) {
+        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             // check if the node is solid
             // all walls have max thickness 2 nodes
-            const tVect pos = h_params.getPosition(it);
+            const tVect pos = h_PARAMS.getPosition(it);
             const double wallDistance = pos.distance2Plane(convertedWallp, normHere);
             if (wallDistance>-2.0 && wallDistance < 0.0) {
                 //check for borders in limted walls
                 if (walls[iw].limited) {
-                    const double xHere = pos.x * h_params.unit.Length;
-                    const double yHere = pos.y * h_params.unit.Length;
-                    const double zHere = pos.z * h_params.unit.Length;
+                    const double xHere = pos.x * h_PARAMS.unit.Length;
+                    const double yHere = pos.y * h_PARAMS.unit.Length;
+                    const double zHere = pos.z * h_PARAMS.unit.Length;
                     // check if beyond limits
                     if (xHere < walls[iw].xMin || xHere > walls[iw].xMax ||
                             yHere < walls[iw].yMin || yHere > walls[iw].yMax ||
@@ -1525,11 +1525,11 @@ void LB2::countObjectBoundaries(std::map<unsigned int, NewNode> &newNodes, const
     // Based on initializeObjectBoundaries()
     // SOLID WALLS ////////////////////////
     for (int io = 0; io < objects.size(); ++io) {
-        const tVect convertedPosition = objects[io].x0 / h_params.unit.Length;
-        const double convertedRadius = objects[io].r / h_params.unit.Length;
+        const tVect convertedPosition = objects[io].x0 / h_PARAMS.unit.Length;
+        const double convertedRadius = objects[io].r / h_PARAMS.unit.Length;
         const unsigned int indexHere = objects[io].index;
-        for (unsigned int it = 0; it < h_params.totPossibleNodes; ++it) {
-            const tVect nodePosition = h_params.getPosition(it);
+        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+            const tVect nodePosition = h_PARAMS.getPosition(it);
             if (nodePosition.insideSphere(convertedPosition, convertedRadius)) {
                 newNodes.emplace(it, NewNode{ OBJ, indexHere });
             }
@@ -1541,21 +1541,21 @@ void LB2::countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, con
     // SOLID CYLINDERS ////////////////////////
     for (int ic = 0; ic < cylinders.size(); ++ic) {
 
-        const tVect convertedCylinderp1 = cylinders[ic].p1 / h_params.unit.Length;
+        const tVect convertedCylinderp1 = cylinders[ic].p1 / h_PARAMS.unit.Length;
         const tVect naxesHere = cylinders[ic].naxes;
-        const double convertedRadius = cylinders[ic].R / h_params.unit.Length;
+        const double convertedRadius = cylinders[ic].R / h_PARAMS.unit.Length;
         const unsigned int indexHere = cylinders[ic].index;
         const bool slipHere = cylinders[ic].slip;
         const bool movingHere = cylinders[ic].moving;
-        for (unsigned int it = 0; it < h_params.totPossibleNodes; ++it) {
+        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             // creating solid cells
-            const bool isOutside = h_params.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, convertedRadius, convertedRadius + 3.0);
-            const bool isInside = h_params.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, max(convertedRadius - 3.0, 0.0), convertedRadius);
+            const bool isOutside = h_PARAMS.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, convertedRadius, convertedRadius + 3.0);
+            const bool isInside = h_PARAMS.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, max(convertedRadius - 3.0, 0.0), convertedRadius);
             if ((cylinders[ic].type == FULL && isInside) ||
                 (cylinders[ic].type == EMPTY && isOutside)) {
                 //check for borders in limted walls
                 if (cylinders[ic].limited) {
-                    const tVect here = h_params.getPosition(it) * h_params.unit.Length;
+                    const tVect here = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
                     // check if beyond limits
                     if (here.x < cylinders[ic].xMin || here.x > cylinders[ic].xMax ||
                         here.y < cylinders[ic].yMin || here.y > cylinders[ic].yMax ||
@@ -1586,32 +1586,32 @@ void LB2::countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, con
 void LB2::countTopography(std::map<unsigned int, NewNode> &newNodes) {
     // Based on initializeTopography()
     
-    const double surfaceThickness = 1.75 * h_params.unit.Length;
+    const double surfaceThickness = 1.75 * h_PARAMS.unit.Length;
 
     // TOPOGRAPHY ////////////////////////
-    if (h_params.lbTopography) {
-        lbTop.readFromFile(init_params.lbTopographyFile, h_params.translateTopographyX, h_params.translateTopographyY, h_params.translateTopographyZ);
+    if (h_PARAMS.lbTopography) {
+        lbTop.readFromFile(init_params.lbTopographyFile, h_PARAMS.translateTopographyX, h_PARAMS.translateTopographyY, h_PARAMS.translateTopographyZ);
         lbTop.show();
         // check if topography grid contains the fluid domain
-        ASSERT(lbTop.coordX[0] < h_params.unit.Length);
-        ASSERT(lbTop.coordY[0] < h_params.unit.Length);
+        ASSERT(lbTop.coordX[0] < h_PARAMS.unit.Length);
+        ASSERT(lbTop.coordY[0] < h_PARAMS.unit.Length);
 
         cout << "lbTop.coordX[lbTop.sizeX - 1]=" << lbTop.coordX[lbTop.sizeX - 1] << endl;
-        cout << "lbSize[0]) * unit.Length=" << h_params.lbSize[0] * h_params.unit.Length << endl;
-        ASSERT(lbTop.coordX[lbTop.sizeX - 1] > h_params.lbSize[0] * h_params.unit.Length);
+        cout << "lbSize[0]) * unit.Length=" << h_PARAMS.lbSize[0] * h_PARAMS.unit.Length << endl;
+        ASSERT(lbTop.coordX[lbTop.sizeX - 1] > h_PARAMS.lbSize[0] * h_PARAMS.unit.Length);
         cout << "lbTop.coordY[lbTop.sizeY - 1]=" << lbTop.coordY[lbTop.sizeY - 1] << endl;
-        cout << "lbSize[1]) * unit.Length=" << h_params.lbSize[1] * h_params.unit.Length << endl;
-        ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_params.lbSize[1] * h_params.unit.Length);
+        cout << "lbSize[1]) * unit.Length=" << h_PARAMS.lbSize[1] * h_PARAMS.unit.Length << endl;
+        ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_PARAMS.lbSize[1] * h_PARAMS.unit.Length);
 
 
-        for (unsigned int ix = 1; ix < h_params.lbSize[0] - 1; ++ix) {
-            for (unsigned int iy = 1; iy < h_params.lbSize[1] - 1; ++iy) {
-                for (unsigned int iz = 1; iz < h_params.lbSize[2] - 1; ++iz) {
-                    const tVect nodePosition = tVect(ix, iy, iz) * h_params.unit.Length;
+        for (unsigned int ix = 1; ix < h_PARAMS.lbSize[0] - 1; ++ix) {
+            for (unsigned int iy = 1; iy < h_PARAMS.lbSize[1] - 1; ++iy) {
+                for (unsigned int iz = 1; iz < h_PARAMS.lbSize[2] - 1; ++iz) {
+                    const tVect nodePosition = tVect(ix, iy, iz) * h_PARAMS.unit.Length;
                     const double distanceFromTopography = lbTop.distance(nodePosition);
                     
                     if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
-                        const unsigned int it = ix + iy * h_params.lbSize[0] + iz * h_params.lbSize[0] * h_params.lbSize[1];
+                        const unsigned int it = ix + iy * h_PARAMS.lbSize[0] + iz * h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1];
                         newNodes.emplace(it, NewNode{ TOPO });
                     }
                 }
@@ -1623,12 +1623,12 @@ void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
     // Based on initializeInterface()
     // @Currently only default case is supported
     // creates an interface electing interface cells from active cells
-    if (h_params.lbTopographySurface) {
+    if (h_PARAMS.lbTopographySurface) {
         // Formerly setTopographySurface()
-        for (unsigned int it = 0; it < h_params.totPossibleNodes; ++it) {
+        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             if (newNodes.find(it) == newNodes.end()) {
                 // control is done in real coordinates
-                const tVect nodePosition = h_params.getPosition(it) * h_params.unit.Length;
+                const tVect nodePosition = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
                 const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
                 if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
                     newNodes.emplace(it, NewNode{ LIQUID });
@@ -1675,19 +1675,19 @@ void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
         case OBJMOVING:
         default:
             {
-                cout << "X=(" << double(h_params.freeSurfaceBorders[0]) * h_params.unit.Length << ", " << double(h_params.freeSurfaceBorders[1]) * h_params.unit.Length << ")" << endl;
-                cout << "Y=(" << double(h_params.freeSurfaceBorders[2]) * h_params.unit.Length << ", " << double(h_params.freeSurfaceBorders[3]) * h_params.unit.Length << ")" << endl;
-                cout << "Z=(" << double(h_params.freeSurfaceBorders[4]) * h_params.unit.Length << ", " << double(h_params.freeSurfaceBorders[5]) * h_params.unit.Length << ")" << endl;
-                for (unsigned int it = 0; it < h_params.totPossibleNodes; ++it) {
+                cout << "X=(" << double(h_PARAMS.freeSurfaceBorders[0]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[1]) * h_PARAMS.unit.Length << ")" << endl;
+                cout << "Y=(" << double(h_PARAMS.freeSurfaceBorders[2]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[3]) * h_PARAMS.unit.Length << ")" << endl;
+                cout << "Z=(" << double(h_PARAMS.freeSurfaceBorders[4]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[5]) * h_PARAMS.unit.Length << ")" << endl;
+                for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
                     if (newNodes.find(it) == newNodes.end()) {
                         // creating fluid cells
-                        const tVect pos = h_params.getPosition(it);
-                        if ((pos.x > h_params.freeSurfaceBorders[0]) &&
-                            (pos.x < h_params.freeSurfaceBorders[1]) &&
-                            (pos.y > h_params.freeSurfaceBorders[2]) &&
-                            (pos.y < h_params.freeSurfaceBorders[3]) &&
-                            (pos.z > h_params.freeSurfaceBorders[4]) &&
-                            (pos.z < h_params.freeSurfaceBorders[5])) {
+                        const tVect pos = h_PARAMS.getPosition(it);
+                        if ((pos.x > h_PARAMS.freeSurfaceBorders[0]) &&
+                            (pos.x < h_PARAMS.freeSurfaceBorders[1]) &&
+                            (pos.y > h_PARAMS.freeSurfaceBorders[2]) &&
+                            (pos.y < h_PARAMS.freeSurfaceBorders[3]) &&
+                            (pos.z > h_PARAMS.freeSurfaceBorders[4]) &&
+                            (pos.z < h_PARAMS.freeSurfaceBorders[5])) {
                             newNodes.emplace(it, NewNode{ LIQUID });
                         }
                     }

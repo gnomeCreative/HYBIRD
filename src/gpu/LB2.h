@@ -199,7 +199,6 @@ class LB2 {
     Cylinder2 h_cylinders, hd_cylinders, * d_cylinders = nullptr;
     Object2 h_objects, hd_objects, *d_objects = nullptr;
     
-    LBParams h_params;  // Host copy of PARAMS
     LBInitParams init_params; // Host only parameters used during initialisation
     // topography container
     topography lbTop = {};  // t
