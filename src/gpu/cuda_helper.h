@@ -32,9 +32,9 @@ enum Implementation {
 inline void gpuAssert(cudaError_t code, const char *file, int line) {
     if (code != cudaSuccess) {
         if (line >= 0) {
-            fprintf(stderr, "CUDA Error: %s(%d): %s", file, line, cudaGetErrorString(code));
+            fprintf(stderr, "CUDA Error: %s(%d): %s\n", file, line, cudaGetErrorString(code));
         } else {
-            fprintf(stderr, "CUDA Error: %s(%d): %s", file, line, cudaGetErrorString(code));
+            fprintf(stderr, "CUDA Error: %s(%d): %s\n", file, line, cudaGetErrorString(code));
         }
         exit(EXIT_FAILURE);
     }

@@ -732,6 +732,8 @@ void LB2::reconstructHydroCollide<CPU>() {
 __global__ void d_reconstructHydroCollide(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     // Get unique CUDA thread index, which corresponds to active node 
     const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (an_i >= d_nodes->activeCount) return;
 
     // reconstruction of macroscopic variables from microscopic distribution
     // this step is necessary to proceed to the collision step
@@ -751,7 +753,7 @@ void LB2::reconstructHydroCollide<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, h_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
     d_reconstructHydroCollide << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
@@ -1015,6 +1017,8 @@ void LB2::streaming<CPU>() {
 __global__ void d_streaming(Node2* d_nodes, Wall2* d_walls) {
     // Get unique CUDA thread index, which corresponds to active node 
     const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (an_i >= d_nodes->activeCount) return;
 
     common_streaming(an_i, d_nodes, d_walls);
 }
