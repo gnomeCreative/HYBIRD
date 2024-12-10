@@ -1487,7 +1487,7 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
             // all walls have max thickness 2 nodes
             const tVect pos = h_PARAMS.getPosition(it);
             const double wallDistance = pos.distance2Plane(convertedWallp, normHere);
-            if (wallDistance>-2.0 && wallDistance < 0.0) {
+            if (wallDistance > -2.0 && wallDistance < 0.0) {
                 //check for borders in limted walls
                 if (walls[iw].limited) {
                     const double xHere = pos.x * h_PARAMS.unit.Length;
@@ -1495,28 +1495,29 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
                     const double zHere = pos.z * h_PARAMS.unit.Length;
                     // check if beyond limits
                     if (xHere < walls[iw].xMin || xHere > walls[iw].xMax ||
-                            yHere < walls[iw].yMin || yHere > walls[iw].yMax ||
-                            zHere < walls[iw].zMin || zHere > walls[iw].zMax) {
+                        yHere < walls[iw].yMin || yHere > walls[iw].yMax ||
+                        zHere < walls[iw].zMin || zHere > walls[iw].zMax) {
                         continue;
                     }
                 }
-            } else {
-                continue;
-            }
-            // setting type: 5-6=slip, 7-8=no-slip
-            if (slipHere) {
-                // setting type for slip: 5=static, 6=moving
-                if (movingHere) {
-                    newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, indexHere });
-                } else {
-                    newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, indexHere });
+                // setting type: 5-6=slip, 7-8=no-slip
+                if (slipHere) {
+                    // setting type for slip: 5=static, 6=moving
+                    if (movingHere) {
+                        newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, indexHere });
+                    }
+                    else {
+                        newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, indexHere });
+                    }
                 }
-            } else {
-                // setting type for no-slip: 7=static, 8=moving
-                if (movingHere) {
-                    newNodes.emplace(it, NewNode{ DYN_WALL, indexHere });
-                } else {
-                    newNodes.emplace(it, NewNode{ STAT_WALL, indexHere });
+                else {
+                    // setting type for no-slip: 7=static, 8=moving
+                    if (movingHere) {
+                        newNodes.emplace(it, NewNode{ DYN_WALL, indexHere });
+                    }
+                    else {
+                        newNodes.emplace(it, NewNode{ STAT_WALL, indexHere });
+                    }
                 }
             }
         }
