@@ -404,18 +404,18 @@ void LB2::syncObjects<CUDA>(const objectList &walls) {
 /**
  * initializeParticleBoundaries()
  */
-__host__ __device__ __forceinline__ inline double common_initializeParticleBoundaries(const unsigned int an_i, Node2* nodes, Particle2* particles) {
+__host__ __device__ __forceinline__ inline double common_initializeParticleBoundaries(const unsigned int i, Node2* nodes, Particle2* particles) {
     // Fetch the index of the (active) node being processed
-    const unsigned int n_i = nodes->activeI[an_i];
-    const tVect node_position = nodes->getPosition(n_i);
+    const unsigned int an_i = nodes->activeI[i];
+    const tVect node_position = nodes->getPosition(an_i);
     for (unsigned int p_i = 0; p_i < particles->count; ++p_i) {
         const tVect convertedPosition = particles->x0[p_i] / PARAMS.unit.Length;
         // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
         const double convertedRadius = particles->r[p_i] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
         if (node_position.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
-            nodes->setInsideParticle(n_i, true);
-            nodes->solidIndex[n_i] = p_i;
-            return nodes->mass[n_i];
+            nodes->setInsideParticle(an_i, true);
+            nodes->solidIndex[an_i] = p_i;
+            return nodes->mass[an_i];
         }
     }
     return 0.0;
@@ -428,20 +428,20 @@ double LB2::initializeParticleBoundaries<CPU>() {
     // @todo can we parallelise at a higher level?
     double totalParticleMass = 0;
 #pragma omp parallel for reduction(+:totalParticleMass) 
-    for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
+    for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
         // Pass the active node index to the common implementation
-        totalParticleMass += common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
+        totalParticleMass += common_initializeParticleBoundaries(i, d_nodes, d_particles);
     }
     return totalParticleMass;
 }
 #ifdef USE_CUDA
 __global__ void d_initializeParticleBoundaries(Node2* d_nodes, Particle2* d_particles, double *node_in_particle_mass) {
     // Get unique CUDA thread index, which corresponds to active node 
-    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
-    if (an_i >= d_nodes->activeCount) return;
+    if (i >= d_nodes->activeCount) return;
     // Pass the active node index to the common implementation
-    const double t = common_initializeParticleBoundaries(an_i, d_nodes, d_particles);
+    const double t = common_initializeParticleBoundaries(i, d_nodes, d_particles);
 
     if (t != 0.0) {
         atomicAdd(node_in_particle_mass, t);
@@ -478,13 +478,13 @@ double LB2::initializeParticleBoundaries<CUDA>() {
 /**
  * findNewActive()
  */
-__host__ __device__ __forceinline__ inline void common_findNewActive(const unsigned int an_i, Node2* nodes, Particle2* particles, Element2* elements) {
+__host__ __device__ __forceinline__ inline void common_findNewActive(const unsigned int i, Node2* nodes, Particle2* particles, Element2* elements) {
     // Fetch the index of the (active) node being processed
-    const unsigned int n_i = nodes->activeI[an_i];
-    if (nodes->p[n_i]) {
-        const tVect nodePosition = nodes->getPosition(n_i);
+    const unsigned int an_i = nodes->activeI[i];
+    if (nodes->p[an_i]) {
+        const tVect nodePosition = nodes->getPosition(an_i);
         // solid index to identify cluster
-        const unsigned int particleIndex = nodes->solidIndex[n_i];
+        const unsigned int particleIndex = nodes->solidIndex[an_i];
         const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // in this case check if it has been uncovered (must be out of all particles of the cluster) - we start with a true hypothesis
         // cycling through component particles
@@ -506,26 +506,26 @@ __host__ __device__ __forceinline__ inline void common_findNewActive(const unsig
             }
         }
         // turning up the cell as we didn't exit early
-        nodes->setInsideParticle(n_i, false);
+        nodes->setInsideParticle(an_i, false);
     }
 }
 template<>
 void LB2::findNewActive<CPU>() {
     // @todo can we parallelise at a higher level?
 #pragma omp parallel for
-    for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
+    for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
         // Pass the active node index to the common implementation
-        common_findNewActive(an_i, d_nodes, d_particles, d_elements);
+        common_findNewActive(i, d_nodes, d_particles, d_elements);
     }
 }
 #ifdef USE_CUDA
 __global__ void d_findNewActive(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     // Get unique CUDA thread index, which corresponds to active node 
-    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
-    if (an_i >= d_nodes->activeCount) return;
+    if (i >= d_nodes->activeCount) return;
     // Pass the active node index to the common implementation
-    common_findNewActive(an_i, d_nodes, d_particles, d_elements);
+    common_findNewActive(i, d_nodes, d_particles, d_elements);
 }
 template<>
 void LB2::findNewActive<CUDA>() {
@@ -544,16 +544,16 @@ void LB2::findNewActive<CUDA>() {
 /**
  * findNewSolid()
  */
-__host__ __device__ __forceinline__ inline void common_findNewSolid(const unsigned int an_i, Node2* nodes, Particle2* particles, Element2* elements) {
-    const unsigned int a_i = nodes->activeI[an_i];
-    if (nodes->isInsideParticle(a_i)) {  // If node is inside particle
+__host__ __device__ __forceinline__ inline void common_findNewSolid(const unsigned int i, Node2* nodes, Particle2* particles, Element2* elements) {
+    const unsigned int an_i = nodes->activeI[i];
+    if (nodes->isInsideParticle(an_i)) {  // If node is inside particle
         // solid index to identify cluster
-        const unsigned int particleIndex = nodes->solidIndex[a_i];
+        const unsigned int particleIndex = nodes->solidIndex[an_i];
         const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // cycle through first neighbors
         const unsigned int nodeCount = nodes->count;
         for (int k = 1; k < lbmMainDirec; ++k) {
-            const unsigned int l_i = nodes->d[nodeCount * k + a_i];
+            const unsigned int l_i = nodes->d[nodeCount * k + an_i];
             if (l_i != std::numeric_limits<unsigned int>::max()) {
                 // checking if solid particle is close to an active one -> we have an active node to check
                 if (!nodes->isInsideParticle(l_i) && nodes->isActive(l_i)) {
@@ -587,20 +587,20 @@ template<>
 void LB2::findNewSolid<CPU>() {
     // @todo can we parallelise at a higher level?
 #pragma omp parallel for
-    for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
+    for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
         // Pass the active node index to the common implementation
-        common_findNewSolid(an_i, d_nodes, d_particles, d_elements);
+        common_findNewSolid(i, d_nodes, d_particles, d_elements);
     }
 }
 
 #ifdef USE_CUDA
 __global__ void d_findNewSolid(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     // Get unique CUDA thread index, which corresponds to active node 
-    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
-    if (an_i >= d_nodes->activeCount) return;
+    if (i >= d_nodes->activeCount) return;
     // Pass the active node index to the common implementation
-    common_findNewSolid(an_i, d_nodes, d_particles, d_elements);
+    common_findNewSolid(i, d_nodes, d_particles, d_elements);
 }
 template<>
 void LB2::findNewSolid<CUDA>() {
@@ -723,17 +723,34 @@ __host__ __device__ __forceinline__ inline void common_computeHydroForces(const 
 }
 template<>
 void LB2::reconstructHydroCollide<CPU>() {
+    // @todo the inside of this loop could be merged with d_reconstructHydroCollide()
 #pragma omp parallel for
-    for (unsigned int e_i = 0; e_i < d_elements->count; ++e_i) {
-        common_checkNewInterfaceParticles(e_i, d_nodes, d_particles, d_elements);
+    for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
+        // Convert index to active node index
+        const unsigned int an_i = d_nodes->activeI[i];
+
+        // reconstruction of macroscopic variables from microscopic distribution
+        // this step is necessary to proceed to the collision step
+        d_nodes->reconstruct(an_i);
+
+        // compute interaction forces
+        if (d_elements->count) {
+            common_computeHydroForces(an_i, d_nodes, d_particles, d_elements);
+        }
+
+        //collision operator
+        d_nodes->collision(an_i);
     }
 }
 #ifdef USE_CUDA
 __global__ void d_reconstructHydroCollide(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     // Get unique CUDA thread index, which corresponds to active node 
-    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
-    if (an_i >= d_nodes->activeCount) return;
+    if (i >= d_nodes->activeCount) return;
+
+    // Convert index to active node index
+    const unsigned int an_i = d_nodes->activeI[i];
 
     // reconstruction of macroscopic variables from microscopic distribution
     // this step is necessary to proceed to the collision step
@@ -760,7 +777,9 @@ void LB2::reconstructHydroCollide<CUDA>() {
     CUDA_CHECK();
 }
 
-__host__ __device__ void common_streaming(const unsigned int an_i, Node2* nodes, Wall2* walls) {
+__host__ __device__ void common_streaming(const unsigned int i, Node2* nodes, Wall2* walls) {
+    // Convert index to active node index
+    const unsigned int an_i = nodes->activeI[i];
 
     // coefficient for free-surface
     constexpr double C2x2 = 9.0;
@@ -876,7 +895,7 @@ __host__ __device__ void common_streaming(const unsigned int an_i, Node2* nodes,
                 walls->FHydro[solidIndex] += BBforce;
 #endif
                 nodes->f[A_OFFSET + opp[j]] = nodes->fs[A_OFFSET + j] - BBi;
-                // adding the extra mass to the surplus
+                // adding the extra mass to the surplus //@todo extraMass required for parity
                 // extraMass = BBi * nodes->mass[an_i];  // redistributeMass() currently not used, so this isn't implemented properly
                 break;
             }// for walls there is simple bounce-back
@@ -944,26 +963,26 @@ __host__ __device__ void common_streaming(const unsigned int an_i, Node2* nodes,
                     if (active1 && !active2) {
                         // first
                         nodes->f[A_OFFSET + opp[j]] = S1 * nodes->fs[nodeCheck1 * lbmDirec + slip1[j]] + S2 * (nodes->fs[A_OFFSET + j] - BBi);
-                        // adding the extra mass to the surplus
+                        // adding the extra mass to the surplus //@todo extraMass required for parity
                         // extraMass += S2 * nodes->mass[an_i] * BBi;  // redistributeMass() currently not used, so this isn't implemented properly
                     }
                     else if (!active1 && active2) {
                         // second
                         nodes->f[A_OFFSET + opp[j]] = S1 * nodes->fs[nodeCheck2 * lbmDirec + slip2[j]] + S2 * (nodes->fs[A_OFFSET + j] - BBi);
-                        // adding the extra mass to the surplus
+                        // adding the extra mass to the surplus //@todo extraMass required for parity
                         // extraMass += S2 * nodes->mass[an_i] * BBi;  // redistributeMass() currently not used, so this isn't implemented properly
                     }
                     else {
                         // standard BB
                         nodes->f[A_OFFSET + opp[j]] = nodes->fs[A_OFFSET + j] - BBi;
-                        // adding the extra mass to the surplus
+                        // adding the extra mass to the surplus //@todo extraMass required for parity
                         // extraMass += nodes->mass[an_i] * BBi;  // redistributeMass() currently not used, so this isn't implemented properly
                     }
                 }
                 else {
                     // standard BB
                     nodes->f[A_OFFSET + opp[j]] = nodes->fs[A_OFFSET + j] - BBi;
-                    // adding the extra mass to the surplus
+                    // adding the extra mass to the surplus //@todo extraMass required for parity
                     // extraMass += nodes->mass[an_i] * BBi;  // redistributeMass() currently not used, so this isn't implemented properly
                 }
                 break;
@@ -977,7 +996,7 @@ __host__ __device__ void common_streaming(const unsigned int an_i, Node2* nodes,
                 {
                     // @todo This may print out of order if multiple threads break in parallel
                     tVect pos = nodes->getPosition(an_i);
-                    printf("(%f, %f, %f) %s TYPE ERROR:\n", pos.x, pos.y, pos.z, typeString(nodes->type[an_i]));
+                    printf("%u(%f, %f, %f) %s TYPE ERROR:\n", an_i, pos.x, pos.y, pos.z, typeString(nodes->type[an_i]));
                     for (unsigned int k = 1; k < lbmDirec; ++k) {
                         printf("before error: j=%u link=%u\n", k, nodes->coord[nodes->d[k * nodes->count + an_i]]);
                     }
@@ -1006,8 +1025,8 @@ void LB2::streaming<CPU>() {
     hd_nodes.store<CPU>();
 
 #pragma omp parallel for // @note extraMass reduction is not currently implemented
-    for (unsigned int an_i = 0; an_i < d_nodes->activeCount; ++an_i) {
-        common_streaming(an_i, d_nodes, d_walls);
+    for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
+        common_streaming(i, d_nodes, d_walls);
     }
 
     // redistributing extra mass due to bounce back to interface cells
@@ -1016,11 +1035,11 @@ void LB2::streaming<CPU>() {
 #ifdef USE_CUDA
 __global__ void d_streaming(Node2* d_nodes, Wall2* d_walls) {
     // Get unique CUDA thread index, which corresponds to active node 
-    const unsigned int an_i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
-    if (an_i >= d_nodes->activeCount) return;
+    if (i >= d_nodes->activeCount) return;
 
-    common_streaming(an_i, d_nodes, d_walls);
+    common_streaming(i, d_nodes, d_walls);
 }
 template<>
 void LB2::streaming<CUDA>() {
@@ -1757,7 +1776,6 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     for (unsigned int i = 0; i < h_nodes.count; ++i) {
         // findNeighbors()
         std::array<unsigned int, lbmDirec> neighbourCoord;
-        neighbourCoord.fill(std::numeric_limits<unsigned int>::max());
         for (int j = 0; j < lbmDirec; ++j) {
             neighbourCoord[j] = h_nodes.coord[i] + PARAMS.ne[j];
         }
