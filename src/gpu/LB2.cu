@@ -1166,10 +1166,10 @@ void LB2::latticeBoltzmannStep() {
     hd_elements.initElements<IMPL>();
 
     // Initialise lattice boltzmann force vector
-    // @note currently ignored, doesn't seem fully integrated with model
-    //if (!h_PARAMS.forceField) {
-    //    lbF.reset(); // @todo, does this exist on host or device
-    //}
+    if (!h_PARAMS.forceField) {
+        h_PARAMS.lbF.reset();
+        syncParams();
+    }
 
     // reconstruct(), computeHydroForces(), collision()
     // Reconstruct macroscopic variables from microscopic distribution

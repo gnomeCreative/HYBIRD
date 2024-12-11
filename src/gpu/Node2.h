@@ -489,10 +489,11 @@ __host__ __device__ __forceinline__ inline void Node2::reconstruct(const unsigne
     this->n[index] = 0.0;
     this->u[index].reset();
     for (unsigned int j = 0; j < lbmDirec; ++j) {
+        const double _f = this->f[index * lbmDirec + j];
         // density
-        this->n[index] += this->f[j];
+        this->n[index] += _f;
         // momentum
-        this->u[index] += this->f[j] * v[j];
+        this->u[index] += _f * v[j];
     }
 
     // velocity
@@ -503,7 +504,7 @@ __host__ __device__ __forceinline__ inline void Node2::collision(const unsigned 
         // equilibrium distributions
         std::array<double, lbmDirec> feq;
         // force field
-        tVect force = { 0,0,0 }; // @todo =lbF;
+        tVect force = PARAMS.lbF;
         if (PARAMS.solveCentrifugal) {
             force += this->centrifugalForce[index];
         }
@@ -526,7 +527,7 @@ __host__ __device__ __forceinline__ inline void Node2::collision(const unsigned 
         std::array<double, lbmDirec> feqp;
         std::array<double, lbmDirec> feqm;
         // force field
-        tVect force = { 0,0,0 }; // @todo =lbF;
+        tVect force = PARAMS.lbF;
         if (PARAMS.solveCentrifugal) {
             force += this->centrifugalForce[index];
         }
