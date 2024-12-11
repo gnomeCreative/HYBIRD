@@ -415,15 +415,15 @@ __host__ __device__ __forceinline__ inline double common_initializeParticleBound
         if (node_position.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
             nodes->setInsideParticle(an_i, true);
             nodes->solidIndex[an_i] = p_i;
-            return nodes->mass[an_i];
+            return nodes->mass[an_i];  // @todo in original code it doesn't break after setting
         }
     }
     return 0.0;
 }
 template<>
 double LB2::initializeParticleBoundaries<CPU>() {
-    // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
-    memset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int));
+    // Reset all nodes to outside
+    memset(hd_nodes.p, 0, h_nodes.count * sizeof(bool));
 
     // @todo can we parallelise at a higher level?
     double totalParticleMass = 0;
@@ -449,8 +449,8 @@ __global__ void d_initializeParticleBoundaries(Node2* d_nodes, Particle2* d_part
 }
 template<>
 double LB2::initializeParticleBoundaries<CUDA>() {
-    // Reset all nodes to outside (e.g. to std::numeric_limits<unsigned int>::max())
-    CUDA_CALL(cudaMemset(hd_nodes.solidIndex, 0xffffffff, h_nodes.count * sizeof(unsigned int)));
+    // Reset all nodes to outside
+    CUDA_CALL(cudaMemset(hd_nodes.p, 0, h_nodes.count * sizeof(bool)));
     // Initialise reduction variable
     auto &t = CubTempMem::GetTempSingleton();
     t.resize(sizeof(double));
@@ -573,7 +573,7 @@ __host__ __device__ __forceinline__ inline void common_findNewSolid(const unsign
                             // if so, then the false hypothesis does not hold true anymore
                             nodes->solidIndex[l_i] = componentIndex;
                             // By setting particle to inside, it won't be checked again, newSolidNodes hence becomes redundant
-                            nodes->setInsideParticle(l_i, true);
+                            nodes->setInsideParticle(l_i, true);  // @todo Is this a race condition? Multiple nodes may share a link node?
                             // and we exit the cycle
                             break;
                         }
@@ -657,7 +657,7 @@ __global__ void d_checkNewInterfaceParticles(Node2* d_nodes, Particle2* d_partic
     // Kill excess threads early
     if (e_i >= d_elements->count) return;
     // Pass the active node index to the common implementation
-    common_findNewSolid(e_i, d_nodes, d_particles, d_elements);
+    common_checkNewInterfaceParticles(e_i, d_nodes, d_particles, d_elements);
 }
 template<>
 void LB2::checkNewInterfaceParticles<CUDA>() {
@@ -1499,7 +1499,7 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
     // Based on initializeWallBoundaries()
     // const double wallThickness = 2.0 * h_PARAMS.unit.Length;
     // SOLID WALLS ////////////////////////
-    for (int iw = 0; iw < walls.size(); ++iw) {
+    for (unsigned int iw = 0; iw < walls.size(); ++iw) {
         const tVect convertedWallp = walls[iw].p / h_PARAMS.unit.Length;
         const tVect normHere = walls[iw].n;
         const unsigned int indexHere = walls[iw].index;
@@ -1527,19 +1527,20 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
                 if (slipHere) {
                     // setting type for slip: 5=static, 6=moving
                     if (movingHere) {
-                        newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, indexHere });
+                        const auto nn = newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, iw });
+                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
+                    } else {
+                        const auto nn = newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, iw });
+                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
                     }
-                    else {
-                        newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, indexHere });
-                    }
-                }
-                else {
+                } else {
                     // setting type for no-slip: 7=static, 8=moving
                     if (movingHere) {
-                        newNodes.emplace(it, NewNode{ DYN_WALL, indexHere });
-                    }
-                    else {
-                        newNodes.emplace(it, NewNode{ STAT_WALL, indexHere });
+                        const auto nn = newNodes.emplace(it, NewNode{ DYN_WALL, iw });
+                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
+                    } else {
+                        const auto nn = newNodes.emplace(it, NewNode{ STAT_WALL, iw });
+                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
                     }
                 }
             }
@@ -2122,7 +2123,6 @@ void LB2::step(const DEM &dem, bool io_demSolver) {
     }
 
     if (dem.demTime >= dem.demInitialRepeat) {
-        // @todo elmts/particles sync only occurs if io_demSolver = true
         this->latticeBoltzmannStep();
 
         // Lattice Boltzmann core steps @todo after latticeBoltzmannStep() has been tested
