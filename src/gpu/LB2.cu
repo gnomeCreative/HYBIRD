@@ -1061,10 +1061,12 @@ void LB2::streaming<CUDA>() {
     CUDA_CHECK();
 
 #ifdef _DEBUG
-    CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, sizeof(double) * h_nodes.activeCount * lbmDirec, cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, sizeof(double) * h_nodes.count * lbmDirec, cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.activeI, hd_nodes.activeI, sizeof(unsigned int) * h_nodes.activeCount, cudaMemcpyDeviceToHost));
     for (unsigned int in = 0; in < h_nodes.activeCount; ++in) {
+        const unsigned int a_i = h_nodes.activeI[in];
         for (unsigned int j = 1; j < lbmDirec; ++j) {
-            if (h_nodes.f[in * lbmDirec + j] == 0) {
+            if (h_nodes.f[a_i * lbmDirec + j] == 0) {
                 cout << "Error!" << endl;
             }
         }
