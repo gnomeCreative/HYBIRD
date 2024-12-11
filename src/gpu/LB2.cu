@@ -1755,7 +1755,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     memset(h_nodes.u, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.hydroForce, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.mass, 0, h_nodes.count * sizeof(double));
-    //h_nodes.visc?
+    // h_nodes.visc is instead init to 1 below
     memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
     memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
     memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
@@ -1767,6 +1767,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
         unsigned int i = 0;
         for (const auto& [id, nn] : newNodes) {
             idIndexMap.emplace(id, i);
+            h_nodes.visc[i] = 1;
             h_nodes.coord[i] = id;
             h_nodes.type[i] = nn.type;
             h_nodes.solidIndex[i] = nn.solidIndex;
