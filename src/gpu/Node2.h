@@ -299,7 +299,7 @@ __host__ __device__ __forceinline__ inline void Node2::computeApparentViscosity(
     tMat gamma(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
     for (int j = 1; j < lbmDirec; ++j) {
-        gamma += (f[j] - feq[j]) * vv[j];
+        gamma += (this->f[j] - feq[j]) * vv[j];
     }
     gamma *= -1.5 / (tau * this->n[index]);
 
@@ -477,7 +477,7 @@ inline void Node2::store<CPU>() {
 template <>
 inline void Node2::store<CUDA>() {
 #ifdef __CUDA_ARCH__
-    memcpy(fs, f, sizeof(double) * lbmDirec * count);
+    // memcpy(fs, f, sizeof(double) * lbmDirec * count);  // This won't work, would need to be lbmDirec per thread
 #else
     // Saving in streaming support variables f->fs
     cudaMemcpy(fs, f, sizeof(double) * lbmDirec * count, cudaMemcpyDeviceToDevice);

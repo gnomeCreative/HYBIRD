@@ -32,6 +32,6 @@ __host__ void Node2::setEquilibrium(const unsigned int i, const double nHere, co
         constexpr double C3 = 1.5;
         // the following lines initialize f to be the local equilibrium values
         const double vu = velHere.dot(v[j]);
-        f[i*lbmDirec + j] = fs[i * lbmDirec + j] = coeff[j] * nHere * (1.0 + C1 * vu + C2 * vu * vu - C3 * usq);
+        this->f[i*lbmDirec + j] = this->fs[i * lbmDirec + j] = coeff[j] * nHere * (1.0 + C1 * vu + C2 * vu * vu - C3 * usq);
     }
 }
