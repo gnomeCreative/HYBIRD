@@ -48,6 +48,9 @@ public:
             fs << "hydroForceX_average"             << ",";
             fs << "hydroForceY_average"             << ",";
             fs << "hydroForceZ_average"             << ",";
+            fs << "centrifugalForceX_average"       << ",";
+            fs << "centrifugalForceY_average"       << ",";
+            fs << "centrifugalForceZ_average"       << ",";
             fs << "mass_average"                    << ",";
             fs << "visc_average"                    << ",";
             fs << "type_average"                    << ",";
@@ -62,6 +65,9 @@ public:
             fs << "wall_coord_average"              << ",";
             for (int i = 0; i < lbmDirec; ++i)
                 fs << "f[" <<i <<"]" << ",";
+            fs << "lbFX" << ",";
+            fs << "lbFY" << ",";
+            fs << "lbFZ" << ",";
             fs << "coord_average" << "\n";
         }
         const Node2 nodes = lb.getNodes();
@@ -77,6 +83,11 @@ public:
         fs << t.z / static_cast<float>(nodes.count) << ",";
         // hydroForceX_average, hydroForceY_average, hydroForceZ_average
         t = std::accumulate(nodes.hydroForce, nodes.hydroForce + nodes.count, Zero);
+        fs << t.x / static_cast<float>(nodes.count) << ",";
+        fs << t.y / static_cast<float>(nodes.count) << ",";
+        fs << t.z / static_cast<float>(nodes.count) << ",";
+        // centrifugalForceX_average, centrifugalForceY_average, centrifugalForceZ_average
+        t = std::accumulate(nodes.centrifugalForce, nodes.centrifugalForce + nodes.count, Zero);
         fs << t.x / static_cast<float>(nodes.count) << ",";
         fs << t.y / static_cast<float>(nodes.count) << ",";
         fs << t.z / static_cast<float>(nodes.count) << ",";
@@ -123,6 +134,10 @@ public:
                 sd += nodes.f[i * lbmDirec + j];
             fs << sd / static_cast<float>(nodes.count) << ",";
         }
+        // lbf
+        fs << h_PARAMS.lbF.x << ",";
+        fs << h_PARAMS.lbF.y << ",";
+        fs << h_PARAMS.lbF.z << ",";
         // coord_average
         fs << std::accumulate(nodes.coord, nodes.coord + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << "\n";
 
