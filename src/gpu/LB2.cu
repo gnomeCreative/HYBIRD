@@ -1780,7 +1780,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     for (unsigned int i = 0; i < h_nodes.count; ++i) {
         // findNeighbors()
         std::array<unsigned int, lbmDirec> neighbourCoord;
-        for (int j = 0; j < lbmDirec; ++j) {
+        for (int j = 1; j < lbmDirec; ++j) {
             neighbourCoord[j] = h_nodes.coord[i] + PARAMS.ne[j];
         }
         // Boundary conditions
@@ -1904,7 +1904,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
             }
         }
         // assign neighbour nodes
-        for (int j = 0; j < lbmDirec; ++j) {
+        for (int j = 1; j < lbmDirec; ++j) {
             auto f = idIndexMap.find(neighbourCoord[j]);
             // check if node at that location exists
             if (f != idIndexMap.end()) {
