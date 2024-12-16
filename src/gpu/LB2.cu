@@ -863,7 +863,7 @@ __host__ __device__ void common_streaming(const unsigned int i, Node2* nodes, Wa
             // for curved walls there is the rule of Mei-Luo-Shyy
             case TOPO:
             {
-                nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j];
+                nodes->f[A_OFFSET + opp[j]] = nodes->fs[A_OFFSET + j];
                 break;
             }
             case OUTLET:
