@@ -811,23 +811,30 @@ __host__ __device__ void common_streaming(const unsigned int i, Node2* nodes, Wa
             nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq);
         } else {
             const unsigned int L_OFFSET = ln_i * lbmDirec;
-            // @todo this could be greatly improved by stacking matching cases to reduce divergence
+            // @todo this could be improved by stacking matching cases to reduce divergence
             switch (nodes->type[ln_i]) {
-            case INTERFACE:
-#ifdef DEBUG
+            case LIQUID:
             {
+                //if (opp[j] == 1) {
+                //    printf("Node %u <- %u = %g\n", nodes->coord[an_i], nodes->coord[ln_i], nodes->fs[L_OFFSET + opp[j]]);
+                //}
+                nodes->f[A_OFFSET + opp[j]] = nodes->fs[L_OFFSET + opp[j]];
+                break;
+            }
+            case INTERFACE:
+            {
+#ifdef DEBUG
                 // TEST USING AGE //////////////////////////////////////
                 const double usq = nodes->u[an_i].norm2();
                 const double vuj = nodes->u[an_i].dot(v[j]);
                 nodes->f[A_OFFSET + opp[j]] = nodes->age[ln_i] * nodes->fs[L_OFFSET + opp[j]] +
                     (1.0 - nodes->age[ln_i]) * (-nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq));
-                break;
-            }
-#endif // INTERFACE falls through to LIQUID if DEBUG not defined
-            case LIQUID:
-            {
+#else
+
                 nodes->f[A_OFFSET + opp[j]] = nodes->fs[L_OFFSET + opp[j]];
+#endif
                 break;
+
             }
             // for walls there is simple bounce-back
             case STAT_WALL:
@@ -858,7 +865,8 @@ __host__ __device__ void common_streaming(const unsigned int i, Node2* nodes, Wa
 #pragma omp atomic update
                 walls->FHydro[solidIndex] += BBforce;
 #endif
-                // Fall through to TOPO
+                nodes->f[A_OFFSET + opp[j]] = nodes->fs[A_OFFSET + j];
+                break;
             }
             // for curved walls there is the rule of Mei-Luo-Shyy
             case TOPO:
@@ -1759,7 +1767,10 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
     memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
     memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
+    // h_nodes.solidIndex is instead init below
+    memset(h_nodes.d, std::numeric_limits<unsigned int>::max(), h_nodes.count * lbmDirec * sizeof(unsigned int));  // Init below is incomplete?
     memset(h_nodes.curved, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
+    // h_nodes.type is instead init below
     memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
     // Perform the generateNode() loop for each item in newNodes
     std::map<unsigned int, unsigned int> idIndexMap;
@@ -1909,31 +1920,36 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
             // check if node at that location exists
             if (f != idIndexMap.end()) {
                 const unsigned int l_i = f->second;
-                // assign neighbor for local node
-                h_nodes.d[j * h_nodes.count + i] = l_i;
-                // if neighbor node is also active, link it to local node
-                if (h_nodes.isActive(i)) {
-                    h_nodes.d[opp[j] * h_nodes.count + l_i] = i;
-                    // if the neighbor is a curved wall, set parameters accordingly
-                    if (h_nodes.type[l_i] == TOPO) {
-                        if (h_nodes.curved[i] == std::numeric_limits<unsigned int>::max()) {
-                            h_nodes.curved[i] = static_cast<unsigned int>(curves.size());
-                            curves.emplace_back();
+                if (h_nodes.isActive(i) && h_nodes.isActive(l_i)) {
+                    // assign neighbor for local node
+                    h_nodes.d[j * h_nodes.count + i] = l_i;
+                    // if neighbor node is also active, link it to local node
+                    if (h_nodes.isActive(i)) {
+                        h_nodes.d[opp[j] * h_nodes.count + l_i] = i;
+                        // if the neighbor is a curved wall, set parameters accordingly
+                        if (h_nodes.type[l_i] == TOPO) {
+                            if (h_nodes.curved[i] == std::numeric_limits<unsigned int>::max()) {
+                                h_nodes.curved[i] = static_cast<unsigned int>(curves.size());
+                                curves.emplace_back();
+                            }
+                            // set curved
+                            const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(i);
+                            // xf - xw
+                            const double topographyDistance = 1.0 * lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
+                            // wall normal
+                            curves.back().wallNormal = lbTop.surfaceNormal(nodePosHere);
+                            //cout << topographyDistance << endl;
+                            const double deltaHere = topographyDistance / vNorm[j];
+                            curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
+                            curves.back().computeCoefficients();
                         }
-                        // set curved
-                        const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(i);
-                        // xf - xw
-                        const double topographyDistance = 1.0 * lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
-                        // wall normal
-                        curves.back().wallNormal = lbTop.surfaceNormal(nodePosHere);
-                        //cout << topographyDistance << endl;
-                        const double deltaHere = topographyDistance / vNorm[j];
-                        curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
-                        curves.back().computeCoefficients();
+                        if (h_nodes.isWall(l_i)) {
+                            h_nodes.basal[i] = true;
+                        }
                     }
-                    if (h_nodes.isWall(l_i)) {
-                        h_nodes.basal[i] = true;
-                    }
+                } else {
+                    // Neighbour is irrelevant?
+                    h_nodes.d[j * h_nodes.count + i] = std::numeric_limits<unsigned int>::max();
                 }
             } else {
                 // Neighbour is gas
