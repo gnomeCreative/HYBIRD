@@ -65,9 +65,14 @@ public:
             fs << "wall_coord_average"              << ",";
             for (int i = 0; i < lbmDirec; ++i)
                 fs << "f[" <<i <<"]" << ",";
+            for (int i = 0; i < lbmDirec; ++i)
+                fs << "fs[" << i << "]" << ",";
+            for (int i = 0; i < lbmDirec; ++i)
+                fs << "d[" << i << "]" << ",";
             fs << "lbFX" << ",";
             fs << "lbFY" << ",";
             fs << "lbFZ" << ",";
+            fs << "activenode_type_liquid_count" << ",";
             fs << "coord_average" << "\n";
         }
         const Node2 nodes = lb.getNodes();
@@ -134,13 +139,33 @@ public:
                 sd += nodes.f[i * lbmDirec + j];
             fs << sd / static_cast<float>(nodes.count) << ",";
         }
+        // fs
+        for (int j = 0; j < lbmDirec; ++j) {
+            double sd = 0;
+            for (int i = 0; i < nodes.count; ++i)
+                sd += nodes.fs[i * lbmDirec + j];
+            fs << sd / static_cast<float>(nodes.count) << ",";
+        }
+        // d (we must convert index to coord)
+        for (int j = 0; j < lbmDirec; ++j) {
+            sum = 0;
+            for (int i = 0; i < nodes.count; ++i)
+                if (nodes.d[j * nodes.count + i] != std::numeric_limits<unsigned int>::max())
+                    sum += nodes.coord[nodes.d[j * nodes.count + i]];
+            fs << sum / static_cast<float>(nodes.count) << ",";
+        }
         // lbf
         fs << h_PARAMS.lbF.x << ",";
         fs << h_PARAMS.lbF.y << ",";
         fs << h_PARAMS.lbF.z << ",";
+        // type==LIQUID
+        sum = 0;
+        for (int i = 0; i < nodes.activeCount; ++i)
+            if (nodes.type[nodes.activeI[i]] == LIQUID)
+                ++sum;
+        fs << sum << ",";
         // coord_average
         fs << std::accumulate(nodes.coord, nodes.coord + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << "\n";
-
     }
     void output(LB& lb) {
         if (!fs.is_open()) {
