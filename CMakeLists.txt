@@ -36,8 +36,9 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/MeasureUnits.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cuda_helper.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cub_temp_mem.h
-    ${PROJECT_SOURCE_DIR}/src/gpu/Cylinder2.h    
+    ${PROJECT_SOURCE_DIR}/src/gpu/Cylinder2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Element2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/IO2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.h
@@ -60,9 +61,10 @@ set(HYBIRD_SRC
     ${PROJECT_SOURCE_DIR}/src/utils.cpp
     # @todo How can we compile these as cpp when CUDA is disabled?
     # e.g. set_source_files_properties(test.cu PROPERTIES LANGUAGE CXX)
+    ${PROJECT_SOURCE_DIR}/src/gpu/IO2.cu
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.cu
-    ${PROJECT_SOURCE_DIR}/src/gpu/Node2.cu
     ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.cu
+    ${PROJECT_SOURCE_DIR}/src/gpu/Node2.cu
     )
 
 # Define the target we wish to build

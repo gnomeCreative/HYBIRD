@@ -85,7 +85,7 @@ public:
     void outputStep(LB& lb, DEM& dem); // DEM used to be passed as const
     void outputFinal();
     
-private:
+protected:
     
     // generic file output streams
     string exportFileName;

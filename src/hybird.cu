@@ -13,6 +13,7 @@
 
 #include "IO.h"
 #include "DEM.h"
+#include "gpu/IO2.h"
 #include "gpu/LB2.h"
 #include "gpu/LBParams.h"
 #include "gpu/ValidationIO.h"
@@ -455,7 +456,7 @@ int main(int argc, char** argv) {
 #endif
 
     // DECLARATION OF VARIABLES - Input-Output ///////////////
-    IO io;
+    IO2 io;
 
     // DECLARATION OF VARIABLES - DEM ///////////////
     DEM dem;
@@ -532,7 +533,7 @@ int main(int argc, char** argv) {
         
     // initial output
     vio.output(lb);
-    //io.outputStep(lb, dem);
+    io.outputStep(lb, dem);
 
     // CYCLE /////////////////////////////
     // integrate in time
@@ -553,7 +554,7 @@ int main(int argc, char** argv) {
             // core of the code, performs time steps
             lb.step(dem, io.demSolver);
             vio.output(lb);
-            //io.outputStep();
+            io.outputStep(lb, dem);
 
             //            // exit abnormally if a serious problem has occurred
             //            if (io.problem) {
