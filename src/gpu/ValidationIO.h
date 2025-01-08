@@ -42,9 +42,17 @@ public:
             // Write the header
             fs << "node_count"                      << ",";
             fs << "n_average"                       << ",";
+            fs << "n_minimum"                       << ",";
+            fs << "n_maximum"                       << ",";
             fs << "uX_average"                      << ",";
+            fs << "uX_minimum"                      << ",";
+            fs << "uX_maximum"                      << ",";
             fs << "uY_average"                      << ",";
+            fs << "uY_minimum"                      << ",";
+            fs << "uY_maximum"                      << ",";
             fs << "uZ_average"                      << ",";
+            fs << "uZ_minimum"                      << ",";
+            fs << "uZ_maximum"                      << ",";
             fs << "hydroForceX_average"             << ",";
             fs << "hydroForceY_average"             << ",";
             fs << "hydroForceZ_average"             << ",";
@@ -63,10 +71,11 @@ public:
             fs << "fluid_coord_average"             << ",";
             fs << "wall_count"                      << ",";
             fs << "wall_coord_average"              << ",";
-            for (int i = 0; i < lbmDirec; ++i)
-                fs << "f[" <<i <<"]" << ",";
-            for (int i = 0; i < lbmDirec; ++i)
-                fs << "fs[" << i << "]" << ",";
+            for (int i = 0; i < lbmDirec; ++i) {
+                fs << "f[" << i << "]_average"      << ",";
+                fs << "f[" << i << "]_minimum"      << ",";
+                fs << "f[" << i << "]_maximum"      << ",";
+            }
             for (int i = 0; i < lbmDirec; ++i)
                 fs << "d[" << i << "]" << ",";
             fs << "lbFX" << ",";
@@ -81,11 +90,35 @@ public:
         fs << nodes.count << ",";
         // n_average
         fs << std::accumulate(nodes.n, nodes.n + nodes.count, 0.0) / static_cast<float>(nodes.count) << ",";
+        double sd_min = std::numeric_limits<double>::max();
+        double sd_max = -std::numeric_limits<double>::max();
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            sd_min = std::min(sd_min, nodes.n[i]);
+            sd_max = std::max(sd_max, nodes.n[i]);
+        }
+        fs << sd_min << ",";
+        fs << sd_max << ",";
         // uX_average, uY_average, uZ_average
         tVect t = std::accumulate(nodes.u, nodes.u + nodes.count, Zero);
+        tVect t_min = tVect(std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
+        tVect t_max = tVect(-std::numeric_limits<double>::max(), -std::numeric_limits<double>::max(), -std::numeric_limits<double>::max());
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            t_min.x = std::min(t_min.x, nodes.u[i].x);
+            t_min.y = std::min(t_min.y, nodes.u[i].y);
+            t_min.z = std::min(t_min.z, nodes.u[i].z);
+            t_max.x = std::max(t_max.x, nodes.u[i].x);
+            t_max.y = std::max(t_max.y, nodes.u[i].y);
+            t_max.z = std::max(t_max.z, nodes.u[i].z);
+        }
         fs << t.x / static_cast<float>(nodes.count) << ",";
+        fs << t_min.x << ",";
+        fs << t_max.x << ",";
         fs << t.y / static_cast<float>(nodes.count) << ",";
+        fs << t_min.y << ",";
+        fs << t_max.y << ",";
         fs << t.z / static_cast<float>(nodes.count) << ",";
+        fs << t_min.z << ",";
+        fs << t_max.z << ",";
         // hydroForceX_average, hydroForceY_average, hydroForceZ_average
         t = std::accumulate(nodes.hydroForce, nodes.hydroForce + nodes.count, Zero);
         fs << t.x / static_cast<float>(nodes.count) << ",";
@@ -135,16 +168,16 @@ public:
         // f
         for (int j = 0; j < lbmDirec; ++j) {
             double sd = 0;
-            for (int i = 0; i < nodes.count; ++i)
+            sd_min = std::numeric_limits<double>::max();
+            sd_max = -std::numeric_limits<double>::max();
+            for (int i = 0; i < nodes.count; ++i) {
                 sd += nodes.f[i * lbmDirec + j];
+                sd_min = std::min(sd_min, nodes.f[i * lbmDirec + j]);
+                sd_max = std::max(sd_max, nodes.f[i * lbmDirec + j]);
+            }
             fs << sd / static_cast<float>(nodes.count) << ",";
-        }
-        // fs
-        for (int j = 0; j < lbmDirec; ++j) {
-            double sd = 0;
-            for (int i = 0; i < nodes.count; ++i)
-                sd += nodes.fs[i * lbmDirec + j];
-            fs << sd / static_cast<float>(nodes.count) << ",";
+            fs << sd_min << ",";
+            fs << sd_max << ",";
         }
         // d (we must convert index to coord)
         for (int j = 0; j < lbmDirec; ++j) {
@@ -166,112 +199,6 @@ public:
         fs << sum << ",";
         // coord_average
         fs << std::accumulate(nodes.coord, nodes.coord + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << "\n";
-    }
-    void output(LB& lb) {
-        if (!fs.is_open()) {
-            fs.open(output_path, std::ios::in | std::ios::binary);
-            if (!fs.is_open()) {
-                throw std::exception(("Unable to open validation file for writing: " + output_path.generic_string()).c_str());
-            }
-            // Write the header
-            fs << "node_count"                      << ",";
-            fs << "coord_average"                   << ",";
-            fs << "n_average"                       << ",";
-            fs << "uX_average"                      << ",";
-            fs << "uY_average"                      << ",";
-            fs << "uZ_average"                      << ",";
-            fs << "hydroForceX_average"             << ",";
-            fs << "hydroForceY_average"             << ",";
-            fs << "hydroForceZ_average"             << ",";
-            fs << "mass_average"                    << ",";
-            fs << "visc_average"                    << ",";
-            fs << "type_average"                    << ",";
-            fs << "p_average"                       << ",";
-            fs << "active_count"                    << ",";
-            fs << "active_coord_average"            << ",";
-            fs << "interface_count"                 << ",";
-            fs << "interface_coord_average"         << ",";
-            fs << "fluid_count"                     << ",";
-            fs << "fluid_coord_average"             << ",";
-            fs << "wall_count"                      << ",";
-            fs << "wall_coord_average"              << "\n";
-        }
-        lb.nodes;
-        // Write a new data row
-        // node_count
-        fs << lb.nodes.size() << ",";
-        // coord_average
-        uint64_t su = 0;
-        for (const auto& [_, nd] : lb.nodes)
-            su += nd.coord;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
-        // n_average
-        double sd = 0;
-        for (const auto& [_, nd] : lb.nodes)
-            sd += nd.n;
-        fs << sd / static_cast<float>(lb.nodes.size()) << ",";
-        // uX_average, uY_average, uZ_average
-        tVect sv = Zero;
-        for (const auto& [_, nd] : lb.nodes)
-            sv += nd.u;
-        fs << sv.x / static_cast<float>(lb.nodes.size()) << ",";
-        fs << sv.y / static_cast<float>(lb.nodes.size()) << ",";
-        fs << sv.z / static_cast<float>(lb.nodes.size()) << ",";
-        // hydroForceX_average, hydroForceY_average, hydroForceZ_average
-        sv = Zero;
-        for (const auto& [_, nd] : lb.nodes)
-            sv += nd.hydroForce;
-        fs << sv.x / static_cast<float>(lb.nodes.size()) << ",";
-        fs << sv.y / static_cast<float>(lb.nodes.size()) << ",";
-        fs << sv.z / static_cast<float>(lb.nodes.size()) << ",";
-        // mass_average
-        sd = 0;
-        for (const auto& [_, nd] : lb.nodes)
-            sd += nd.mass;
-        fs << sd / static_cast<float>(lb.nodes.size()) << ",";
-        // visc_average
-        sd = 0;
-        for (const auto& [_, nd] : lb.nodes)
-            sd += nd.visc;
-        fs << sd / static_cast<float>(lb.nodes.size()) << ",";
-        // type_average
-        su = 0;
-        for (const auto& [_, nd] : lb.nodes)
-            su += nd.type;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
-        // p_average
-        su = 0;
-        for (const auto& [_, nd] : lb.nodes)
-            su += nd.p ? 1: 0;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
-        // active_count
-        fs << lb.activeNodes.size() << ",";
-        // active_coord_average
-        su = 0;
-        for (const auto &nd : lb.activeNodes)
-            su += nd->coord;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
-        // interface_count
-        fs << lb.interfaceNodes.size() << ",";
-        // interface_coord_average
-        su = 0;
-        for (const auto& nd : lb.interfaceNodes)
-            su += nd->coord;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
-        // fluid_count
-        fs << lb.fluidNodes.size() << ",";
-        // fluid_coord_average
-        su = 0;
-        for (const auto& nd : lb.fluidNodes)
-            su += nd->coord;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
-        // wall_count
-        fs << lb.wallNodes.size() << ",";
-        // wall_coord_average
-        su = 0;
-        for (const auto& nd : lb.wallNodes)
-            su += nd->coord;
-        fs << su / static_cast<float>(lb.nodes.size()) << ",";
     }
 };
 
