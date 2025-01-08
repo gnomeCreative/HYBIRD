@@ -550,6 +550,7 @@ int main(int argc, char** argv) {
             io.realTime += h_PARAMS.unit.Time;
             ++io.currentTimeStep;
             ++h_PARAMS.time;
+            lb.syncParams(); // Update time on device
 
             // core of the code, performs time steps
             lb.step(dem, io.demSolver);
