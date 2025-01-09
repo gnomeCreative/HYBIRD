@@ -182,10 +182,14 @@ public:
         // d (we must convert index to coord)
         for (int j = 0; j < lbmDirec; ++j) {
             sum = 0;
+            unsigned int active_count = 0;
             for (int i = 0; i < nodes.count; ++i)
-                if (nodes.d[j * nodes.count + i] != std::numeric_limits<unsigned int>::max())
-                    sum += nodes.coord[nodes.d[j * nodes.count + i]];
-            fs << sum / static_cast<float>(nodes.count) << ",";
+                if (nodes.isActive(i)) {
+                    ++active_count;
+                    if (nodes.d[j * nodes.count + i] != std::numeric_limits<unsigned int>::max())
+                        sum += nodes.coord[nodes.d[j * nodes.count + i]];                    
+                }
+            fs << sum / static_cast<float>(active_count) << ",";
         }
         // lbf
         fs << h_PARAMS.lbF.x << ",";
