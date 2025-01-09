@@ -1041,7 +1041,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile << "   </CellData>\n";
     paraviewFluidFile << "   <Points>\n";
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\"/>\n";
-    for (int i = 1; i < nodes.activeCount + 1; ++i) {
+    for (int i = 0; i < nodes.activeCount; ++i) {
         const tVect positionHere = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
         positionHere.printLine(paraviewFluidFile);
     }
