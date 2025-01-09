@@ -299,7 +299,7 @@ __host__ __device__ __forceinline__ inline void Node2::computeApparentViscosity(
     tMat gamma(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
     for (int j = 1; j < lbmDirec; ++j) {
-        gamma += (this->f[j] - feq[j]) * vv[j];
+        gamma += (this->f[index * lbmDirec + j] - feq[j]) * vv[j];
     }
     gamma *= -1.5 / (tau * this->n[index]);
 
