@@ -465,7 +465,7 @@ __host__ __device__ __forceinline__ inline tVect Node2::bounceBackForce(const un
     if (visc[index] == PARAMS.fluidMaterial.lbMaxVisc) {
         return (2.0 * (fs[index * lbmDirec + j] + coeff[j] * (n[index] - 1.0) * (PARAMS.fluidMaterial.earthPressureCoeff - 1.0) - staticPres[j]) - BBi) * v[j];
     } else {
-        return (2.0 * (fs[index * lbmDirec + j] - staticPres[index * lbmDirec + j]) - BBi) * v[j];
+        return (2.0 * (fs[index * lbmDirec + j] - staticPres[j]) - BBi) * v[j];
     }
 }
 template <>
