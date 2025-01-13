@@ -592,7 +592,6 @@ void LB2::findNewSolid<CPU>() {
         common_findNewSolid(i, d_nodes, d_particles, d_elements);
     }
 }
-
 #ifdef USE_CUDA
 __global__ void d_findNewSolid(Node2* d_nodes, Particle2* d_particles, Element2* d_elements) {
     // Get unique CUDA thread index, which corresponds to active node 
@@ -776,8 +775,12 @@ void LB2::reconstructHydroCollide<CUDA>() {
     d_reconstructHydroCollide << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
+#endif
 
-__host__ __device__ void common_streaming(const unsigned int i, Node2* nodes, Wall2* walls) {
+/**
+ * streaming()
+ */
+__host__ __device__ __forceinline__ void common_streaming(const unsigned int i, Node2* nodes, Wall2* walls) {
     // Convert index to active node index
     const unsigned int an_i = nodes->activeI[i];
 
@@ -1082,6 +1085,7 @@ void LB2::streaming<CUDA>() {
     // redistributeMass(extraMass);  // extraMass hasn't been implemented properly
 }
 #endif
+
 template<>
 void LB2::shiftToPhysical<CPU>() {
     for (unsigned int i = 0; i < d_elements->count; ++i) {
@@ -1188,7 +1192,6 @@ void LB2::latticeBoltzmannStep() {
     // Shift element/wall/object forces and torques to physical units
     this->shiftToPhysical<IMPL>();
 }
-#endif
 
 Node2& LB2::getNodes() {
 #ifdef USE_CUDA
