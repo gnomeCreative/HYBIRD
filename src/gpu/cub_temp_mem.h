@@ -21,7 +21,6 @@
  * The purpose of this class is to manage a shared, singleton, for that buffer
  */
 class CubTempMem {
-    friend std::unique_ptr<CubTempMem>std::make_unique();
  public:
     /**
      * Singletons should not be cloneable.
@@ -36,7 +35,7 @@ class CubTempMem {
      */
     static CubTempMem &GetTempSingleton() {
         if(!_singletonT)
-            _singletonT = std::make_unique<CubTempMem>();
+            _singletonT = std::unique_ptr<CubTempMem>(new CubTempMem());
         return *_singletonT;
     }
     /**
@@ -44,7 +43,7 @@ class CubTempMem {
      */
     static CubTempMem &GetBufferSingleton() {
         if (!_singletonB)
-            _singletonB = std::make_unique<CubTempMem>();
+            _singletonB = std::unique_ptr<CubTempMem>(new CubTempMem());
         return *_singletonB;
     }
     /**
@@ -57,7 +56,7 @@ class CubTempMem {
     /**
      * Release any allocated memory
      */
-    ~CubTempMem() { CUDA_CALL(cudaFree(d_cub_temp)); }
+    ~CubTempMem() { CUDA_CALL(cudaFree(d_cub_temp)); }  // @todo CUDAError, driver shutting down.
     /**
      * Grow the size of the allocated buffer
      */

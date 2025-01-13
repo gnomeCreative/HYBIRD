@@ -195,7 +195,7 @@ struct Node2 {
     void cleanLists();
 };
 
-__host__ __device__ __forceinline__ inline tVect Node2::getPosition(const unsigned int index) const {
+__host__ __device__ __forceinline__ tVect Node2::getPosition(const unsigned int index) const {
     unsigned int x, y, z;
 
     // index is calculated in this fashion:
@@ -228,7 +228,7 @@ __host__ __device__ __forceinline__ inline tVect Node2::getPosition(const unsign
 
     return { double(x) - 0.5, double(y) - 0.5, double(z) - 0.5 };
 }
-__host__ __device__ __forceinline__ inline std::array<int, 3> Node2::getGridPosition(const unsigned int index) const {
+__host__ __device__ __forceinline__ std::array<int, 3> Node2::getGridPosition(const unsigned int index) const {
     unsigned int x, y, z;
 
     // index is calculated in this fashion:
@@ -260,11 +260,11 @@ __host__ __device__ __forceinline__ inline std::array<int, 3> Node2::getGridPosi
 
     return { static_cast<int>(x), static_cast<int>(y), static_cast<int>(z) };
 }
-__host__ __device__ __forceinline__ inline void Node2::shiftVelocity(const unsigned int index, const tVect& F) {
+__host__ __device__ __forceinline__ void Node2::shiftVelocity(const unsigned int index, const tVect& F) {
     const tVect totalForce = F + this->hydroForce[index];
     this->u[index] += 0.5 * this->mass[index] * totalForce;
 }
-__host__ __device__ __forceinline__ inline void Node2::computeEquilibrium(const unsigned int index, std::array<double, lbmDirec> &feq) const {
+__host__ __device__ __forceinline__ void Node2::computeEquilibrium(const unsigned int index, std::array<double, lbmDirec> &feq) const {
     constexpr double C1 = 3.0;
     constexpr double C2 = 4.5;
     constexpr double C3 = 1.5;
@@ -276,7 +276,7 @@ __host__ __device__ __forceinline__ inline void Node2::computeEquilibrium(const 
         feq[j] = coeff[j] * this->n[index] * (1.0 + C1 * vu + C2 * vu * vu - C3 * usq);
     }    
 }
-__host__ __device__ __forceinline__ inline void Node2::computeEquilibriumTRT(const unsigned int index, std::array<double, lbmDirec> &feqp, std::array<double, lbmDirec> &feqm) const {
+__host__ __device__ __forceinline__ void Node2::computeEquilibriumTRT(const unsigned int index, std::array<double, lbmDirec> &feqp, std::array<double, lbmDirec> &feqm) const {
     constexpr double C1 = 3.0;
     constexpr double C2 = 4.5;
     constexpr double C3 = 1.5;
@@ -292,7 +292,7 @@ __host__ __device__ __forceinline__ inline void Node2::computeEquilibriumTRT(con
     feqp[0] = this->n[index] - posSum;
     feqm[0] = 0.0;
 }
-__host__ __device__ __forceinline__ inline void Node2::computeApparentViscosity(const unsigned int index, const std::array<double, lbmDirec> &feq) {
+__host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const unsigned int index, const std::array<double, lbmDirec> &feq) {
     // minimum and maximum viscosity
     const double tau = 0.5 + 3.0 * this->visc[index];
 
@@ -377,7 +377,7 @@ __host__ __device__ __forceinline__ inline void Node2::computeApparentViscosity(
     // limiting for stability
     this->visc[index] = std::max(PARAMS.fluidMaterial.lbMinVisc, std::min(PARAMS.fluidMaterial.lbMaxVisc, nuApp));
 }
-__host__ __device__ __forceinline__ inline void Node2::solveCollision(const unsigned int index, const std::array<double, lbmDirec> &feq) {
+__host__ __device__ __forceinline__ void Node2::solveCollision(const unsigned int index, const std::array<double, lbmDirec> &feq) {
     // relaxation frequency
     const double omega = 1.0 / (0.5 + 3.0 * this->visc[index]);
 
@@ -387,7 +387,7 @@ __host__ __device__ __forceinline__ inline void Node2::solveCollision(const unsi
         _f[j] += omega * (feq[j] - _f[j]);
     }
 }
-__host__ __device__ __forceinline__ inline void Node2::solveCollisionTRT(const unsigned int index, const std::array<double, lbmDirec> &feqp, const std::array<double, lbmDirec> &feqm) {
+__host__ __device__ __forceinline__ void Node2::solveCollisionTRT(const unsigned int index, const std::array<double, lbmDirec> &feqp, const std::array<double, lbmDirec> &feqm) {
     // relaxation frequency
     const double omegap = 1.0 / (0.5 + 3.0 * this->visc[index]);
     const double omegam = 6.0 * this->visc[index] / (2.0 * PARAMS.magicNumber + 3.0 * this->visc[index]);
@@ -412,7 +412,7 @@ __host__ __device__ __forceinline__ inline void Node2::solveCollisionTRT(const u
         _f[j] += omegam * (feqm[j] - fm[j]) + omegap * (feqp[j] - fp[j]);
     }
 }
-__host__ __device__ __forceinline__ inline void Node2::addForce(const unsigned int index, const tVect &F) {
+__host__ __device__ __forceinline__ void Node2::addForce(const unsigned int index, const tVect &F) {
     constexpr double F1 = 3.0;
     constexpr double F2 = 9.0;
 
@@ -428,7 +428,7 @@ __host__ __device__ __forceinline__ inline void Node2::addForce(const unsigned i
         _f[j] +=  omegaf * coeff[j] * forcePart.dot(this->mass[index] *totalForce);
     }
 }
-__host__ __device__ __forceinline__ inline void Node2::addForce(const unsigned int index, const std::array<double, lbmDirec> &feq, const tVect &F) {
+__host__ __device__ __forceinline__ void Node2::addForce(const unsigned int index, const std::array<double, lbmDirec> &feq, const tVect &F) {
     constexpr double F1 = 3.0;
 
     const double omegaf = 1.0 - 1.0 / (1.0 + 6.0 * this->visc[index]);
@@ -442,7 +442,7 @@ __host__ __device__ __forceinline__ inline void Node2::addForce(const unsigned i
         _f[j] +=  omegaf * forcePart.dot(this->mass[index]*totalForce);
     }
 }
-__host__ __device__ __forceinline__ inline void Node2::addForceTRT(const unsigned int index, const tVect& F) {
+__host__ __device__ __forceinline__ void Node2::addForceTRT(const unsigned int index, const tVect& F) {
     constexpr double F1 = 3.0;
     constexpr double F2 = 9.0;
 
@@ -461,7 +461,7 @@ __host__ __device__ __forceinline__ inline void Node2::addForceTRT(const unsigne
         _f[j] += omegaf * coeff[j] * forcePart.dot(totalForce);
     }
 }
-__host__ __device__ __forceinline__ inline tVect Node2::bounceBackForce(const unsigned int index, const unsigned int j, const std::array<double, lbmDirec>& staticPres, const double BBi) const {
+__host__ __device__ __forceinline__ tVect Node2::bounceBackForce(const unsigned int index, const unsigned int j, const std::array<double, lbmDirec>& staticPres, const double BBi) const {
     if (visc[index] == PARAMS.fluidMaterial.lbMaxVisc) {
         return (2.0 * (fs[index * lbmDirec + j] + coeff[j] * (n[index] - 1.0) * (PARAMS.fluidMaterial.earthPressureCoeff - 1.0) - staticPres[j]) - BBi) * v[j];
     } else {
@@ -484,7 +484,7 @@ inline void Node2::store<CUDA>() {
 #endif
 }
 #endif
-__host__ __device__ __forceinline__ inline void Node2::reconstruct(const unsigned int index) {
+__host__ __device__ __forceinline__ void Node2::reconstruct(const unsigned int index) {
     // reconstruction of macroscopical physical variables
     this->n[index] = 0.0;
     this->u[index].reset();
@@ -499,7 +499,7 @@ __host__ __device__ __forceinline__ inline void Node2::reconstruct(const unsigne
     // velocity
     this->u[index] /= this->n[index];
 }
-__host__ __device__ __forceinline__ inline void Node2::collision(const unsigned int index) {
+__host__ __device__ __forceinline__ void Node2::collision(const unsigned int index) {
     if (!PARAMS.TRTsolver) {
         // equilibrium distributions
         std::array<double, lbmDirec> feq;

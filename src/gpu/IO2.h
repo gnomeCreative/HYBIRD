@@ -1,7 +1,7 @@
 #ifndef IO2_H
 #define IO2_H
 
-#include "io.h"
+#include "IO.h"
 
 class LB2;
 

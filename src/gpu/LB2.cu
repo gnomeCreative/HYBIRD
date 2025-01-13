@@ -404,7 +404,7 @@ void LB2::syncObjects<CUDA>(const objectList &walls) {
 /**
  * initializeParticleBoundaries()
  */
-__host__ __device__ __forceinline__ inline double common_initializeParticleBoundaries(const unsigned int i, Node2* nodes, Particle2* particles) {
+__host__ __device__ __forceinline__ double common_initializeParticleBoundaries(const unsigned int i, Node2* nodes, Particle2* particles) {
     // Fetch the index of the (active) node being processed
     const unsigned int an_i = nodes->activeI[i];
     const tVect node_position = nodes->getPosition(an_i);
@@ -478,7 +478,7 @@ double LB2::initializeParticleBoundaries<CUDA>() {
 /**
  * findNewActive()
  */
-__host__ __device__ __forceinline__ inline void common_findNewActive(const unsigned int i, Node2* nodes, Particle2* particles, Element2* elements) {
+__host__ __device__ __forceinline__ void common_findNewActive(const unsigned int i, Node2* nodes, Particle2* particles, Element2* elements) {
     // Fetch the index of the (active) node being processed
     const unsigned int an_i = nodes->activeI[i];
     if (nodes->p[an_i]) {
@@ -544,7 +544,7 @@ void LB2::findNewActive<CUDA>() {
 /**
  * findNewSolid()
  */
-__host__ __device__ __forceinline__ inline void common_findNewSolid(const unsigned int i, Node2* nodes, Particle2* particles, Element2* elements) {
+__host__ __device__ __forceinline__ void common_findNewSolid(const unsigned int i, Node2* nodes, Particle2* particles, Element2* elements) {
     const unsigned int an_i = nodes->activeI[i];
     if (nodes->isInsideParticle(an_i)) {  // If node is inside particle
         // solid index to identify cluster
@@ -619,7 +619,7 @@ void LB2::findNewSolid<CUDA>() {
 /**
  * checkNewInterfaceParticles()
  */
-__host__ __device__ __forceinline__ inline void common_checkNewInterfaceParticles(const unsigned int e_i, Node2* nodes, Particle2* particles, Element2* elements) {
+__host__ __device__ __forceinline__ void common_checkNewInterfaceParticles(const unsigned int e_i, Node2* nodes, Particle2* particles, Element2* elements) {
     // INITIAL PARTICLE POSITION ////////////////////////
     if (elements->FHydro[e_i].norm2() == 0.0) {
         const unsigned int first_component = elements->componentsIndex[e_i];
@@ -679,7 +679,7 @@ void LB2::checkNewInterfaceParticles<CUDA>() {
  * computeHydroForces()
  * collision()
  */
-__host__ __device__ __forceinline__ inline void common_computeHydroForces(const unsigned int an_i, Node2* nodes, Particle2* particles, Element2* elements) {
+__host__ __device__ __forceinline__ void common_computeHydroForces(const unsigned int an_i, Node2* nodes, Particle2* particles, Element2* elements) {
     // resetting hydrodynamic forces on nodes
     nodes->hydroForce[an_i].reset();
     if (nodes->isInsideParticle(an_i)) {
@@ -1392,7 +1392,8 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
         ASSERT(restartZ == h_PARAMS.lbSize[2]);
         // read active nodes from file and generate
         // @todo
-        throw std::exception("lbRestart is not yet supported.");
+        fprintf(stderr, "lbRestart is not yet supported.\n");
+        throw std::exception();
         // restartInterface(fluidFileID, restartNodes);
     } else {
         // initialize interface

@@ -37,7 +37,8 @@ public:
         if (!fs.is_open()) {
             fs.open(output_path, std::ios::out | std::ios::binary | std::ios::trunc);
             if (!fs.is_open()) {
-                throw std::exception(("Unable to open validation file for writing: " + output_path.generic_string()).c_str());
+                fprintf(stderr, "Unable to open validation file for writing: %s\n", output_path.generic_string().c_str());
+                throw std::exception();
             }
             // Write the header
             fs << "node_count"                      << ",";
