@@ -14,6 +14,7 @@ enum Implementation {
 
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
+#include <thrust/transform_reduce.h>
 
 /**
  * Error check function for safe CUDA API calling

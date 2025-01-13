@@ -135,6 +135,9 @@ struct LBParams {
     double hourglassOutletHeight = 0.0;  // t
     // HEAP: continuum heap (mirrors in DEM)
     double heapBaseLevel = 0.0;  // t
+    // age coefficients for new nodes
+    float maxAge = 200.0f; // should be const
+    float ageRatio = 1.0f / maxAge; // should be const
     
     // functions for linearized index management
     __host__ __device__ __forceinline__ unsigned int getIndex(const unsigned int& x, const unsigned int& y, const unsigned int& z) {

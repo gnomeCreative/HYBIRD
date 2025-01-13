@@ -1086,6 +1086,9 @@ void LB2::streaming<CUDA>() {
 }
 #endif
 
+/**
+ * shiftToPhysical(), originally part of latticeBoltzmannStep()
+ */
 template<>
 void LB2::shiftToPhysical<CPU>() {
     for (unsigned int i = 0; i < d_elements->count; ++i) {
@@ -1133,6 +1136,221 @@ void LB2::shiftToPhysical<CUDA>() {
 }
 #endif
 
+
+///
+/// latticeBoltzmannFreeSurfaceStep() subroutines
+///
+
+/**
+ * redistributeMass()
+ */
+template<>
+void LB2::redistributeMass<CPU>(const double& massSurplus) {
+    const double addMass = massSurplus / d_nodes->interfaceCount;
+
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        const unsigned int in_i = d_nodes->activeI[i];
+        d_nodes->mass[in_i] += addMass;
+    }
+}
+#ifdef USE_CUDA
+__global__ void d_redistributeMass(Node2 *d_nodes, const double addMass) {
+    // Get unique CUDA thread index
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads
+    if (i >= d_nodes->interfaceCount)
+        return;
+    // Increase mass
+    const unsigned int in_i = d_nodes->activeI[i];
+    d_nodes->mass[in_i] += addMass;    
+}
+template<>
+void LB2::redistributeMass<CUDA>(const double& massSurplus) {
+    const double addMass = massSurplus / d_nodes->interfaceCount;
+    // Launch enough threads to accommodate all interface nodes
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.interfaceCount);
+    // Round up to accommodate required threads
+    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
+    CUDA_CHECK();
+}
+#endif
+
+/**
+ * enforceMassConservation()
+ */
+template<>
+void LB2::enforceMassConservation<CPU>() {
+    // calculate total mass of active nodes
+    double thisMass = 0.0;
+    for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
+        const unsigned int an_i = d_nodes->activeI[i];
+        if (!d_nodes->isInsideParticle(an_i)) {
+            thisMass += d_nodes->mass[an_i];
+        }
+    }
+
+    // mass deficit
+    const double massDeficit = (thisMass - PARAMS.totalMass);
+
+    // fix it
+    redistributeMass<CPU>(-0.01 * massDeficit);
+}
+#ifdef USE_CUDA
+/**
+ * This unary operator allows us to reduce across a mapped array
+ */
+template<typename T>
+struct unmapper : thrust::unary_function<unsigned int, T> {
+    T* d_map;
+    unmapper(T* d_map_init)
+        : d_map(d_map_init) { }
+    __host__ __device__ T operator()(const unsigned int& x) const {
+        return d_map[x];
+    }
+};
+template<>
+void LB2::enforceMassConservation<CUDA>() {
+    // calculate total mass of active nodes
+    // This could be switched to use cub in a future cuda version
+    const double thisMass = thrust::transform_reduce(hd_nodes.activeI, hd_nodes.activeI + hd_nodes.activeCount,
+        unmapper(hd_nodes.mass),
+        0.0,
+        thrust::plus<double>());
+
+    // mass deficit
+    const double massDeficit = (thisMass - PARAMS.totalMass);
+
+    // fix it
+    redistributeMass<CUDA>(-0.01 * massDeficit);
+
+}
+#endif
+
+/**
+ * updateMass()
+ */
+__host__ __device__ __forceinline__ void common_updateMassInterface(const unsigned int in_i, Node2 *nodes) {
+    nodes->newMass[in_i] = nodes->mass[in_i];  // Redundant, call is repeated at end
+    // additional mass streaming to/from interface
+    double deltaMass = 0.0;
+    const unsigned int nodeCount = nodes->count;
+    // cycling through neighbors
+    for (unsigned int j = 1; j < lbmDirec; ++j) {
+        // getting neighbor index
+        const unsigned int ln_i = nodes->d[nodeCount * j + in_i];
+        // average liquid fraction
+        if (ln_i == std::numeric_limits<unsigned int>::max()) {
+            // do nothing
+        } else if (nodes->type[ln_i] == INTERFACE) {
+            // average liquid fraction
+            const double averageMass = 0.5 * (nodes->mass[ln_i] / nodes->n[ln_i] + nodes->mass[in_i] / nodes->n[in_i]);
+            deltaMass += averageMass * nodes->massStream(in_i, j);
+        } else if (nodes->type[ln_i] == LIQUID) {
+            const double averageMass = 1.0;
+            deltaMass += averageMass * nodes->massStream(in_i, j);
+        } else if (nodes->type[ln_i] == DYN_WALL) {
+            const double averageMass = 1.0 * nodes->mass[in_i];
+            deltaMass += averageMass * nodes->massStream(in_i, j);
+        } else if (nodes->type[ln_i] == CYL) {
+            const double averageMass = 1.0 * nodes->mass[in_i];
+            deltaMass += averageMass * nodes->massStream(in_i, j);
+        } else if (nodes->type[ln_i] == SLIP_DYN_WALL) {
+            if (j > 6) {
+                bool active1 = false;
+                bool active2 = false;
+                const unsigned int c1_i = nodes->d[nodeCount * slip1Check[j] + in_i];
+                const unsigned int c2_i = nodes->d[nodeCount * slip2Check[j] + in_i];
+                // check for the environment
+                if (c1_i != std::numeric_limits<unsigned int>::max()) {
+                    if (nodes->isActive(c1_i)) {
+                        active1 = true;
+                    }
+                }
+                if (c2_i != std::numeric_limits<unsigned int>::max()) {
+                    if (nodes->isActive(c2_i)) {
+                        active2 = true;
+                    }
+                }
+                // given the environment, perform the right operation
+                double averageMass = 0.0;
+                if (active1 && !active2) {
+                    // adding the extra mass to the surplus
+                    averageMass += 1.0 * (1.0 - PARAMS.slipCoefficient) * nodes->mass[in_i];
+                } else if (!active1 && active2) {
+                    // adding the extra mass to the surplus
+                    averageMass += 1.0 * (1.0 - PARAMS.slipCoefficient) * nodes->mass[in_i];
+                } else {
+                    // adding the extra mass to the surplus
+                    averageMass += 1.0 * nodes->mass[in_i];
+                }
+                deltaMass += averageMass * nodes->massStream(in_i, j);
+            } else {
+                // adding the extra mass to the surplus
+                const double averageMass = 1.0 * nodes->mass[in_i];
+                deltaMass += averageMass * nodes->massStream(in_i, j);
+            }
+        }
+    }
+    nodes->newMass[in_i] += deltaMass;
+
+    nodes->mass[in_i] = nodes->newMass[in_i];
+    nodes->age[in_i] = min(nodes->age[in_i] + PARAMS.ageRatio, 1.0f);
+}
+__host__ __device__ __forceinline__ void common_updateMassFluid(const unsigned int fn_i, Node2 *nodes) {
+    nodes->mass[fn_i] = nodes->n[fn_i];
+    nodes->age[fn_i] = min(nodes->age[fn_i] + PARAMS.ageRatio, 1.0f);
+}
+template<>
+void LB2::updateMass<CPU>() {
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        // Convert index to active node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        common_updateMassInterface(in_i, d_nodes);
+    }
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->fluidCount; ++i) {
+        // Convert index to active node index
+        const unsigned int fn_i = d_nodes->fluidI[i];
+        common_updateMassFluid(fn_i, d_nodes);
+    }
+}
+#ifdef USE_CUDA
+__global__ void d_updateMass(Node2* d_nodes) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < d_nodes->interfaceCount) {
+        // Convert index to active node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        common_updateMassInterface(in_i, d_nodes);
+    }
+    if (i < d_nodes->fluidCount) {
+        // Convert index to active node index
+        const unsigned int fn_i = d_nodes->fluidI[i];
+        common_updateMassFluid(fn_i, d_nodes);
+    }
+}
+template<>
+void LB2::updateMass<CUDA>() {
+    // Enough threads for interface or fluid
+    const unsigned int maxThreads = std::max(h_nodes.interfaceCount, h_nodes.fluidCount);
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, maxThreads);
+    // Round up to accommodate required threads
+    gridSize = (maxThreads + blockSize - 1) / blockSize;
+    d_updateMass<<<gridSize, blockSize>>>(d_nodes);
+    CUDA_CHECK();
+}
+#endif
 
 void LB2::latticeBoltzmannCouplingStep(bool& newNeighbourList) {
     // identifies which nodes need to have an update due to particle movement
@@ -1192,6 +1410,31 @@ void LB2::latticeBoltzmannStep() {
     // Shift element/wall/object forces and torques to physical units
     this->shiftToPhysical<IMPL>();
 }
+extern ProblemName problemName;
+void LB2::latticeBoltzmannFreeSurfaceStep() {
+    // in case mass needs to be kept constant, call enforcing function here
+    if (PARAMS.imposeFluidVolume) {
+        this->enforceMassConservation<IMPL>();
+    } else if (PARAMS.increaseVolume) {
+        if (PARAMS.time < PARAMS.deltaTime) {
+            this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
+        }
+    } else {
+        switch (problemName) {
+        case DRUM:
+        case STAVA:
+        {
+            this->enforceMassConservation<IMPL>();
+            break;
+        }
+        }
+    }
+
+    // mass and free surface update
+    this->updateMass<IMPL>();
+    this->updateInterface<IMPL>();
+    this->cleanLists<IMPL>();
+}
 
 Node2& LB2::getNodes() {
 #ifdef USE_CUDA
@@ -1212,6 +1455,8 @@ Node2& LB2::getNodes() {
         h_nodes.centrifugalForce = static_cast<tVect*>(malloc(hd_nodes.count * sizeof(tVect)));
         if (h_nodes.mass) free(h_nodes.mass);
         h_nodes.mass = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
+        if (h_nodes.newMass) free(h_nodes.newMass);
+        h_nodes.newMass = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
         if (h_nodes.visc) free(h_nodes.visc);
         h_nodes.visc = static_cast<double*>(malloc(hd_nodes.count * sizeof(double)));
         if (h_nodes.basal) free(h_nodes.basal);
@@ -1267,6 +1512,7 @@ Node2& LB2::getNodes() {
     CUDA_CALL(cudaMemcpy(h_nodes.hydroForce, hd_nodes.hydroForce, h_nodes.count * sizeof(tVect), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.centrifugalForce, hd_nodes.centrifugalForce, h_nodes.count * sizeof(tVect), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.mass, hd_nodes.mass, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.newMass, hd_nodes.newMass, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.visc, hd_nodes.visc, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.basal, hd_nodes.basal, h_nodes.count * sizeof(bool), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.friction, hd_nodes.friction, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
@@ -1327,6 +1573,8 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMemcpy(hd_nodes.centrifugalForce, h_nodes.centrifugalForce, hd_nodes.count * sizeof(tVect), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.mass, hd_nodes.count * sizeof(double)));
     CUDA_CALL(cudaMemcpy(hd_nodes.mass, h_nodes.mass, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMalloc(&hd_nodes.newMass, hd_nodes.count * sizeof(double)));
+    CUDA_CALL(cudaMemcpy(hd_nodes.newMass, h_nodes.newMass, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.visc, hd_nodes.count * sizeof(double)));
     CUDA_CALL(cudaMemcpy(hd_nodes.visc, h_nodes.visc, hd_nodes.count * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.basal, hd_nodes.count * sizeof(bool)));
@@ -1748,6 +1996,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     h_nodes.hydroForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
     h_nodes.centrifugalForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
     h_nodes.mass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.newMass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
     h_nodes.visc = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
     h_nodes.basal = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
     h_nodes.friction = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
@@ -1764,6 +2013,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     memset(h_nodes.u, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.hydroForce, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.mass, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.newMass, 0, h_nodes.count * sizeof(double));
     // h_nodes.visc is instead init to 1 below
     memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
     memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
@@ -2139,10 +2389,10 @@ void LB2::step(const DEM &dem, bool io_demSolver) {
     if (dem.demTime >= dem.demInitialRepeat) {
         this->latticeBoltzmannStep();
 
-        // Lattice Boltzmann core steps @todo after latticeBoltzmannStep() has been tested
-        // if (this->freeSurface) {
-        //     this->latticeBoltzmannFreeSurfaceStep();
-        // }
+        // Lattice Boltzmann core steps
+        if (PARAMS.freeSurface) {
+            this->latticeBoltzmannFreeSurfaceStep();
+        }
     }
 }
 

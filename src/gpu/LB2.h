@@ -72,6 +72,10 @@ class LB2 {
      */
     void latticeBoltzmannStep();
     /**
+     * @brief free-surface  management functions
+     */
+    void latticeBoltzmannFreeSurfaceStep();
+    /**
      * @brief Sync DEM elements list to h_elements/d_elements
      * @note Should be redundant once DEM is also ported to CUDA
      */
@@ -170,6 +174,21 @@ class LB2 {
      */
     template<int impl>
     void shiftToPhysical();
+
+
+    ///
+    /// latticeBoltzmannFreeSurfaceStep() subroutines
+    ///
+    template<int impl>
+    void enforceMassConservation();
+    template<int impl>
+    void redistributeMass(const double &massSurplus);
+    template<int impl>
+    void updateMass();
+    template<int impl>
+    void updateInterface();
+    template<int impl>
+    void cleanLists();
 
     Node2 &getNodes();
     void initDeviceNodes();

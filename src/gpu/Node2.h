@@ -83,6 +83,7 @@ struct Node2 {
     tVect *centrifugalForce = nullptr;
     // mass functions
     double *mass = nullptr;
+    double *newMass = nullptr;
     // viscosity functions
     double *visc = nullptr;
     bool *basal = nullptr;
@@ -162,6 +163,7 @@ struct Node2 {
     __host__ __device__ void addForce(unsigned int index, const std::array<double, lbmDirec>& feq, const tVect& F);
     __host__ __device__ void addForceTRT(unsigned int index, const tVect &F);
     __host__ __device__ tVect bounceBackForce(unsigned int index, unsigned int j, const std::array<double, lbmDirec> &staticPres, double BBi) const;
+    __host__ __device__ double massStream(unsigned int index, unsigned int sdir) const;
 
     /**
      * @brief Copy the force variable (f) to the streaming support variable (fs) for all nodes 
@@ -467,6 +469,10 @@ __host__ __device__ __forceinline__ tVect Node2::bounceBackForce(const unsigned 
     } else {
         return (2.0 * (fs[index * lbmDirec + j] - staticPres[j]) - BBi) * v[j];
     }
+}
+
+__host__ __device__ __forceinline__ double Node2::massStream(const unsigned int index, const unsigned int sdir) const {
+    return (f[index * lbmDirec + opp[sdir]] - fs[index * lbmDirec + sdir]);
 }
 template <>
 inline void Node2::store<CPU>() {
