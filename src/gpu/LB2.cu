@@ -1236,7 +1236,7 @@ void LB2::enforceMassConservation<CUDA>() {
  * updateMass()
  */
 __host__ __device__ __forceinline__ void common_updateMassInterface(const unsigned int in_i, Node2 *nodes) {
-    nodes->newMass[in_i] = nodes->mass[in_i];  // Redundant, call is repeated at end
+    nodes->newMass[in_i] = nodes->mass[in_i];
     // additional mass streaming to/from interface
     double deltaMass = 0.0;
     const unsigned int nodeCount = nodes->count;
@@ -1347,6 +1347,81 @@ void LB2::updateMass<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, maxThreads);
     // Round up to accommodate required threads
     gridSize = (maxThreads + blockSize - 1) / blockSize;
+    d_updateMass<<<gridSize, blockSize>>>(d_nodes);
+    CUDA_CHECK();
+}
+#endif
+
+/**
+ * updateInterface()
+ */
+__host__ __device__ __forceinline__ void common_updateInterface(const unsigned int in_i, Node2* nodes) {
+    // variable for storage of mass surplus
+    double massSurplus = 0.0;
+
+    // lists for "mutant" nodes
+    filledNodes.clear();
+    emptiedNodes.clear();
+    newInterfaceNodes.clear();
+    /// Create lists filledNodes and emptiedNodes, interface node IDs with certain mass properties
+    /// Filled nodes also convert from interface to fluid node
+    // filling lists of mutant nodes and changing their type
+    findInterfaceMutants();
+
+    /// Nodes which converted to fluid from interface, now turn their neighbours into interface nodes
+    /// This requires initialising their d parameter
+    /// This process is then repeated for neighbours of empty nodes
+    // fixing the interface (always one interface between fluid and gas)
+    smoothenInterface(massSurplus);
+
+    /// Empty nodes are then updated, original code has a poor loop to check whether point is now invalid
+    // updating characteristics of mutant nodes
+    updateMutants(massSurplus);
+
+    /// Interface node surrounded by LIQUID is converted to LIQUID
+    /// Interface node surrounded by GAS is converted to GAS
+    // remove isolated interface cells (both surrounded by gas and by fluid)
+    removeIsolated(massSurplus);
+
+    /// Surplus mass is shared between interface cells
+    // distributing surplus to interface cells
+    redistributeMass(massSurplus);
+
+#ifdef DEBUG
+    // compute surface normal vectors
+    // computeSurfaceNormal();
+#endif
+}
+
+template<>
+void LB2::updateInterface<CPU>() {
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        // Convert index to active node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        common_updateInterface(in_i, d_nodes);
+    }
+}
+#ifdef USE_CUDA
+__global__ void d_updateInterface(Node2* d_nodes) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (i >= d_nodes->interfaceCount)
+        return;
+    // Convert index to active node index
+    const unsigned int in_i = d_nodes->interfaceI[i];
+    common_updateInterface(in_i, d_nodes);
+}
+template<>
+void LB2::updateInterface<CUDA>() {
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, h_nodes.interfaceCount);
+    // Round up to accommodate required threads
+    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_updateMass<<<gridSize, blockSize>>>(d_nodes);
     CUDA_CHECK();
 }
