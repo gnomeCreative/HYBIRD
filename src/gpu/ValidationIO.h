@@ -62,6 +62,8 @@ public:
             fs << "centrifugalForceZ_average"       << ",";
             fs << "mass_average"                    << ",";
             fs << "visc_average"                    << ",";
+            fs << "visc_minimum"                    << ",";
+            fs << "visc_maximum"                    << ",";
             fs << "type_average"                    << ",";
             fs << "p_average"                       << ",";
             fs << "active_count"                    << ",";
@@ -134,6 +136,14 @@ public:
         fs << std::accumulate(nodes.mass, nodes.mass + nodes.count, 0.0) / static_cast<float>(nodes.count) << ",";
         // visc_average
         fs << std::accumulate(nodes.visc, nodes.visc + nodes.count, 0.0) / static_cast<float>(nodes.count) << ",";
+        sd_min = std::numeric_limits<double>::max();
+        sd_max = -std::numeric_limits<double>::max();
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            sd_min = std::min(sd_min, nodes.visc[i]);
+            sd_max = std::max(sd_max, nodes.visc[i]);
+        }
+        fs << sd_min << ",";
+        fs << sd_max << ",";
         // type_average
         fs << std::accumulate(nodes.type, nodes.type + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << ",";
         // p_average
