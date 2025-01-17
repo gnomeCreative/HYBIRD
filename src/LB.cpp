@@ -2365,6 +2365,12 @@ void LB::streaming(wallList& walls, objectList& objects) {
     //        }
     //    }
 
+    //  Saving in support variables f->fs
+#pragma omp for
+    for (int it = 0; it < activeNodes.size(); ++it) {
+        activeNodes[it]->store();
+    }
+
     //  Streaming
 #pragma omp for ordered reduction(+:extraMass)
     // cycling through active nodes
@@ -2372,8 +2378,6 @@ void LB::streaming(wallList& walls, objectList& objects) {
 
         // pointer to active node
         node* nodeHere = activeNodes[in];
-        //  Saving in support variables f->fs
-        nodeHere->store();
         // cycling through neighbours
         for (int j = 1; j < lbmDirec; ++j) {
             // getting neighbour index
