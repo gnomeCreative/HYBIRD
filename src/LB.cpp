@@ -2162,7 +2162,7 @@ void LB::collision(node* nodeHere) {
         if (solveCentrifugal) {
             force+=nodeHere->centrifugalForce;
         }
-        if (solveCentrifugal) {
+        if (solveCoriolis) {
             force+=computeCoriolis(nodeHere->u,rotationSpeed);
         }
         // shift velocity field to F/2
@@ -2191,7 +2191,7 @@ void LB::collision(node* nodeHere) {
         if (solveCentrifugal) {
             force+=nodeHere->centrifugalForce;
         }
-        if (solveCentrifugal) {
+        if (solveCoriolis) {
             force+=computeCoriolis(nodeHere->u,rotationSpeed);
         }
         // shift velocity field to F/2
