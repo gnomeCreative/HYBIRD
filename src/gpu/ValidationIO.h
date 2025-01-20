@@ -153,28 +153,28 @@ public:
         // active_coord_average
         uint64_t sum = 0;
         for (int i = 0; i < nodes.activeCount; ++i)
-            sum += nodes.coord[nodes.activeI[i]];
+            sum += nodes.activeI[i];
         fs << sum / static_cast<float>(nodes.activeCount) << ",";
         // interface_count
         fs << nodes.interfaceCount << ",";
         // interface_coord_average
         sum = 0;
         for (int i = 0; i < nodes.interfaceCount; ++i)
-            sum += nodes.coord[nodes.interfaceI[i]];
+            sum += nodes.interfaceI[i];
         fs << sum / static_cast<float>(nodes.interfaceCount) << ",";
         // fluid_count
         fs << nodes.fluidCount << ",";
         // fluid_coord_average
         sum = 0;
         for (int i = 0; i < nodes.fluidCount; ++i)
-            sum += nodes.coord[nodes.fluidI[i]];
+            sum += nodes.fluidI[i];
         fs << sum / static_cast<float>(nodes.fluidCount) << ",";
         // wall_count
         fs << nodes.wallCount << ",";
         // wall_coord_average
         sum = 0;
         for (int i = 0; i < nodes.wallCount; ++i)
-            sum += nodes.coord[nodes.wallI[i]];
+            sum += nodes.wallI[i];
         fs << sum / static_cast<float>(nodes.wallCount) << ",";
         // f
         for (int j = 0; j < lbmDirec; ++j) {
@@ -198,7 +198,7 @@ public:
                 if (nodes.isActive(i)) {
                     ++active_count;
                     if (nodes.d[j * nodes.count + i] != std::numeric_limits<unsigned int>::max())
-                        sum += nodes.coord[nodes.d[j * nodes.count + i]];                    
+                        sum += nodes.d[j * nodes.count + i];                    
                 }
             fs << sum / static_cast<float>(active_count) << ",";
         }
@@ -213,7 +213,8 @@ public:
                 ++sum;
         fs << sum << ",";
         // coord_average
-        fs << std::accumulate(nodes.coord, nodes.coord + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << "\n";
+        //fs << std::accumulate(nodes.coord, nodes.coord + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << "\n";
+        fs << 0 << "\n";
     }
 };
 

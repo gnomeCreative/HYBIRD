@@ -54,7 +54,7 @@ struct Node2 {
     /**
      * @brief linear coordinate of node
      */
-    unsigned int *coord = nullptr;
+    // unsigned int *coord = nullptr; // TODO nolonger required
     /**
      * @brief probability density functions (one per lattice direction)
      * @note lbmDirec elements per node, not stored interleaved
@@ -220,7 +220,7 @@ __host__ __device__ __forceinline__ tVect Node2::getPosition(const unsigned int 
     // see online documentation for class div_t (stdlib.h)
     div_t firstDiv, secondDiv;
 
-    firstDiv = div(int(coord[index]), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
+    firstDiv = div(int(index), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
     secondDiv = div(firstDiv.rem, int(PARAMS.lbSize[0]));
 
     x = secondDiv.rem;
@@ -252,7 +252,7 @@ __host__ __device__ __forceinline__ std::array<int, 3> Node2::getGridPosition(co
     // see online documentation for class div_t (stdlib.h)
     div_t firstDiv, secondDiv;
 
-    firstDiv = div(int(coord[index]), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
+    firstDiv = div(int(index), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
     secondDiv = div(firstDiv.rem, int(PARAMS.lbSize[0]));
 
     x = secondDiv.rem;

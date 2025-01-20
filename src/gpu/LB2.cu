@@ -683,7 +683,7 @@ __host__ __device__ __forceinline__ void common_computeHydroForces(const unsigne
     nodes->hydroForce[an_i].reset();
     if (nodes->isInsideParticle(an_i)) {
         // getting the index of the particle to compute force in the right object
-        const unsigned int index = nodes->coord[an_i];
+        const unsigned int index = an_i;
         const unsigned int particleIndex = nodes->solidIndex[an_i];
         const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // calculating velocity of the solid boundary at the node (due to rotation of particles)
@@ -1006,7 +1006,7 @@ __host__ __device__ __forceinline__ void common_streaming(const unsigned int i, 
                     tVect pos = nodes->getPosition(an_i);
                     printf("%u(%f, %f, %f) %s TYPE ERROR:\n", an_i, pos.x, pos.y, pos.z, typeString(nodes->type[an_i]));
                     for (unsigned int k = 1; k < lbmDirec; ++k) {
-                        printf("before error: j=%u link=%u\n", k, nodes->coord[nodes->d[k * nodes->count + an_i]]);
+                        printf("before error: j=%u link=%u\n", k, nodes->d[k * nodes->count + an_i]);
                     }
                     pos = nodes->getPosition(ln_i);
                     printf("(%f, %f, %f) %s TYPE ERROR\n", pos.x, pos.y, pos.z, typeString(nodes->type[ln_i]));
@@ -1359,33 +1359,33 @@ __host__ __device__ __forceinline__ void common_updateInterface(const unsigned i
     // variable for storage of mass surplus
     double massSurplus = 0.0;
 
-    // lists for "mutant" nodes
-    filledNodes.clear();
-    emptiedNodes.clear();
-    newInterfaceNodes.clear();
-    /// Create lists filledNodes and emptiedNodes, interface node IDs with certain mass properties
-    /// Filled nodes also convert from interface to fluid node
-    // filling lists of mutant nodes and changing their type
-    findInterfaceMutants();
+    //// lists for "mutant" nodes
+    //filledNodes.clear();
+    //emptiedNodes.clear();
+    //newInterfaceNodes.clear();
+    ///// Create lists filledNodes and emptiedNodes, interface node IDs with certain mass properties
+    ///// Filled nodes also convert from interface to fluid node
+    //// filling lists of mutant nodes and changing their type
+    //findInterfaceMutants();
 
-    /// Nodes which converted to fluid from interface, now turn their neighbours into interface nodes
-    /// This requires initialising their d parameter
-    /// This process is then repeated for neighbours of empty nodes
-    // fixing the interface (always one interface between fluid and gas)
-    smoothenInterface(massSurplus);
+    ///// Nodes which converted to fluid from interface, now turn their neighbours into interface nodes
+    ///// This requires initialising their d parameter
+    ///// This process is then repeated for neighbours of empty nodes
+    //// fixing the interface (always one interface between fluid and gas)
+    //smoothenInterface(massSurplus);
 
-    /// Empty nodes are then updated, original code has a poor loop to check whether point is now invalid
-    // updating characteristics of mutant nodes
-    updateMutants(massSurplus);
+    ///// Empty nodes are then updated, original code has a poor loop to check whether point is now invalid
+    //// updating characteristics of mutant nodes
+    //updateMutants(massSurplus);
 
-    /// Interface node surrounded by LIQUID is converted to LIQUID
-    /// Interface node surrounded by GAS is converted to GAS
-    // remove isolated interface cells (both surrounded by gas and by fluid)
-    removeIsolated(massSurplus);
+    ///// Interface node surrounded by LIQUID is converted to LIQUID
+    ///// Interface node surrounded by GAS is converted to GAS
+    //// remove isolated interface cells (both surrounded by gas and by fluid)
+    //removeIsolated(massSurplus);
 
-    /// Surplus mass is shared between interface cells
-    // distributing surplus to interface cells
-    redistributeMass(massSurplus);
+    ///// Surplus mass is shared between interface cells
+    //// distributing surplus to interface cells
+    //redistributeMass(massSurplus);
 
 #ifdef DEBUG
     // compute surface normal vectors
@@ -1487,28 +1487,28 @@ void LB2::latticeBoltzmannStep() {
 }
 extern ProblemName problemName;
 void LB2::latticeBoltzmannFreeSurfaceStep() {
-    // in case mass needs to be kept constant, call enforcing function here
-    if (PARAMS.imposeFluidVolume) {
-        this->enforceMassConservation<IMPL>();
-    } else if (PARAMS.increaseVolume) {
-        if (PARAMS.time < PARAMS.deltaTime) {
-            this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
-        }
-    } else {
-        switch (problemName) {
-        case DRUM:
-        case STAVA:
-        {
-            this->enforceMassConservation<IMPL>();
-            break;
-        }
-        }
-    }
+    //// in case mass needs to be kept constant, call enforcing function here
+    //if (PARAMS.imposeFluidVolume) {
+    //    this->enforceMassConservation<IMPL>();
+    //} else if (PARAMS.increaseVolume) {
+    //    if (PARAMS.time < PARAMS.deltaTime) {
+    //        this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
+    //    }
+    //} else {
+    //    switch (problemName) {
+    //    case DRUM:
+    //    case STAVA:
+    //    {
+    //        this->enforceMassConservation<IMPL>();
+    //        break;
+    //    }
+    //    }
+    //}
 
-    // mass and free surface update
-    this->updateMass<IMPL>();
-    this->updateInterface<IMPL>();
-    this->cleanLists<IMPL>();
+    //// mass and free surface update
+    //this->updateMass<IMPL>();
+    //this->updateInterface<IMPL>();
+    //this->cleanLists<IMPL>();
 }
 
 Node2& LB2::getNodes() {
@@ -1579,7 +1579,7 @@ Node2& LB2::getNodes() {
     }
     h_nodes.curveCount = hd_nodes.curveCount;
     // Copy main buffers back to host
-    CUDA_CALL(cudaMemcpy(h_nodes.coord, hd_nodes.coord, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    // CUDA_CALL(cudaMemcpy(h_nodes.coord, hd_nodes.coord, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost)); // redundant?
     CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, h_nodes.count * lbmDirec * sizeof(double), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.fs, hd_nodes.fs, h_nodes.count * lbmDirec * sizeof(double), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.n, hd_nodes.n, h_nodes.count * sizeof(double), cudaMemcpyDeviceToHost));
@@ -1613,6 +1613,7 @@ void LB2::initDeviceNodes() {
         fprintf(stderr, "LB2::initDeviceNodes() should only be called once.");
         throw std::exception();
     }
+    cout << "Initialising device nodes..";
     CUDA_CALL(cudaMalloc(&d_nodes, sizeof(Node2)));
     // Build HD struct
     hd_nodes.activeCount = h_nodes.activeCount;
@@ -1632,8 +1633,8 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMalloc(&hd_nodes.curves, hd_nodes.curveCount * sizeof(curve)));
     CUDA_CALL(cudaMemcpy(hd_nodes.curves, h_nodes.curves, hd_nodes.curveCount * sizeof(curve), cudaMemcpyHostToDevice));
     hd_nodes.count = h_nodes.count;
-    CUDA_CALL(cudaMalloc(&hd_nodes.coord, hd_nodes.count * sizeof(unsigned int)));
-    CUDA_CALL(cudaMemcpy(hd_nodes.coord, h_nodes.coord, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    // CUDA_CALL(cudaMalloc(&hd_nodes.coord, hd_nodes.count * sizeof(unsigned int)));  // redundant?
+    // CUDA_CALL(cudaMemcpy(hd_nodes.coord, h_nodes.coord, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.f, hd_nodes.count * lbmDirec * sizeof(double)));
     CUDA_CALL(cudaMemcpy(hd_nodes.f, h_nodes.f, hd_nodes.count * lbmDirec * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.fs, hd_nodes.count * lbmDirec * sizeof(double)));
@@ -1670,8 +1671,8 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMemcpy(hd_nodes.p, h_nodes.p, hd_nodes.count * sizeof(bool), cudaMemcpyHostToDevice));
     // Copy struct containing device pointers and counts
     CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
-#endif
-    
+    cout << "..complete" << std::endl;
+#endif    
 }
 
 void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
@@ -1692,15 +1693,17 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     // total number of nodes
     h_PARAMS.totPossibleNodes = h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1] * h_PARAMS.lbSize[2];
 
-    // Count the number of nodes to be created, so memory can be pre-allocated
-    std::map<unsigned int, NewNode> newNodes;
-    // application of lattice boundaries
-    countLatticeBoundaries(newNodes);
-    // then the initial node type must be identified for every node (if not specified, it is already Fluid)
-    countTypes(newNodes, walls, cylinders, objects);
+    // Allocate nodes (dense matrix, even gas nodes are represented)
+    // This initialises them all as GAS
+    allocateHostNodes(h_PARAMS.totPossibleNodes);
 
-    // Build a temporary buffer of curves
+    // Build a temporary buffer for curve data
     std::vector<curve> curves;
+
+    // application of lattice boundaries
+    initializeLatticeBoundaries(curves);
+    // then the initial node type must be identified for every node (if not specified, it is already Fluid)
+    initializeTypes(walls, cylinders, objects, curves);
 
     ifstream fluidFileID;
     if (h_PARAMS.lbRestart) {
@@ -1723,15 +1726,15 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
         // restartInterface(fluidFileID, restartNodes);
     } else {
         // initialize interface
-        countInterface(newNodes);
-        // Create and initialize active nodes
-        generateInitialNodes(newNodes, curves);
+        initializeInterface(curves);
+        // initialize variables for active nodes
+        initializeVariables();
     }
 
     // initialize variables for wall nodes
     initializeWalls();
 
-    // initializing curved properties
+    // initializing curved properties of walls
     initializeCurved(curves);
 
     // Allocate the curves storage
@@ -1788,15 +1791,71 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     cout << "Done with initialization" << endl;
 }
 
-void LB2::countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes) {
-    // Based on initialiseLatticeBoundaries()
+void LB2::allocateHostNodes(const unsigned int count) {
+    // Allocate enough memory for these nodes
+    assert(h_nodes.count == 0);  // No nodes should exist at the time this is called
+    h_nodes.count = count;
+    // Allocate host buffers
+    //h_nodes.coord = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int))); // TODO nolonger required
+    h_nodes.f = static_cast<double*>(malloc(h_nodes.count * lbmDirec * sizeof(double)));
+    h_nodes.fs = static_cast<double*>(malloc(h_nodes.count * lbmDirec * sizeof(double)));
+    h_nodes.n = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.u = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
+    h_nodes.hydroForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
+    h_nodes.centrifugalForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
+    h_nodes.mass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.newMass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.visc = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.basal = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
+    h_nodes.friction = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
+    h_nodes.age = static_cast<float*>(malloc(h_nodes.count * sizeof(float)));
+    h_nodes.solidIndex = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
+    h_nodes.d = static_cast<unsigned int*>(malloc(h_nodes.count * lbmDirec * sizeof(unsigned int)));
+    h_nodes.curved = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
+    h_nodes.type = static_cast<types*>(malloc(h_nodes.count * sizeof(types)));
+    h_nodes.p = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
+    // Zero initialisation
+    memset(h_nodes.f, 0, h_nodes.count * lbmDirec * sizeof(double));
+    memset(h_nodes.fs, 0, h_nodes.count * lbmDirec * sizeof(double));
+    memset(h_nodes.n, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.u, 0, h_nodes.count * sizeof(tVect));
+    memset(h_nodes.hydroForce, 0, h_nodes.count * sizeof(tVect));
+    memset(h_nodes.centrifugalForce, 0, h_nodes.count * sizeof(tVect));
+    memset(h_nodes.mass, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.newMass, 0, h_nodes.count * sizeof(double));
+    std::fill(h_nodes.visc, h_nodes.visc + h_nodes.count, 1.0);
+    memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
+    memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
+    memset(h_nodes.solidIndex, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
+    memset(h_nodes.d, std::numeric_limits<unsigned int>::max(), h_nodes.count * lbmDirec * sizeof(unsigned int));
+    memset(h_nodes.curved, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
+    std::fill(h_nodes.type, h_nodes.type + h_nodes.count, GAS);
+    memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
+}
+
+void LB2::initializeLatticeBoundaries(std::vector<curve>& curves) {
+    // assign boundary characteristic to nodes (see class)
+    // if not differently defined, type is 0 (fluid)
+
+    // BOUNDARY CONDITIONS ///////////////////////////
+    // solid boundary wins over all in corners, where more than 1 bc is defined
+    cout << "Initializing boundaries" << endl;
+
+    unsigned int indexHere = 0;
     // XY
     for (unsigned int x = 0; x < h_PARAMS.lbSize[0]; ++x) {
         for (unsigned int y = 0; y < h_PARAMS.lbSize[1]; ++y) {
             // bottom
-            newNodes.emplace(h_PARAMS.getIndex(x, y, 0), NewNode{ h_PARAMS.boundary[4] });
+            indexHere = h_PARAMS.getIndex(x, y, 0);
+            if (h_nodes.type[indexHere] == GAS) {
+                generateNode(indexHere, h_PARAMS.boundary[4], curves);
+            }
             // top
-            newNodes.emplace(h_PARAMS.getIndex(x, y, h_PARAMS.lbSize[2] - 1), NewNode{ h_PARAMS.boundary[5] });
+            indexHere = h_PARAMS.getIndex(x, y, h_PARAMS.lbSize[2] - 1);
+            if (h_nodes.type[indexHere] == GAS) {
+                generateNode(indexHere, h_PARAMS.boundary[5], curves);
+            }
         }
     }
 
@@ -1804,9 +1863,15 @@ void LB2::countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes) {
     for (unsigned int y = 0; y < h_PARAMS.lbSize[1]; ++y) {
         for (unsigned int z = 0; z < h_PARAMS.lbSize[2]; ++z) {
             // bottom
-            newNodes.emplace(h_PARAMS.getIndex(0, y, z), NewNode{ h_PARAMS.boundary[0] });
+            indexHere = h_PARAMS.getIndex(0, y, z);
+            if (h_nodes.type[indexHere] == GAS) {
+                generateNode(indexHere, h_PARAMS.boundary[0], curves);
+            }
             // top
-            newNodes.emplace(h_PARAMS.getIndex(h_PARAMS.lbSize[0] - 1, y, z), NewNode{ h_PARAMS.boundary[1] });
+            indexHere = h_PARAMS.getIndex(h_PARAMS.lbSize[0] - 1, y, z);
+            if (h_nodes.type[indexHere] == GAS) {
+                generateNode(indexHere, h_PARAMS.boundary[1], curves);
+            }
         }
     }
 
@@ -1814,23 +1879,28 @@ void LB2::countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes) {
     for (unsigned int z = 0; z < h_PARAMS.lbSize[2]; ++z) {
         for (unsigned int x = 0; x < h_PARAMS.lbSize[0]; ++x) {
             // bottom
-            newNodes.emplace(h_PARAMS.getIndex(x, 0, z), NewNode{ h_PARAMS.boundary[2] });
+            indexHere = h_PARAMS.getIndex(x, 0, z);
+            if (h_nodes.type[indexHere] == GAS) {
+                generateNode(indexHere, h_PARAMS.boundary[2], curves);
+            }
             // top
-            newNodes.emplace(h_PARAMS.getIndex(x, h_PARAMS.lbSize[1] - 1, z), NewNode{ h_PARAMS.boundary[3] });
+            indexHere = h_PARAMS.getIndex(x, h_PARAMS.lbSize[1] - 1, z);
+            if (h_nodes.type[indexHere] == GAS) {
+                generateNode(indexHere, h_PARAMS.boundary[3], curves);
+            }
         }
     }
 }
-void LB2::countTypes(std::map<unsigned int, NewNode> &newNodes, const wallList& walls, const cylinderList& cylinders, const objectList& objects) {
-    countWallBoundaries(newNodes, walls);
+void LB2::initializeTypes(const wallList& walls, const cylinderList& cylinders, const objectList& objects, std::vector<curve>& curves) {
+    initializeWallBoundaries(walls, curves);
     // application of solid cylinders
-    countCylinderBoundaries(newNodes, cylinders);
+    initializeCylinderBoundaries(cylinders, curves);
     // application of objects
-    countObjectBoundaries(newNodes, objects);
+    initializeObjectBoundaries(objects, curves);
     // initializing topography if one is present
-    countTopography(newNodes);
+    initializeTopography(curves);
 }
-void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const wallList& walls) {
-    // Based on initializeWallBoundaries()
+void LB2::initializeWallBoundaries(const wallList& walls, std::vector<curve>& curves) {
     // const double wallThickness = 2.0 * h_PARAMS.unit.Length;
     // SOLID WALLS ////////////////////////
     for (unsigned int iw = 0; iw < walls.size(); ++iw) {
@@ -1839,6 +1909,7 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
         const unsigned int indexHere = walls[iw].index;
         const bool slipHere = walls[iw].slip;
         const bool movingHere = walls[iw].moving;
+        // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             // check if the node is solid
             // all walls have max thickness 2 nodes
@@ -1857,24 +1928,25 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
                         continue;
                     }
                 }
+                // Node is inside a wall
+                // generate node (tentatively as static wall)
+                generateNode(it, STAT_WALL, curves);
+                // setting solidIndex
+                h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use iw?
                 // setting type: 5-6=slip, 7-8=no-slip
                 if (slipHere) {
                     // setting type for slip: 5=static, 6=moving
                     if (movingHere) {
-                        const auto nn = newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, iw });
-                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
+                        h_nodes.type[it] = SLIP_DYN_WALL;
                     } else {
-                        const auto nn = newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, iw });
-                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
+                        h_nodes.type[it] = SLIP_STAT_WALL;
                     }
                 } else {
                     // setting type for no-slip: 7=static, 8=moving
                     if (movingHere) {
-                        const auto nn = newNodes.emplace(it, NewNode{ DYN_WALL, iw });
-                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
+                        h_nodes.type[it] = DYN_WALL;
                     } else {
-                        const auto nn = newNodes.emplace(it, NewNode{ STAT_WALL, iw });
-                        nn.first->second.solidIndex = iw; // Update solidIndex, even if node creation already requested
+                        h_nodes.type[it] = STAT_WALL;
                     }
                 }
             }
@@ -1882,32 +1954,32 @@ void LB2::countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const w
     }
 
 }
-void LB2::countObjectBoundaries(std::map<unsigned int, NewNode> &newNodes, const objectList& objects) {
-    // Based on initializeObjectBoundaries()
+void LB2::initializeObjectBoundaries(const objectList& objects, std::vector<curve>& curves) {
     // SOLID WALLS ////////////////////////
     for (int io = 0; io < objects.size(); ++io) {
         const tVect convertedPosition = objects[io].x0 / h_PARAMS.unit.Length;
         const double convertedRadius = objects[io].r / h_PARAMS.unit.Length;
         const unsigned int indexHere = objects[io].index;
+        // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             const tVect nodePosition = h_PARAMS.getPosition(it);
             if (nodePosition.insideSphere(convertedPosition, convertedRadius)) {
-                newNodes.emplace(it, NewNode{ OBJ, indexHere });
+                generateNode(it, OBJ, curves);
+                h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use io?
             }
         }
     }
 }
-void LB2::countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, const cylinderList& cylinders) {
-    // Based on initializeCylinderBoundaries()
+void LB2::initializeCylinderBoundaries(const cylinderList& cylinders, std::vector<curve>& curves) {
     // SOLID CYLINDERS ////////////////////////
     for (int ic = 0; ic < cylinders.size(); ++ic) {
-
         const tVect convertedCylinderp1 = cylinders[ic].p1 / h_PARAMS.unit.Length;
         const tVect naxesHere = cylinders[ic].naxes;
         const double convertedRadius = cylinders[ic].R / h_PARAMS.unit.Length;
         const unsigned int indexHere = cylinders[ic].index;
         const bool slipHere = cylinders[ic].slip;
         const bool movingHere = cylinders[ic].moving;
+        // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             // creating solid cells
             const bool isOutside = h_PARAMS.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, convertedRadius, convertedRadius + 3.0);
@@ -1924,27 +1996,32 @@ void LB2::countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, con
                         continue;
                     }
                 }
+                // Node is inside a cylinder
+                // tentatively static
+                generateNode(it, STAT_WALL, curves);
+                // setting solidIndex
+                h_nodes.solidIndex[it] = indexHere;  // TODO indexHere is redundant, use ic?
                 // setting type: 5-6=slip, 7-8=no-slip
                 if (slipHere) {
                     // setting type for slip: 5=static, 6=moving
                     if (movingHere) {
-                        newNodes.emplace(it, NewNode{ SLIP_DYN_WALL, indexHere });
+                        h_nodes.type[it] = SLIP_DYN_WALL;
                     } else {
-                        newNodes.emplace(it, NewNode{ SLIP_STAT_WALL, indexHere });
+                        h_nodes.type[it] = SLIP_STAT_WALL;
                     }
                 } else {
                     // setting type for no-slip: 7=static, 8=moving
                     if (movingHere) {
-                        newNodes.emplace(it, NewNode{ DYN_WALL, indexHere });
+                        h_nodes.type[it] = DYN_WALL;
                     } else {
-                        newNodes.emplace(it, NewNode{ STAT_WALL, indexHere });
+                        h_nodes.type[it] = STAT_WALL;
                     }
                 }
             }
         }
     }
 }
-void LB2::countTopography(std::map<unsigned int, NewNode> &newNodes) {
+void LB2::initializeTopography(std::vector<curve>& curves) {
     // Based on initializeTopography()
     
     const double surfaceThickness = 1.75 * h_PARAMS.unit.Length;
@@ -1963,8 +2040,8 @@ void LB2::countTopography(std::map<unsigned int, NewNode> &newNodes) {
         cout << "lbTop.coordY[lbTop.sizeY - 1]=" << lbTop.coordY[lbTop.sizeY - 1] << endl;
         cout << "lbSize[1]) * unit.Length=" << h_PARAMS.lbSize[1] * h_PARAMS.unit.Length << endl;
         ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_PARAMS.lbSize[1] * h_PARAMS.unit.Length);
-
-
+        
+        // @todo This was previously OpenMP parallel, critical section around generateNode()
         for (unsigned int ix = 1; ix < h_PARAMS.lbSize[0] - 1; ++ix) {
             for (unsigned int iy = 1; iy < h_PARAMS.lbSize[1] - 1; ++iy) {
                 for (unsigned int iz = 1; iz < h_PARAMS.lbSize[2] - 1; ++iz) {
@@ -1973,26 +2050,27 @@ void LB2::countTopography(std::map<unsigned int, NewNode> &newNodes) {
                     
                     if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
                         const unsigned int it = ix + iy * h_PARAMS.lbSize[0] + iz * h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1];
-                        newNodes.emplace(it, NewNode{ TOPO });
+                        generateNode(it, STAT_WALL, curves);
+                        h_nodes.type[it] = TOPO;
                     }
                 }
             }
         }
     }
 }
-void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
-    // Based on initializeInterface()
-    // @Currently only default case is supported
+void LB2::initializeInterface(std::vector<curve>& curves) {
+    // TODO Currently only default case is supported
     // creates an interface electing interface cells from active cells
     if (h_PARAMS.lbTopographySurface) {
         // Formerly setTopographySurface()
+        // @todo This was previously OpenMP parallel, critical section around generateNode()
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-            if (newNodes.find(it) == newNodes.end()) {
+            if (h_nodes.type[it] == GAS) {
                 // control is done in real coordinates
                 const tVect nodePosition = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
                 const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
                 if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
-                    newNodes.emplace(it, NewNode{ LIQUID });
+                    generateNode(it, LIQUID, curves);
                 }
             }
         }
@@ -2036,11 +2114,12 @@ void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
         case OBJMOVING:
         default:
             {
+                cout << "Initializing interface using box defined in config file:" << endl;
                 cout << "X=(" << double(h_PARAMS.freeSurfaceBorders[0]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[1]) * h_PARAMS.unit.Length << ")" << endl;
                 cout << "Y=(" << double(h_PARAMS.freeSurfaceBorders[2]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[3]) * h_PARAMS.unit.Length << ")" << endl;
                 cout << "Z=(" << double(h_PARAMS.freeSurfaceBorders[4]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[5]) * h_PARAMS.unit.Length << ")" << endl;
                 for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-                    if (newNodes.find(it) == newNodes.end()) {
+                    if (h_nodes.type[it] == GAS) {
                         // creating fluid cells
                         const tVect pos = h_PARAMS.getPosition(it);
                         if ((pos.x > h_PARAMS.freeSurfaceBorders[0]) &&
@@ -2049,7 +2128,7 @@ void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
                             (pos.y < h_PARAMS.freeSurfaceBorders[3]) &&
                             (pos.z > h_PARAMS.freeSurfaceBorders[4]) &&
                             (pos.z < h_PARAMS.freeSurfaceBorders[5])) {
-                            newNodes.emplace(it, NewNode{ LIQUID });
+                            generateNode(it, LIQUID, curves);
                         }
                     }
                 }
@@ -2058,227 +2137,176 @@ void LB2::countInterface(std::map<unsigned int, NewNode> &newNodes) {
         }
     }
 }
-void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, std::vector<curve> &curves) {
-    // Allocate enough memory for these nodes
-    assert(h_nodes.count == 0);  // No nodes should exist at the time this is called
-    h_nodes.count = newNodes.size();
-    // Allocate host buffers
-    h_nodes.coord = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
-    h_nodes.f = static_cast<double*>(malloc(h_nodes.count * lbmDirec * sizeof(double)));
-    h_nodes.fs = static_cast<double*>(malloc(h_nodes.count * lbmDirec * sizeof(double)));
-    h_nodes.n = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
-    h_nodes.u = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
-    h_nodes.hydroForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
-    h_nodes.centrifugalForce = static_cast<tVect*>(malloc(h_nodes.count * sizeof(tVect)));
-    h_nodes.mass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
-    h_nodes.newMass = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
-    h_nodes.visc = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
-    h_nodes.basal = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
-    h_nodes.friction = static_cast<double*>(malloc(h_nodes.count * sizeof(double)));
-    h_nodes.age = static_cast<float*>(malloc(h_nodes.count * sizeof(float)));
-    h_nodes.solidIndex = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
-    h_nodes.d = static_cast<unsigned int*>(malloc(h_nodes.count * lbmDirec * sizeof(unsigned int)));
-    h_nodes.curved = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
-    h_nodes.type = static_cast<types*>(malloc(h_nodes.count * sizeof(types)));
-    h_nodes.p = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
-    // Zero initialisation
-    memset(h_nodes.f, 0, h_nodes.count * lbmDirec * sizeof(double));
-    memset(h_nodes.fs, 0, h_nodes.count * lbmDirec * sizeof(double));
-    memset(h_nodes.n, 0, h_nodes.count * sizeof(double));
-    memset(h_nodes.u, 0, h_nodes.count * sizeof(tVect));
-    memset(h_nodes.hydroForce, 0, h_nodes.count * sizeof(tVect));
-    memset(h_nodes.mass, 0, h_nodes.count * sizeof(double));
-    memset(h_nodes.newMass, 0, h_nodes.count * sizeof(double));
-    // h_nodes.visc is instead init to 1 below
-    memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
-    memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
-    memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
-    // h_nodes.solidIndex is instead init below
-    memset(h_nodes.d, std::numeric_limits<unsigned int>::max(), h_nodes.count * lbmDirec * sizeof(unsigned int));  // Init below is incomplete?
-    memset(h_nodes.curved, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
-    // h_nodes.type is instead init below
-    memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
-    // Perform the generateNode() loop for each item in newNodes
-    std::map<unsigned int, unsigned int> idIndexMap;
-    {
-        unsigned int i = 0;
-        for (const auto& [id, nn] : newNodes) {
-            idIndexMap.emplace(id, i);
-            h_nodes.visc[i] = 1;
-            h_nodes.coord[i] = id;
-            h_nodes.type[i] = nn.type;
-            h_nodes.solidIndex[i] = nn.solidIndex;
-            // set centrifugal acceleration
-            h_nodes.centrifugalForce[i] = computeCentrifugal(h_nodes.getPosition(i), PARAMS.rotationCenter, PARAMS.rotationSpeed);
-            ++i;
+std::array<unsigned int, lbmDirec> LB2::findNeighbors(unsigned int it) {
+    std::array<unsigned int, lbmDirec> neighborCoord;
+    // assign boundary characteristic to nodes (see class)
+    // if not differently defined, type is 0 (fluid)
+
+    for (int j = 1; j < lbmDirec; ++j) {
+        neighborCoord[j] = it + PARAMS.ne[j];
+    }
+
+    // BOUNDARY CONDITIONS ///////////////////////////
+    // nodes on the boundary have no neighbors
+    if (h_nodes.isWall(it)) {
+        const std::array<int, 3> pos = h_nodes.getGridPosition(it);// getPosition() adds + 0.5x
+        if (pos[0] == 0) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) < 0.0) {
+                    neighborCoord[j] = it;
+                }
+            }
+        }
+        if (pos[0] == PARAMS.lbSize[0] - 1) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) > 0.0) {
+                    neighborCoord[j] = it;
+                }
+            }
+        }
+        if (pos[1] == 0) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) < 0.0) {
+                    neighborCoord[j] = it;
+                }
+            }
+        }
+        if (pos[1] == PARAMS.lbSize[1] - 1) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) > 0.0) {
+                    neighborCoord[j] = it;
+                }
+            }
+        }
+        if (pos[2] == 0) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) < 0.0) {
+                    neighborCoord[j] = it;
+                }
+            }
+        }
+        if (pos[2] == PARAMS.lbSize[2] - 1) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) > 0.0) {
+                    neighborCoord[j] = it;
+                }
+            }
+        }
+    }// PERIODICITY ////////////////////////////////////////////////
+        // assigning periodicity conditions (this needs to be done after applying boundary conditions)
+        // runs through free cells and identifies neighboring cells. If neighbor cell is
+        // a special cell (periodic) then the proper neighboring condition is applied
+        // calculates the effect of periodicity
+    else if (h_nodes.isActive(it)) {
+        // neighboring and periodicity vector for boundary update
+        std::array<unsigned int, lbmDirec> pbc = {};
+        if (h_nodes.type[neighborCoord[1]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) > 0.0) {
+                    pbc[j] -= PARAMS.domain[0];
+                }
+            }
+        }
+        if (h_nodes.type[neighborCoord[2]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) < 0.0) {
+                    pbc[j] += PARAMS.domain[0];
+                }
+            }
+        }
+        if (h_nodes.type[neighborCoord[3]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) > 0.0) {
+                    pbc[j] -= PARAMS.domain[1];
+                }
+            }
+        }
+        if (h_nodes.type[neighborCoord[4]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) < 0.0) {
+                    pbc[j] += PARAMS.domain[1];
+                }
+            }
+        }
+        if (h_nodes.type[neighborCoord[5]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) > 0.0) {
+                    pbc[j] -= PARAMS.domain[2];
+                }
+            }
+        }
+        if (h_nodes.type[neighborCoord[6]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) < 0.0) {
+                    pbc[j] += PARAMS.domain[2];
+                }
+            }
+        }
+
+        // apply periodicity
+        for (unsigned int j = 1; j < lbmDirec; ++j) {
+            neighborCoord[j] += pbc[j];
+        }
+
+    }
+
+    return neighborCoord;
+}
+void LB2::generateNode(unsigned int coord, types typeHere, std::vector<curve>& curves) {
+
+    // set type
+    h_nodes.type[coord] = typeHere;
+    h_nodes.p[coord] = false;  // setOutsideParticle()
+    h_nodes.age[coord] = 0.0;
+
+    // TODO Add it to list of known non-gas nodes?
+
+    // find neighbor indices
+    const std::array<unsigned int, lbmDirec> neighborCoord = findNeighbors(coord);
+
+    h_nodes.basal[coord] = false;
+
+    // set centrifugal acceleration
+    h_nodes.centrifugalForce[coord] = computeCentrifugal(h_nodes.getPosition(coord), PARAMS.rotationCenter, PARAMS.rotationSpeed);
+
+    // assign neighbor nodes
+    for (unsigned int j = 1; j < lbmDirec; ++j) {
+        // linearized coordinate of neighbor nodes
+        const unsigned int link = neighborCoord[j];
+        // check if node at that location exists
+        if (link < h_nodes.count && h_nodes.type[link] != GAS) {
+            // assign neighbor for local node
+            h_nodes.d[j * h_nodes.count + coord] = link;
+            // if neighbor node is also active, link it to local node
+            if (h_nodes.isActive(coord)) {
+                h_nodes.d[opp[j] * h_nodes.count + link] = coord;
+                // if the neighbor is a curved wall, set parameters accordingly
+                if (h_nodes.type[link] == TOPO) {
+                    if (h_nodes.curved[coord] == std::numeric_limits<unsigned int>::max()) {
+                        h_nodes.curved[coord] = static_cast<unsigned int>(curves.size());
+                        curves.emplace_back();
+                    }
+                    // set curved
+                    const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(coord);
+                    // xf - xw
+                    const double topographyDistance = 1.0 * lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
+                    // wall normal
+                    curves.back().wallNormal = lbTop.surfaceNormal(nodePosHere);
+                    //cout << topographyDistance << endl;
+                    const double deltaHere = topographyDistance / vNorm[j];
+                    curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
+                    curves.back().computeCoefficients();
+                }
+                if (h_nodes.isWall(link)) {
+                    h_nodes.basal[coord] = true;
+                }
+            }
+        } else {
+            h_nodes.d[j * h_nodes.count + coord] = std::numeric_limits<unsigned int>::max();
         }
     }
-    // Perform a second pass for handling neighbours
-    for (unsigned int i = 0; i < h_nodes.count; ++i) {
-        // findNeighbors()
-        std::array<unsigned int, lbmDirec> neighbourCoord;
-        for (int j = 1; j < lbmDirec; ++j) {
-            neighbourCoord[j] = h_nodes.coord[i] + PARAMS.ne[j];
-        }
-        // Boundary conditions
-        if (h_nodes.isWall(i)) {
-            const std::array<int, 3> pos = h_nodes.getGridPosition(i);// getPosition() adds + 0.5x
-            if (pos[0] == 0) {
-                for (unsigned int j = 1; j < lbmDirec; ++j) {
-                    if (v[j].dot(Xp) < 0.0) {
-                        neighbourCoord[j] = h_nodes.coord[i];
-                    }
-                }
-            } else if (pos[0] == static_cast<int>(PARAMS.lbSize[0] - 1)) {
-                for (unsigned int j = 1; j < lbmDirec; ++j) {
-                    if (v[j].dot(Xp) > 0.0) {
-                        neighbourCoord[j] = h_nodes.coord[i];
-                    }
-                }
-            }
-            if (pos[1] == 0) {
-                for (unsigned int j = 1; j < lbmDirec; ++j) {
-                    if (v[j].dot(Yp) < 0.0) {
-                        neighbourCoord[j] = h_nodes.coord[i];
-                    }
-                }
-            } else if (pos[1] == static_cast<int>(PARAMS.lbSize[1] - 1)) {
-                for (unsigned int j = 1; j < lbmDirec; ++j) {
-                    if (v[j].dot(Yp) > 0.0) {
-                        neighbourCoord[j] = h_nodes.coord[i];
-                    }
-                }
-            }
-            if (pos[2] == 0) {
-                for (unsigned int j = 1; j < lbmDirec; ++j) {
-                    if (v[j].dot(Zp) < 0.0) {
-                        neighbourCoord[j] = h_nodes.coord[i];
-                    }
-                }
-            } else if (pos[2] == static_cast<int>(PARAMS.lbSize[2] - 1)) {
-                for (unsigned int j = 1; j < lbmDirec; ++j) {
-                    if (v[j].dot(Zp) > 0.0) {
-                        neighbourCoord[j] = h_nodes.coord[i];
-                    }
-                }
-            }
-        } else if (h_nodes.isActive(i)) {
-            /*
-            // PERIODICITY ////////////////////////////////////////////////
-            // assigning periodicity conditions (this needs to be done after applying boundary conditions)
-            // runs through free cells and identifies neighboring cells. If neighbor cell is
-            // a special cell (periodic) then the proper neighboring condition is applied
-            // calculates the effect of periodicity
-            */
-            // 
-            // neighboring and periodicity vector for boundary update
-            std::array<unsigned int, lbmDirec> pbc = {};
-
-            auto f = idIndexMap.find(neighbourCoord[1]);
-            if (f != idIndexMap.end()) {
-                if (h_nodes.type[f->second] == PERIODIC) {
-                    for (int j = 1; j < lbmDirec; ++j) {
-                        if (v[j].dot(Xp) > 0.0) {
-                            pbc[j] -= PARAMS.domain[0];
-                        }
-                    }
-                }
-            }
-            f = idIndexMap.find(neighbourCoord[2]);
-            if (f != idIndexMap.end()) {
-                if (h_nodes.type[f->second] == PERIODIC) {
-                    for (int j = 1; j < lbmDirec; ++j) {
-                        if (v[j].dot(Xp) < 0.0) {
-                            pbc[j] += PARAMS.domain[0];
-                        }
-                    }
-                }
-            }
-            f = idIndexMap.find(neighbourCoord[3]);
-            if (f != idIndexMap.end()) {
-                if (h_nodes.type[f->second] == PERIODIC) {
-                    for (int j = 1; j < lbmDirec; ++j) {
-                        if (v[j].dot(Yp) > 0.0) {
-                            pbc[j] -= PARAMS.domain[1];
-                        }
-                    }
-                }
-            }
-            f = idIndexMap.find(neighbourCoord[4]);
-            if (f != idIndexMap.end()) {
-                if (h_nodes.type[f->second] == PERIODIC) {
-                    for (int j = 1; j < lbmDirec; ++j) {
-                        if (v[j].dot(Yp) < 0.0) {
-                            pbc[j] += PARAMS.domain[1];
-                        }
-                    }
-                }
-            }
-            f = idIndexMap.find(neighbourCoord[5]);
-            if (f != idIndexMap.end()) {
-                if (h_nodes.type[f->second] == PERIODIC) {
-                    for (int j = 1; j < lbmDirec; ++j) {
-                        if (v[j].dot(Zp) > 0.0) {
-                            pbc[j] -= PARAMS.domain[2];
-                        }
-                    }
-                }
-            }
-            f = idIndexMap.find(neighbourCoord[6]);
-            if (f != idIndexMap.end()) {
-                if (h_nodes.type[f->second] == PERIODIC) {
-                    for (int j = 1; j < lbmDirec; ++j) {
-                        if (v[j].dot(Zp) < 0.0) {
-                            pbc[j] += PARAMS.domain[2];
-                        }
-                    }
-                }
-            }
-
-            // apply periodicity
-            for (int j = 1; j < lbmDirec; ++j) {
-                neighbourCoord[j] += pbc[j];
-            }
-        }
-        // assign neighbour nodes
-        for (int j = 1; j < lbmDirec; ++j) {
-            auto f = idIndexMap.find(neighbourCoord[j]);
-            // check if node at that location exists
-            if (f != idIndexMap.end()) {
-                const unsigned int l_i = f->second;
-                // if neighbor node is also active, link it to local node
-                if (h_nodes.isActive(i)) {// This rule needs to be more complex
-                    h_nodes.d[j * h_nodes.count + i] = l_i;
-                    h_nodes.d[opp[j] * h_nodes.count + l_i] = i;
-                     // if the neighbor is a curved wall, set parameters accordingly
-                    if (h_nodes.type[l_i] == TOPO) {
-                        if (h_nodes.curved[i] == std::numeric_limits<unsigned int>::max()) {
-                            h_nodes.curved[i] = static_cast<unsigned int>(curves.size());
-                            curves.emplace_back();
-                        }
-                        // set curved
-                        const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(i);
-                        // xf - xw
-                        const double topographyDistance = 1.0 * lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
-                        // wall normal
-                        curves.back().wallNormal = lbTop.surfaceNormal(nodePosHere);
-                        //cout << topographyDistance << endl;
-                        const double deltaHere = topographyDistance / vNorm[j];
-                        curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
-                        curves.back().computeCoefficients();
-                    }
-                    if (h_nodes.isWall(l_i)) {
-                        h_nodes.basal[i] = true;
-                    }
-                }
-            } else {
-                // Neighbour is gas
-                h_nodes.d[j * h_nodes.count + i] = std::numeric_limits<unsigned int>::max();
-            }
-        }
-    }    
-
-    // Formerly initializeVariables()    
+}
+void LB2::initializeVariables() { 
     cout << "Initializing variables" << endl;
     // note that interface is not defined here. All fluid, interface and gas cells are uninitialized at the moment
     // calculate maximum height of the fluid
@@ -2288,6 +2316,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     double maxProjection = -std::numeric_limits<double>::max();
         
     if (!PARAMS.solveCentrifugal) {
+        // TODO openmp reduction?
         for (unsigned int i = 0; i < h_nodes.count; ++i) {
             if (h_nodes.isActive(i)) {
                 const tVect position = h_nodes.getPosition(i);
@@ -2298,6 +2327,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
         }
         cout << "minProjection = " << minProjection << endl;
     } else {
+        // TODO openmp reduction?
         for (unsigned int i = 0; i < h_nodes.count; ++i) {
             if (h_nodes.isActive(i)) {
                 const tVect position = h_nodes.getPosition(i);
@@ -2313,6 +2343,7 @@ void LB2::generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, 
     // at this point fluid cells contain actual fluid cells and potential interface cells, so we create the node anyway
     double massFluid = 0.0;
     double massInterface = 0.0;
+    // TODO openmp?
     for (unsigned int i = 0; i < h_nodes.count; ++i) {
         if (h_nodes.type[i] == LIQUID) {
             // check if it is interface
@@ -2356,13 +2387,14 @@ void LB2::initializeWalls() {
 
     // initializing wall nodes
     // note that, in the hypothesis that these walls are not evolving, only nodes at the interface need creation
+    // TODO openmp?
     for (unsigned int i = 0; i < h_nodes.count; ++i) {
         if (h_nodes.isWall(i)) {
             // initialize node
             // STATIC WALL NODES ////
             if (h_nodes.type[i] == STAT_WALL ||
                 h_nodes.type[i] == SLIP_STAT_WALL ||
-                h_nodes.type[i] ==  OBJ ||
+                h_nodes.type[i] == OBJ ||
                 h_nodes.type[i] == TOPO) {
                 // reset velocity and mass (useful for plotting)
                 // density=0.0; velocity=(0.0,0.0,0.0), mass=0.0; viscosity=0.0; force=(0.0,0.0,0.0)
@@ -2422,13 +2454,13 @@ void LB2::initializeLists() {
     std::vector<unsigned int> interfaceNodes;
 
     // creating list and initialize macroscopic variables for all nodes except walls
+    // TODO OpenMP?
     for (unsigned int i = 0; i < h_nodes.count; ++i) {
         if (h_nodes.type[i] == LIQUID) {
             fluidNodes.push_back(i);
         } else if (h_nodes.type[i] == INTERFACE) {
             interfaceNodes.push_back(i);
         }
-
     }
 
     // Array to Buffer

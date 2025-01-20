@@ -30,14 +30,17 @@ class LB2 {
     LB2() = default;
 
     void init(cylinderList &cylinders, wallList &walls, particleList &particles, objectList &objects, bool externalSolveCoriolis, bool externalSolveCentrifugal);
-    void countLatticeBoundaries(std::map<unsigned int, NewNode> &newNodes);
-    void countTypes(std::map<unsigned int, NewNode> &newNodes, const wallList &walls, const cylinderList &cylinders, const objectList &objects);
-    void countWallBoundaries(std::map<unsigned int, NewNode> &newNodes, const wallList& walls);
-    void countObjectBoundaries(std::map<unsigned int, NewNode> &newNodes, const objectList& objects);
-    void countCylinderBoundaries(std::map<unsigned int, NewNode> &newNodes, const cylinderList& cylinders);
-    void countTopography(std::map<unsigned int, NewNode> &newNodes);
-    void countInterface(std::map<unsigned int, NewNode> &newNodes);
-    void generateInitialNodes(const std::map<unsigned int, NewNode> &newNodes, std::vector<curve> &curves);
+    void allocateHostNodes(unsigned int count);
+    void initializeLatticeBoundaries(std::vector<curve> &curves);
+    void initializeTypes(const wallList &walls, const cylinderList &cylinders, const objectList &objects, std::vector<curve> &curves);
+    void initializeWallBoundaries(const wallList &walls, std::vector<curve> &curves);
+    void initializeObjectBoundaries(const objectList &objects, std::vector<curve> &curves);
+    void initializeCylinderBoundaries(const cylinderList &cylinders, std::vector<curve> &curves);
+    void initializeTopography(std::vector<curve> &curves);
+    void initializeInterface(std::vector<curve> &curves);
+    void initializeVariables();
+    std::array<unsigned int, lbmDirec> findNeighbors(unsigned int it);
+    void generateNode(unsigned int coord, types typeHere, std::vector<curve>& curves);
     void initializeWalls();
     void initializeCurved(std::vector<curve>& curves);
     void initializeLists();
