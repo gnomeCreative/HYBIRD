@@ -2,6 +2,7 @@
 #define NODE2_H
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <cub/cub.cuh>
 
@@ -152,7 +153,8 @@ struct Node2 {
     __host__ __device__ bool isActive(const unsigned int i) const {
         return type[i] == LIQUID || type[i] == INTERFACE;
     }
-
+    __host__ __device__ void copy(unsigned int dest_index, unsigned int src_index);
+    __host__ __device__ void scatterMass(unsigned int index, double& extraMass);
     __host__ __device__ void shiftVelocity(unsigned int index, const tVect& F);
     __host__ __device__ void computeEquilibrium(unsigned int index, std::array<double, lbmDirec> &feq) const;
     __host__ __device__ void computeEquilibriumTRT(unsigned int index, std::array<double, lbmDirec>& feqp, std::array<double, lbmDirec>& feqm) const;
@@ -195,6 +197,10 @@ struct Node2 {
      */
     template<int impl>
     void cleanLists();
+
+    __host__ __device__ std::array<unsigned int, lbmDirec> findNeighbors(unsigned int index) const;
+    __host__ __device__ void generateNode(unsigned int index, types typeHere);
+    __host__ __device__ void eraseNode(unsigned int index);
 };
 
 __host__ __device__ __forceinline__ tVect Node2::getPosition(const unsigned int index) const {
@@ -261,6 +267,46 @@ __host__ __device__ __forceinline__ std::array<int, 3> Node2::getGridPosition(co
 #endif
 
     return { static_cast<int>(x), static_cast<int>(y), static_cast<int>(z) };
+}
+__host__ __device__ __forceinline__ void Node2::copy(unsigned int dest_index, unsigned int src_index) {
+    //macroscopic properties of the initial condition
+    this->n[dest_index] = this->n[src_index];
+    this->mass[dest_index] = 0.1 * this->mass[src_index];
+    this->u[dest_index] = this->u[src_index];
+    this->visc[dest_index] = this->visc[src_index];
+    this->friction[dest_index] = this->friction[src_index];
+    this->centrifugalForce[dest_index] = this->centrifugalForce[src_index];
+
+    //for (int j = 0; j < lbmDirec; ++j) {
+    //    this->f[dest_index * lbmDirec + j] = this->f[src_index * lbmDirec + j];
+    //    this->fs[dest_index * lbmDirec + j] = this->fs[src_index * lbmDirec + j];
+    //}
+    memcpy(this->f + (dest_index * lbmDirec), this->f + (src_index * lbmDirec), sizeof(double) * lbmDirec);
+    memcpy(this->fs + (dest_index * lbmDirec), this->fs + (src_index * lbmDirec), sizeof(double) * lbmDirec);
+}
+__host__ __device__ __forceinline__ void Node2::scatterMass(unsigned int index, double& extraMass) {
+
+    unsigned int totNodes = 0;
+    for (int j = 1; j < lbmDirec; ++j) {
+        unsigned int ln_i = d[j];
+        if (ln_i != std::numeric_limits<unsigned int>::max()) {
+            if (this->type[ln_i] == INTERFACE) {
+                ++totNodes;
+            }
+        }
+    }
+    if (totNodes) {
+        for (int j = 1; j < lbmDirec; ++j) {
+            unsigned int ln_i = d[j];
+            if (ln_i != std::numeric_limits<unsigned int>::max()) {
+                if (this->type[ln_i] == INTERFACE) {
+                    this->extraMass[ln_i] += extraMass / double(totNodes);
+                }
+            }
+        }
+        extraMass = 0.0;
+    }
+    // otherwise mass is not redistributed, but rather given to the global redistribution function
 }
 __host__ __device__ __forceinline__ void Node2::shiftVelocity(const unsigned int index, const tVect& F) {
     const tVect totalForce = F + this->hydroForce[index];
@@ -613,4 +659,195 @@ inline void Node2::cleanLists<CUDA>() {
     activeAlloc = static_cast<unsigned int>(ctb.swapPtr(activeI, activeAlloc * sizeof(unsigned int)) / sizeof(unsigned int));
 }
 #endif
+
+
+__host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::findNeighbors(unsigned int index) const {
+    std::array<unsigned int, lbmDirec> neighborCoord;
+    // assign boundary characteristic to nodes (see class)
+    // if not differently defined, type is 0 (fluid)
+
+    for (int j = 1; j < lbmDirec; ++j) {
+        neighborCoord[j] = index + PARAMS.ne[j];
+    }
+
+    // BOUNDARY CONDITIONS ///////////////////////////
+    // nodes on the boundary have no neighbors
+    if (this->isWall(index)) {
+        const std::array<int, 3> pos = this->getGridPosition(index);// getPosition() adds + 0.5x
+        if (pos[0] == 0) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) < 0.0) {
+                    neighborCoord[j] = index;
+                }
+            }
+        }
+        if (pos[0] == PARAMS.lbSize[0] - 1) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) > 0.0) {
+                    neighborCoord[j] = index;
+                }
+            }
+        }
+        if (pos[1] == 0) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) < 0.0) {
+                    neighborCoord[j] = index;
+                }
+            }
+        }
+        if (pos[1] == PARAMS.lbSize[1] - 1) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) > 0.0) {
+                    neighborCoord[j] = index;
+                }
+            }
+        }
+        if (pos[2] == 0) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) < 0.0) {
+                    neighborCoord[j] = index;
+                }
+            }
+        }
+        if (pos[2] == PARAMS.lbSize[2] - 1) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) > 0.0) {
+                    neighborCoord[j] = index;
+                }
+            }
+        }
+    }// PERIODICITY ////////////////////////////////////////////////
+        // assigning periodicity conditions (this needs to be done after applying boundary conditions)
+        // runs through free cells and identifies neighboring cells. If neighbor cell is
+        // a special cell (periodic) then the proper neighboring condition is applied
+        // calculates the effect of periodicity
+    else if (this->isActive(index)) {
+        // neighboring and periodicity vector for boundary update
+        std::array<unsigned int, lbmDirec> pbc = {};
+        if (this->type[neighborCoord[1]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) > 0.0) {
+                    pbc[j] -= PARAMS.domain[0];
+                }
+            }
+        }
+        if (this->type[neighborCoord[2]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Xp) < 0.0) {
+                    pbc[j] += PARAMS.domain[0];
+                }
+            }
+        }
+        if (this->type[neighborCoord[3]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) > 0.0) {
+                    pbc[j] -= PARAMS.domain[1];
+                }
+            }
+        }
+        if (this->type[neighborCoord[4]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Yp) < 0.0) {
+                    pbc[j] += PARAMS.domain[1];
+                }
+            }
+        }
+        if (this->type[neighborCoord[5]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) > 0.0) {
+                    pbc[j] -= PARAMS.domain[2];
+                }
+            }
+        }
+        if (this->type[neighborCoord[6]] == PERIODIC) {
+            for (unsigned int j = 1; j < lbmDirec; ++j) {
+                if (v[j].dot(Zp) < 0.0) {
+                    pbc[j] += PARAMS.domain[2];
+                }
+            }
+        }
+
+        // apply periodicity
+        for (unsigned int j = 1; j < lbmDirec; ++j) {
+            neighborCoord[j] += pbc[j];
+        }
+
+    }
+
+    return neighborCoord;
+}
+/**
+ * CUDA capable version of generateNode()
+ * This does not support TOPO nodes, which may be curved
+ */
+__host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index, types typeHere) {
+    // set type
+    this->type[index] = typeHere;
+    this->p[index] = false;  // setOutsideParticle()
+    this->age[index] = 0.0;
+
+    // find neighbor indices
+    const std::array<unsigned int, lbmDirec> neighborindex = this->findNeighbors(index);
+
+    this->basal[index] = false;
+
+    // set centrifugal acceleration
+    this->centrifugalForce[index] = computeCentrifugal(this->getPosition(index), PARAMS.rotationCenter, PARAMS.rotationSpeed);
+
+    // assign neighbor nodes
+    for (unsigned int j = 1; j < lbmDirec; ++j) {
+        // linearized indexinate of neighbor nodes
+        const unsigned int link = neighborindex[j];
+        // check if node at that location exists
+        if (link < this->count && this->type[link] != GAS) {
+            // assign neighbor for local node
+            this->d[j * this->count + index] = link;
+            // if neighbor node is also active, link it to local node
+            if (this->isActive(index)) {
+                /// TODO potential race condition
+                this->d[opp[j] * this->count + link] = index;
+#ifdef _DEBUG
+                if (this->type[link] == TOPO) {
+                    // curved walls cannot be created via this version of generateNode()
+#ifdef __CUDA_ARCH__
+                    printf("Attempting to create curve via common_generateNode(), please use generateNode() (host code only)\n");
+                    __trap();
+#else
+                    fprintf(stderr, "Attempting to create curve via common_generateNode(), please use generateNode() (host code only)\n");
+                    throw std::exception();
+#endif
+                }
+#endif
+                if (this->isWall(link)) {
+                    this->basal[index] = true;
+                }
+            }
+        } else {
+            this->d[j * this->count + index] = std::numeric_limits<unsigned int>::max();
+        }
+    }
+}
+__host__ __device__ __forceinline__ void Node2::eraseNode(const unsigned int index) {
+    // find neighbor indices
+    std::array<unsigned int, lbmDirec> neighborCoord = findNeighbors(index);
+
+    /// TODO Cleanup curve
+    // delete nodeHere->curved;
+
+    //remove from map;
+    this->type[index] = GAS;
+
+    // assign neighbor nodes
+    for (int j = 1; j < lbmDirec; ++j) {
+        // linearized coordinate of neighbor nodes
+        const unsigned int ln_i = neighborCoord[j];
+        // check if node at that location exists
+        if (this->type[ln_i] != std::numeric_limits<unsigned int>::max()) {
+            // if neighbor node is active, remove link to local node
+            if (this->isActive(ln_i)) {
+                this->d[this->count * opp[j] + ln_i] = std::numeric_limits<unsigned int>::max();
+            }
+        }
+    }
+}
 #endif  // NODE2_H

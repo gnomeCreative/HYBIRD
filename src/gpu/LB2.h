@@ -39,7 +39,6 @@ class LB2 {
     void initializeTopography(std::vector<curve> &curves);
     void initializeInterface(std::vector<curve> &curves);
     void initializeVariables();
-    std::array<unsigned int, lbmDirec> findNeighbors(unsigned int it);
     void generateNode(unsigned int coord, types typeHere, std::vector<curve>& curves);
     void initializeWalls();
     void initializeCurved(std::vector<curve>& curves);

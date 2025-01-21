@@ -1162,7 +1162,7 @@ __global__ void d_redistributeMass(Node2 *d_nodes, const double addMass) {
     if (i >= d_nodes->interfaceCount)
         return;
     // Increase mass
-    const unsigned int in_i = d_nodes->activeI[i];
+    const unsigned int in_i = d_nodes->interfaceI[i];
     d_nodes->mass[in_i] += addMass;    
 }
 template<>
@@ -1352,77 +1352,308 @@ void LB2::updateMass<CUDA>() {
 }
 #endif
 
-/**
- * updateInterface()
- */
-__host__ __device__ __forceinline__ void common_updateInterface(const unsigned int in_i, Node2* nodes) {
-    // variable for storage of mass surplus
-    double massSurplus = 0.0;
+__host__ __device__ __forceinline__ void common_findInterfaceMutants(const unsigned int in_i, Node2* nodes) {
+    // CHECKING FOR NEW FLUID NODES from filling
+    if (nodes->mass[in_i] > nodes->n[in_i]) {
+        // updating type
+        nodes->type[in_i] = INTERFACE_FILLED;
+        // updating lists (interface -> fluid)
+        // @TODO ADD to fluidNodes
+        // @TODO Remove from interfaceNodes
+    }// CHECKING FOR NEW GAS NODES from emptying
+    else if (nodes->mass[in_i] < 0.0) {
+        // updating type
+        nodes->type[in_i] = INTERFACE_EMPTY;
+        // @TODO Remove from interfaceNodes
+    }
+}
+__host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned int in_i, Node2* nodes) {
+    constexpr double marginalMass = 1.0e-2;
+    // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
+    if (nodes->type[in_i] == INTERFACE_FILLED) {
+        // neighor indices
+        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
+        // cycling through neighbors
+        for (int j = 1; j < lbmDirec; ++j) {
+            // neighbor index
+            const unsigned int ln_i = neighborCoord[j];
+            // checking if node is gas (so to be transformed into interface)
+            if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY
+                // create new interface node
+                nodes->generateNode(ln_i, INTERFACE_NEW);
+                // add it to interface node list
+                // @TODO add to interfaceNodes
+                // node is becoming active and needs to be initialized
+                double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
+                // same density and velocity; 1% of the mass
+                nodes->copy(ln_i, in_i);
+                nodes->mass[ln_i] = -massSurplusHere;
+                // the 1% of the mass is taken form the surplus
+                nodes->scatterMass(ln_i, massSurplusHere);  // @TODO race condition on extraMass?
+                // massSurplus += massSurplusHere;
+            }
+        }
+    }
 
-    //// lists for "mutant" nodes
-    //filledNodes.clear();
-    //emptiedNodes.clear();
-    //newInterfaceNodes.clear();
-    ///// Create lists filledNodes and emptiedNodes, interface node IDs with certain mass properties
-    ///// Filled nodes also convert from interface to fluid node
-    //// filling lists of mutant nodes and changing their type
-    //findInterfaceMutants();
-
-    ///// Nodes which converted to fluid from interface, now turn their neighbours into interface nodes
-    ///// This requires initialising their d parameter
-    ///// This process is then repeated for neighbours of empty nodes
-    //// fixing the interface (always one interface between fluid and gas)
-    //smoothenInterface(massSurplus);
-
-    ///// Empty nodes are then updated, original code has a poor loop to check whether point is now invalid
-    //// updating characteristics of mutant nodes
-    //updateMutants(massSurplus);
-
-    ///// Interface node surrounded by LIQUID is converted to LIQUID
-    ///// Interface node surrounded by GAS is converted to GAS
-    //// remove isolated interface cells (both surrounded by gas and by fluid)
-    //removeIsolated(massSurplus);
-
-    ///// Surplus mass is shared between interface cells
-    //// distributing surplus to interface cells
-    //redistributeMass(massSurplus);
-
-#ifdef DEBUG
-    // compute surface normal vectors
-    // computeSurfaceNormal();
+    // CHECKING FOR NEW INTERFACE NODES from neighboring a new gas node
+    // tested unordered_set, was slower
+    if (nodes->type[in_i] == INTERFACE_EMPTY) {
+        // neighor indices
+        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
+        // cycling through neighbors
+        for (int j = 1; j < lbmDirec; ++j) {
+            // neighbor node
+            const unsigned int ln_i = neighborCoord[j];
+            if (ln_i < nodes->count && (nodes->type[ln_i] == LIQUID || nodes->type[ln_i] == INTERFACE_FILLED)) {
+                // ln_i should equal nodes->d[in_i * nodes.count + j];
+                nodes->type[ln_i] = INTERFACE_NEW;
+                // @TODO add to interfaceNodes
+                // @TODO remove from fluidNodes
+                double massSurplusHere = marginalMass * nodes->n[ln_i];
+                // characteristics are inherited by previous fluid cell. Only mass must be updated to 99% of initial mass
+                nodes->mass[ln_i] = nodes->n[ln_i] - massSurplusHere;
+                // the remaining 1% of the mass is added to the surplus
+                nodes->scatterMass(ln_i, massSurplusHere);
+                //massSurplus += massSurplusHere;
+            }
+        }
+    }
+}
+__host__ __device__ __forceinline__ void common_updateMutants(const unsigned int in_i, Node2* nodes, double *massSurplus) {
+    // resetting new gas macroscopic quantities
+    if (nodes->type[in_i] == INTERFACE_EMPTY) {
+        // updating mass surplus
+#ifdef __CUDA_ARCH__
+        // CUDA atomics
+        atomicAdd(massSurplus, nodes->mass[in_i]);
+#else
+        // CPU atomics
+        #pragma omp atomic update
+        *massSurplus += nodes->mass[in_i];
 #endif
+        // deleting node
+        nodes->eraseNode(in_i);
+    }
+
+    // resetting new fluid macroscopic quantities
+    if (nodes->type[in_i] == INTERFACE_FILLED) {
+        // updating mass surplus
+#ifdef __CUDA_ARCH__
+        // CUDA atomics
+        atomicAdd(massSurplus, nodes->mass[in_i] - nodes->n[in_i]);
+#else
+        // CPU atomics
+        #pragma omp atomic update
+        *massSurplus += (nodes->mass[in_i] - nodes->n[in_i]);
+#endif
+        // setting liquid fraction for new fluid cell (other macroscopic characteristics stay the same)
+        nodes->mass[in_i] = nodes->n[in_i];
+    }
+}
+__host__ __device__ __forceinline__ void common_removeIsolated(const unsigned int in_i, Node2* nodes, double *massSurplus) {
+    // remove isolated interface cells (surrounded either by only fluid or only solid cells)
+
+    // checking if it is surrounded by fluid (in that case is converted to fluid). Solid is an exception
+    // reverse cycle is needed because of deletion function
+    {
+        bool surroundedFluid = true;
+        for (int j = 1; j < lbmDirec; ++j) {
+            const unsigned int ln_i = nodes->d[nodes->count * j + in_i];
+            if (ln_i == std::numeric_limits<unsigned int>::max() || nodes->type[ln_i] == GAS || nodes->type[ln_i] == INTERFACE_EMPTY) {
+                surroundedFluid = false;
+                break;
+            }
+        }
+        if (surroundedFluid) {
+            // update mass storage for balance
+            /// todo atomics
+#ifdef __CUDA_ARCH__
+        // CUDA atomics
+        atomicAdd(massSurplus, nodes->mass[in_i] - nodes->n[in_i]);
+#else
+        // CPU atomics
+        #pragma omp atomic update
+        *massSurplus += (nodes->mass[in_i] - nodes->n[in_i]);
+#endif
+            // update characteristics (inherited from the gas node)
+            nodes->mass[in_i] = nodes->n[in_i];
+            nodes->type[in_i] = LIQUID;
+            // @TODO add to fluidNodes
+            // @TODO remove from interfaceNodes
+        }
+    }
+
+    // checking if it is surrounded by gas (in that case is converted to gas)
+    // or, better, if it is not connected to fluid (could be connected to walls or particles)
+    {
+        bool surroundedGas = true;
+        for (int j = 1; j < lbmDirec; ++j) {
+            const unsigned int ln_i = nodes->d[nodes->count * j + in_i];
+            if (ln_i != std::numeric_limits<unsigned int>::max()) {
+                if (nodes->type[ln_i] == LIQUID || nodes->type[ln_i] == INTERFACE_FILLED) {
+                    surroundedGas = false;
+                    break;
+                }
+            }
+        }
+        // updating mass surplus
+        if (surroundedGas) {
+            //            cout<<nodes[i].x<<" "<<nodes[i].y<<" "<<nodes[i].z<<" NEW GAS NODE from surrounding\n";
+            // update mass
+#ifdef __CUDA_ARCH__
+            // CUDA atomics
+            atomicAdd(massSurplus, nodes->mass[in_i]);
+#else
+            // CPU atomics
+            #pragma omp atomic update
+            *massSurplus += nodes->mass[in_i];
+#endif
+            nodes->eraseNode(in_i);
+            // @TODO remove from interfaceNodes
+        }
+    }
 }
 
 template<>
 void LB2::updateInterface<CPU>() {
+    // Initialise reduction variable
+    double h_massSurplus = 0.0;
 #pragma omp parallel for
     for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
-        // Convert index to active node index
+        // Convert index to interface node index
         const unsigned int in_i = d_nodes->interfaceI[i];
-        common_updateInterface(in_i, d_nodes);
+        // filling lists of mutant nodes and changing their type
+        common_findInterfaceMutants(in_i, d_nodes);
+    }
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        // Convert index to interface node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        // fixing the interface (always one interface between fluid and gas)
+        common_smoothenInterface(in_i, d_nodes);
+    }
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        // Convert index to interface node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        // updating characteristics of mutant nodes
+        common_updateMutants(in_i, d_nodes, &h_massSurplus);
+    }
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        // Convert index to interface node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        // remove isolated interface cells (both surrounded by gas and by fluid)
+        common_removeIsolated(in_i, d_nodes, &h_massSurplus);
+    }
+    /// @todo rebuild lists
+    const double addMass = h_massSurplus / d_nodes->interfaceCount;
+#pragma omp parallel for
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        const unsigned int in_i = d_nodes->activeI[i];
+        // distributing surplus to interface cells
+        d_nodes->mass[in_i] += addMass;
     }
 }
 #ifdef USE_CUDA
-__global__ void d_updateInterface(Node2* d_nodes) {
-    // Get unique CUDA thread index, which corresponds to active node 
+__global__ void d_findInterfaceMutants(Node2* d_nodes) {
+    // Get unique CUDA thread index, which corresponds to interface node 
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
     if (i >= d_nodes->interfaceCount)
         return;
-    // Convert index to active node index
+    // Convert index to interface node index
     const unsigned int in_i = d_nodes->interfaceI[i];
-    common_updateInterface(in_i, d_nodes);
+    common_findInterfaceMutants(in_i, d_nodes);
+}
+__global__ void d_smoothenInterface(Node2* d_nodes) {
+    // Get unique CUDA thread index, which corresponds to interface node 
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (i >= d_nodes->interfaceCount)
+        return;
+    // Convert index to interface node index
+    const unsigned int in_i = d_nodes->interfaceI[i];
+    common_smoothenInterface(in_i, d_nodes);
+}
+__global__ void d_updateMutants(Node2* d_nodes, double* d_massSurplus) {
+    // Get unique CUDA thread index, which corresponds to interface node 
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (i >= d_nodes->interfaceCount)
+        return;
+    // Convert index to interface node index
+    const unsigned int in_i = d_nodes->interfaceI[i];
+    common_updateMutants(in_i, d_nodes, d_massSurplus);
+}
+__global__ void d_removeIsolated(Node2* d_nodes, double* d_massSurplus) {
+    // Get unique CUDA thread index, which corresponds to interface node 
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (i >= d_nodes->interfaceCount)
+        return;
+    // Convert index to interface node index
+    const unsigned int in_i = d_nodes->interfaceI[i];
+    common_removeIsolated(in_i, d_nodes, d_massSurplus);
 }
 template<>
 void LB2::updateInterface<CUDA>() {
+    /**
+     * TODO:
+     * Confirm whether node::extraMass (inside node::scatterMass()) is redundant
+     * Check whether interface list needs updating half way through ever?
+     *      d_findInterfaceMutants: converts some INTERFACE to INTERFACE_FILLED (GAS)/INTERFACE_EMPTY (LIQUID)
+     *      d_smoothenInterface: converts some neighbours of INTERFACE_FILLED/INTERFACE_EMPTY (including each other, race condition?) to INTERFACE_NEW (INTERFACE)
+     *      d_updateMutants: INTERFACE_FILLED/INTERFACE_EMPTY nodes have their properties updated
+     *      > Need an updated list of INTERFACE for kernel launch
+     *      d_removeIsolated: converts some INTERFACE/INTERFACE_NEW to LIQUID/GAS
+     *      > Need an updated list of INTERFACE for kernel launch
+     *      d_redistributeMass: updates all INTERFACE
+     *      > Need an updated list of FLUID/ACTIVE for return to LBM
+     * Rebuild lists
+     *      atomics vs scan + compact
+     * Assign all curves at init? (does TOPO ever move?, e.g. it's not dynamic)
+     *      Device generateNode() that supports curves?
+     *      Device eraseNode() how to remove curves?
+     */
+    // Initialise reduction variable
+    auto& t = CubTempMem::GetTempSingleton();
+    t.resize(sizeof(double));
+    double *d_massSurplus = static_cast<double*>(t.getPtr());
+    double h_massSurplus = 0;
+    CUDA_CALL(cudaMemcpy(d_massSurplus, &h_massSurplus, sizeof(double), cudaMemcpyHostToDevice));
+
     // Launch cuda kernel to update
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, h_nodes.interfaceCount);
-    // Round up to accommodate required threads
+    // Separate kernels, in the same (default) stream, synchronisation is required between each kernel launch
+    // filling lists of mutant nodes and changing their type
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findInterfaceMutants, 0, h_nodes.interfaceCount);
     gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
-    d_updateMass<<<gridSize, blockSize>>>(d_nodes);
+    d_findInterfaceMutants<<<gridSize, blockSize>>>(d_nodes);
+    // fixing the interface (always one interface between fluid and gas)
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface, 0, h_nodes.interfaceCount);
+    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    d_smoothenInterface<<<gridSize, blockSize>>>(d_nodes);
+    // updating characteristics of mutant nodes
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, h_nodes.interfaceCount);
+    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    d_updateMutants<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
+    // remove isolated interface cells (both surrounded by gas and by fluid)
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_removeIsolated, 0, h_nodes.interfaceCount);
+    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    d_removeIsolated<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
+    /// Todo rebuild lists, no more nodes are changing type
+    // distributing surplus to interface cells
+    CUDA_CALL(cudaMemcpy(&h_massSurplus, d_massSurplus, sizeof(double), cudaMemcpyDeviceToHost));
+    const double addMass = h_massSurplus / h_nodes.interfaceCount;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, h_nodes.interfaceCount);
+    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
+#ifdef DEBUG
+    // computeSurfaceNormal()
+#endif
     CUDA_CHECK();
 }
 #endif
@@ -1487,28 +1718,28 @@ void LB2::latticeBoltzmannStep() {
 }
 extern ProblemName problemName;
 void LB2::latticeBoltzmannFreeSurfaceStep() {
-    //// in case mass needs to be kept constant, call enforcing function here
-    //if (PARAMS.imposeFluidVolume) {
-    //    this->enforceMassConservation<IMPL>();
-    //} else if (PARAMS.increaseVolume) {
-    //    if (PARAMS.time < PARAMS.deltaTime) {
-    //        this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
-    //    }
-    //} else {
-    //    switch (problemName) {
-    //    case DRUM:
-    //    case STAVA:
-    //    {
-    //        this->enforceMassConservation<IMPL>();
-    //        break;
-    //    }
-    //    }
-    //}
+    // in case mass needs to be kept constant, call enforcing function here
+    if (PARAMS.imposeFluidVolume) {
+        this->enforceMassConservation<IMPL>();
+    } else if (PARAMS.increaseVolume) {
+        if (PARAMS.time < PARAMS.deltaTime) {
+            this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
+        }
+    } else {
+        switch (problemName) {
+        case DRUM:
+        case STAVA:
+        {
+            this->enforceMassConservation<IMPL>();
+            break;
+        }
+        }
+    }
 
-    //// mass and free surface update
-    //this->updateMass<IMPL>();
-    //this->updateInterface<IMPL>();
-    //this->cleanLists<IMPL>();
+    // mass and free surface update
+    this->updateMass<IMPL>();
+    this->updateInterface<IMPL>();
+    this->cleanLists<IMPL>();
 }
 
 Node2& LB2::getNodes() {
@@ -1633,8 +1864,6 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMalloc(&hd_nodes.curves, hd_nodes.curveCount * sizeof(curve)));
     CUDA_CALL(cudaMemcpy(hd_nodes.curves, h_nodes.curves, hd_nodes.curveCount * sizeof(curve), cudaMemcpyHostToDevice));
     hd_nodes.count = h_nodes.count;
-    // CUDA_CALL(cudaMalloc(&hd_nodes.coord, hd_nodes.count * sizeof(unsigned int)));  // redundant?
-    // CUDA_CALL(cudaMemcpy(hd_nodes.coord, h_nodes.coord, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.f, hd_nodes.count * lbmDirec * sizeof(double)));
     CUDA_CALL(cudaMemcpy(hd_nodes.f, h_nodes.f, hd_nodes.count * lbmDirec * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.fs, hd_nodes.count * lbmDirec * sizeof(double)));
@@ -2137,121 +2366,6 @@ void LB2::initializeInterface(std::vector<curve>& curves) {
         }
     }
 }
-std::array<unsigned int, lbmDirec> LB2::findNeighbors(unsigned int it) {
-    std::array<unsigned int, lbmDirec> neighborCoord;
-    // assign boundary characteristic to nodes (see class)
-    // if not differently defined, type is 0 (fluid)
-
-    for (int j = 1; j < lbmDirec; ++j) {
-        neighborCoord[j] = it + PARAMS.ne[j];
-    }
-
-    // BOUNDARY CONDITIONS ///////////////////////////
-    // nodes on the boundary have no neighbors
-    if (h_nodes.isWall(it)) {
-        const std::array<int, 3> pos = h_nodes.getGridPosition(it);// getPosition() adds + 0.5x
-        if (pos[0] == 0) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Xp) < 0.0) {
-                    neighborCoord[j] = it;
-                }
-            }
-        }
-        if (pos[0] == PARAMS.lbSize[0] - 1) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Xp) > 0.0) {
-                    neighborCoord[j] = it;
-                }
-            }
-        }
-        if (pos[1] == 0) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Yp) < 0.0) {
-                    neighborCoord[j] = it;
-                }
-            }
-        }
-        if (pos[1] == PARAMS.lbSize[1] - 1) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Yp) > 0.0) {
-                    neighborCoord[j] = it;
-                }
-            }
-        }
-        if (pos[2] == 0) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Zp) < 0.0) {
-                    neighborCoord[j] = it;
-                }
-            }
-        }
-        if (pos[2] == PARAMS.lbSize[2] - 1) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Zp) > 0.0) {
-                    neighborCoord[j] = it;
-                }
-            }
-        }
-    }// PERIODICITY ////////////////////////////////////////////////
-        // assigning periodicity conditions (this needs to be done after applying boundary conditions)
-        // runs through free cells and identifies neighboring cells. If neighbor cell is
-        // a special cell (periodic) then the proper neighboring condition is applied
-        // calculates the effect of periodicity
-    else if (h_nodes.isActive(it)) {
-        // neighboring and periodicity vector for boundary update
-        std::array<unsigned int, lbmDirec> pbc = {};
-        if (h_nodes.type[neighborCoord[1]] == PERIODIC) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Xp) > 0.0) {
-                    pbc[j] -= PARAMS.domain[0];
-                }
-            }
-        }
-        if (h_nodes.type[neighborCoord[2]] == PERIODIC) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Xp) < 0.0) {
-                    pbc[j] += PARAMS.domain[0];
-                }
-            }
-        }
-        if (h_nodes.type[neighborCoord[3]] == PERIODIC) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Yp) > 0.0) {
-                    pbc[j] -= PARAMS.domain[1];
-                }
-            }
-        }
-        if (h_nodes.type[neighborCoord[4]] == PERIODIC) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Yp) < 0.0) {
-                    pbc[j] += PARAMS.domain[1];
-                }
-            }
-        }
-        if (h_nodes.type[neighborCoord[5]] == PERIODIC) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Zp) > 0.0) {
-                    pbc[j] -= PARAMS.domain[2];
-                }
-            }
-        }
-        if (h_nodes.type[neighborCoord[6]] == PERIODIC) {
-            for (unsigned int j = 1; j < lbmDirec; ++j) {
-                if (v[j].dot(Zp) < 0.0) {
-                    pbc[j] += PARAMS.domain[2];
-                }
-            }
-        }
-
-        // apply periodicity
-        for (unsigned int j = 1; j < lbmDirec; ++j) {
-            neighborCoord[j] += pbc[j];
-        }
-
-    }
-
-    return neighborCoord;
-}
 void LB2::generateNode(unsigned int coord, types typeHere, std::vector<curve>& curves) {
 
     // set type
@@ -2262,7 +2376,7 @@ void LB2::generateNode(unsigned int coord, types typeHere, std::vector<curve>& c
     // TODO Add it to list of known non-gas nodes?
 
     // find neighbor indices
-    const std::array<unsigned int, lbmDirec> neighborCoord = findNeighbors(coord);
+    const std::array<unsigned int, lbmDirec> neighborCoord = h_nodes.findNeighbors(coord);
 
     h_nodes.basal[coord] = false;
 
