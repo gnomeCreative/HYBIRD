@@ -42,6 +42,13 @@ class LB2 {
     void generateNode(unsigned int coord, types typeHere);
     void initializeWalls();
     void initializeLists();
+
+    template<int impl>
+    void buildInterfaceList(unsigned int max_len = std::numeric_limits<unsigned int>::max(), bool update_device_struct = true);
+    template<int impl>
+    void buildFluidList(unsigned int max_len = std::numeric_limits<unsigned int>::max(), bool update_device_struct = true);
+    template<int impl>
+    void buildActiveList();
     /**
      * Execute all LB methods from hybird.cpp::goCycle()
      * 1. latticeBoltzmannCouplingStep() if io.demSolver

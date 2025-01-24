@@ -40,6 +40,9 @@ struct Node2 {
 
     // The total number of fluid nodes
     unsigned int fluidCount = 0;
+    // The allocated size of fluidI
+    // We don't shrink the buffer if the number of fluid nodes decreases
+    unsigned int fluidAlloc = 0;
     // Index of nodes marked as fluid
     unsigned int *fluidI = nullptr;
 

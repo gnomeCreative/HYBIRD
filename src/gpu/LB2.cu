@@ -1640,64 +1640,32 @@ void LB2::updateInterface<CUDA>() {
     int gridSize = 0;  // The actual grid size needed, based on input size
     // Separate kernels, in the same (default) stream, synchronisation is required between each kernel launch
     // filling lists of mutant nodes and changing their type
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findInterfaceMutants, 0, h_nodes.interfaceCount);
-    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findInterfaceMutants, 0, hd_nodes.interfaceCount);
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_findInterfaceMutants<<<gridSize, blockSize>>>(d_nodes);
     // fixing the interface (always one interface between fluid and gas)
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface, 0, h_nodes.interfaceCount);
-    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface, 0, hd_nodes.interfaceCount);
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_smoothenInterface<<<gridSize, blockSize>>>(d_nodes);
     // updating characteristics of mutant nodes
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, h_nodes.interfaceCount);
-    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, hd_nodes.interfaceCount);
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_updateMutants<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
-    {  // Update interface node list
-        // This is a simple implementation, there may be faster approaches
-        // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
-
-        // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
-        auto& ctb = CubTempMem::GetBufferSingleton();
-        const unsigned int max_interface = min(19 * hd_nodes.activeCount, hd_nodes.count) + 1;
-        ctb.resize(max_interface * sizeof(unsigned int));
-        unsigned int* builderI = reinterpret_cast<unsigned int *>(ctb.getPtr());
-        // Init index 0 to 0, this will be used as an atomic counter
-        CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
-        // Launch kernel as grid stride loop
-        int numSMs;
-        cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
-        d_buildList<<<32 * numSMs, 256>>>(builderI, &builderI[1], INTERFACE, hd_nodes.type, hd_nodes.count);
-        CUDA_CHECK();
-        // Copy back result to main list
-        unsigned int new_interface_count = 0;
-        CUDA_CALL(cudaMemcpy(&new_interface_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost));
-        if (new_interface_count > hd_nodes.interfaceAlloc) {
-            // Resize interface buffer (it doesn't currently ever scale back down)
-            if (hd_nodes.interfaceI) {
-                CUDA_CALL(cudaFree(hd_nodes.interfaceI));
-            }
-            CUDA_CALL(cudaMalloc(&hd_nodes.interfaceI, new_interface_count * sizeof(unsigned int)));
-            hd_nodes.interfaceAlloc = new_interface_count;
-        }
-        hd_nodes.interfaceCount = new_interface_count;
-        // Sort list into it's new storage
-        size_t temp_storage_bytes = 0;
-        CUDA_CALL(cub::DeviceRadixSort::SortKeys(nullptr, temp_storage_bytes, &builderI[1], hd_nodes.interfaceI, new_interface_count));
-        auto &ctm = CubTempMem::GetTempSingleton();
-        ctm.resize(temp_storage_bytes);
-        CUDA_CALL(cub::DeviceRadixSort::SortKeys(ctm.getPtr(), temp_storage_bytes, &builderI[1], hd_nodes.interfaceI, new_interface_count));
-        // Update device struct (new size and ptr, but whole struct because eh)
-        CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
-    }
+    // Rebuild interface list
+    buildInterfaceList<CUDA>(lbmDirec * hd_nodes.activeCount);
     // remove isolated interface cells (both surrounded by gas and by fluid)
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_removeIsolated, 0, h_nodes.interfaceCount);
-    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_removeIsolated, 0, hd_nodes.interfaceCount);
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_removeIsolated<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
-    /// Todo rebuild lists, no more nodes are changing type
+    // Rebuild all lists
+    buildInterfaceList<CUDA>(hd_nodes.interfaceCount, false);
+    buildFluidList<CUDA>(hd_nodes.fluidCount + lbmDirec * hd_nodes.interfaceCount, false);
+    buildActiveList<CUDA>();
     // distributing surplus to interface cells
     CUDA_CALL(cudaMemcpy(&h_massSurplus, d_massSurplus, sizeof(double), cudaMemcpyDeviceToHost));
     const double addMass = h_massSurplus / h_nodes.interfaceCount;
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, h_nodes.interfaceCount);
-    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, hd_nodes.interfaceCount);
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
 #ifdef DEBUG
     // computeSurfaceNormal()
@@ -1705,6 +1673,110 @@ void LB2::updateInterface<CUDA>() {
     CUDA_CHECK();
 }
 #endif
+
+template <>
+void LB2::buildInterfaceList<CUDA>(unsigned int max_len, bool update_device_struct) {
+    // This is a simple implementation, there may be faster approaches
+    // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
+
+    // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+    auto& ctb = CubTempMem::GetBufferSingleton();
+    const unsigned int max_interface = min(max_len, hd_nodes.count) + 1;
+    ctb.resize(max_interface * sizeof(unsigned int));
+    unsigned int* builderI = reinterpret_cast<unsigned int *>(ctb.getPtr());
+    // Init index 0 to 0, this will be used as an atomic counter
+    CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
+    // Launch kernel as grid stride loop
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
+    d_buildList<<<32 * numSMs, 256>>>(builderI, &builderI[1], INTERFACE, hd_nodes.type, hd_nodes.count);
+    CUDA_CHECK();
+    // Copy back result to main list
+    unsigned int new_interface_count = 0;
+    CUDA_CALL(cudaMemcpy(&new_interface_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    if (new_interface_count > hd_nodes.interfaceAlloc) {
+        // Resize interface buffer (it doesn't currently ever scale back down)
+        if (hd_nodes.interfaceI) {
+            CUDA_CALL(cudaFree(hd_nodes.interfaceI));
+        }
+        CUDA_CALL(cudaMalloc(&hd_nodes.interfaceI, new_interface_count * sizeof(unsigned int)));
+        hd_nodes.interfaceAlloc = new_interface_count;
+    }
+    hd_nodes.interfaceCount = new_interface_count;
+    // Sort list into it's new storage
+    size_t temp_storage_bytes = 0;
+    CUDA_CALL(cub::DeviceRadixSort::SortKeys(nullptr, temp_storage_bytes, &builderI[1], hd_nodes.interfaceI, new_interface_count));
+    auto &ctm = CubTempMem::GetTempSingleton();
+    ctm.resize(temp_storage_bytes);
+    CUDA_CALL(cub::DeviceRadixSort::SortKeys(ctm.getPtr(), temp_storage_bytes, &builderI[1], hd_nodes.interfaceI, new_interface_count));
+    // Update device struct (new size and ptr, but whole struct because eh)
+    if (update_device_struct) {
+        CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
+    }
+}
+template <>
+void LB2::buildFluidList<CUDA>(unsigned int max_len, bool update_device_struct) {
+    // This is a simple implementation, there may be faster approaches
+    // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
+
+    // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+    auto& ctb = CubTempMem::GetBufferSingleton();
+    const unsigned int max_interface = min(max_len, hd_nodes.count) + 1;
+    ctb.resize(max_interface * sizeof(unsigned int));
+    unsigned int* builderI = reinterpret_cast<unsigned int*>(ctb.getPtr());
+    // Init index 0 to 0, this will be used as an atomic counter
+    CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
+    // Launch kernel as grid stride loop
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
+    d_buildList << <32 * numSMs, 256 >> > (builderI, &builderI[1], LIQUID, hd_nodes.type, hd_nodes.count);
+    CUDA_CHECK();
+    // Copy back result to main list
+    unsigned int new_fluid_count = 0;
+    CUDA_CALL(cudaMemcpy(&new_fluid_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    if (new_fluid_count > hd_nodes.fluidAlloc) {
+        // Resize buffer (it doesn't currently ever scale back down)
+        if (hd_nodes.fluidI) {
+            CUDA_CALL(cudaFree(hd_nodes.fluidI));
+        }
+        CUDA_CALL(cudaMalloc(&hd_nodes.fluidI, new_fluid_count * sizeof(unsigned int)));
+        hd_nodes.fluidAlloc = new_fluid_count;
+    }
+    hd_nodes.fluidCount = new_fluid_count;
+    // Sort list into it's new storage
+    size_t temp_storage_bytes = 0;
+    CUDA_CALL(cub::DeviceRadixSort::SortKeys(nullptr, temp_storage_bytes, &builderI[1], hd_nodes.fluidI, new_fluid_count));
+    auto& ctm = CubTempMem::GetTempSingleton();
+    ctm.resize(temp_storage_bytes);
+    CUDA_CALL(cub::DeviceRadixSort::SortKeys(ctm.getPtr(), temp_storage_bytes, &builderI[1], hd_nodes.fluidI, new_fluid_count));
+    // Update device struct (new size and ptr, but whole struct because eh)
+    if (update_device_struct) {
+        CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
+    }
+}template <>
+void LB2::buildActiveList<CUDA>() {
+    // Merge fluid and interface lists into active list
+    // This could be done with cub with CCCL 2.7.0, but that's 3 weeks old so not currently provided by CUDA, whilst retaining sortedness
+    // Instead we'll just pack the two buffers one after the other, probably good enough.
+
+    // Resize active list
+    const unsigned int new_active_count = hd_nodes.interfaceCount + hd_nodes.fluidCount;
+    if (new_active_count > hd_nodes.activeAlloc) {
+        // Resize buffer (it doesn't currently ever scale back down)
+        if (hd_nodes.activeI) {
+            CUDA_CALL(cudaFree(hd_nodes.activeI));
+        }
+        CUDA_CALL(cudaMalloc(&hd_nodes.activeI, new_active_count * sizeof(unsigned int)));
+        hd_nodes.activeAlloc = new_active_count;
+    }
+    hd_nodes.activeCount = new_active_count;
+    // Copy data to buffer
+    CUDA_CALL(cudaMemcpy(hd_nodes.activeI, hd_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+    CUDA_CALL(cudaMemcpy(&hd_nodes.activeI[hd_nodes.interfaceCount], hd_nodes.fluidI, hd_nodes.fluidCount * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+    // Update device struct (new size and ptr, but whole struct because eh)
+    CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
+}
+
 
 void LB2::latticeBoltzmannCouplingStep(bool& newNeighbourList) {
     // identifies which nodes need to have an update due to particle movement
@@ -1841,9 +1913,10 @@ Node2& LB2::getNodes() {
         h_nodes.interfaceAlloc = hd_nodes.interfaceCount;
     }
     h_nodes.interfaceCount = hd_nodes.interfaceCount;
-    if (hd_nodes.fluidCount > h_nodes.fluidCount) {
+    if (hd_nodes.fluidCount > h_nodes.fluidAlloc) {
         if (h_nodes.fluidI) free(h_nodes.fluidI);
         h_nodes.fluidI = static_cast<unsigned int*>(malloc(hd_nodes.fluidCount * sizeof(unsigned int)));
+        h_nodes.fluidAlloc = hd_nodes.fluidCount;
     }
     h_nodes.fluidCount = hd_nodes.fluidCount;
     if (hd_nodes.wallCount > h_nodes.wallCount) {
@@ -1896,6 +1969,7 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMalloc(&hd_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.interfaceI, h_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
     hd_nodes.fluidCount = h_nodes.fluidCount;
+    hd_nodes.fluidAlloc = h_nodes.fluidCount;
     CUDA_CALL(cudaMalloc(&hd_nodes.fluidI, hd_nodes.fluidCount * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.fluidI, h_nodes.fluidI, hd_nodes.fluidCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
     hd_nodes.wallCount = h_nodes.wallCount;
@@ -2571,6 +2645,7 @@ void LB2::initializeLists() {
     assert(!h_nodes.fluidI);
     h_nodes.fluidCount = static_cast<unsigned int>(fluidNodes.size());
     h_nodes.fluidI = static_cast<unsigned int*>(malloc(h_nodes.fluidCount * sizeof(unsigned int)));
+    h_nodes.fluidAlloc = h_nodes.fluidCount;
     memcpy(h_nodes.fluidI, fluidNodes.data(), h_nodes.fluidCount * sizeof(unsigned int));
 
     assert(!h_nodes.interfaceI);
