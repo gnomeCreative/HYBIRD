@@ -1380,7 +1380,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned
             // checking if node is gas (so to be transformed into interface)
             if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY
                 // create new interface node
-                nodes->generateNode(ln_i, INTERFACE_NEW);
+                nodes->generateNode(ln_i, INTERFACE_NEW);  // @TODO potential race condition
                 // add it to interface node list
                 // @TODO add to interfaceNodes
                 // node is becoming active and needs to be initialized
@@ -1596,6 +1596,20 @@ __global__ void d_removeIsolated(Node2* d_nodes, double* d_massSurplus) {
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_removeIsolated(in_i, d_nodes, d_massSurplus);
 }
+
+__global__ void d_buildList(unsigned int *counter, unsigned int *buffer, const types type_check, const types *types_buffer, const unsigned int threadCount) {
+    // Grid stride loop
+    for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+        i < threadCount;
+        i += blockDim.x * gridDim.x)
+    {
+        if (types_buffer[i] == type_check) {
+            const unsigned int offset = atomicInc(counter, 1);
+            buffer[offset] = i;
+        }
+    }
+}
+
 template<>
 void LB2::updateInterface<CUDA>() {
     /**
@@ -1637,6 +1651,43 @@ void LB2::updateInterface<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, h_nodes.interfaceCount);
     gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_updateMutants<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
+    {  // Update interface node list
+        // This is a simple implementation, there may be faster approaches
+        // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
+
+        // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+        auto& ctb = CubTempMem::GetBufferSingleton();
+        const unsigned int max_interface = min(19 * hd_nodes.activeCount, hd_nodes.count) + 1;
+        ctb.resize(max_interface * sizeof(unsigned int));
+        unsigned int* builderI = reinterpret_cast<unsigned int *>(ctb.getPtr());
+        // Init index 0 to 0, this will be used as an atomic counter
+        CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
+        // Launch kernel as grid stride loop
+        int numSMs;
+        cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
+        d_buildList<<<32 * numSMs, 256>>>(builderI, &builderI[1], INTERFACE, hd_nodes.type, hd_nodes.count);
+        CUDA_CHECK();
+        // Copy back result to main list
+        unsigned int new_interface_count = 0;
+        CUDA_CALL(cudaMemcpy(&new_interface_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost));
+        if (new_interface_count > hd_nodes.interfaceAlloc) {
+            // Resize interface buffer (it doesn't currently ever scale back down)
+            if (hd_nodes.interfaceI) {
+                CUDA_CALL(cudaFree(hd_nodes.interfaceI));
+            }
+            CUDA_CALL(cudaMalloc(&hd_nodes.interfaceI, new_interface_count * sizeof(unsigned int)));
+            hd_nodes.interfaceAlloc = new_interface_count;
+        }
+        hd_nodes.interfaceCount = new_interface_count;
+        // Sort list into it's new storage
+        size_t temp_storage_bytes = 0;
+        CUDA_CALL(cub::DeviceRadixSort::SortKeys(nullptr, temp_storage_bytes, &builderI[1], hd_nodes.interfaceI, new_interface_count));
+        auto &ctm = CubTempMem::GetTempSingleton();
+        ctm.resize(temp_storage_bytes);
+        CUDA_CALL(cub::DeviceRadixSort::SortKeys(ctm.getPtr(), temp_storage_bytes, &builderI[1], hd_nodes.interfaceI, new_interface_count));
+        // Update device struct (new size and ptr, but whole struct because eh)
+        CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
+    }
     // remove isolated interface cells (both surrounded by gas and by fluid)
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_removeIsolated, 0, h_nodes.interfaceCount);
     gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
@@ -1784,9 +1835,10 @@ Node2& LB2::getNodes() {
         h_nodes.activeI = static_cast<unsigned int*>(malloc(hd_nodes.activeCount * sizeof(unsigned int)));
     }
     h_nodes.activeCount = hd_nodes.activeCount;
-    if (hd_nodes.interfaceCount > h_nodes.interfaceCount) {
+    if (hd_nodes.interfaceCount > h_nodes.interfaceAlloc) {
         if (h_nodes.interfaceI) free(h_nodes.interfaceI);
         h_nodes.interfaceI = static_cast<unsigned int*>(malloc(hd_nodes.interfaceCount * sizeof(unsigned int)));
+        h_nodes.interfaceAlloc = hd_nodes.interfaceCount;
     }
     h_nodes.interfaceCount = hd_nodes.interfaceCount;
     if (hd_nodes.fluidCount > h_nodes.fluidCount) {
@@ -1840,6 +1892,7 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMalloc(&hd_nodes.activeI, hd_nodes.activeCount * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.activeI, h_nodes.activeI, hd_nodes.activeCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
     hd_nodes.interfaceCount = h_nodes.interfaceCount;
+    hd_nodes.interfaceAlloc = h_nodes.interfaceCount;
     CUDA_CALL(cudaMalloc(&hd_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.interfaceI, h_nodes.interfaceI, hd_nodes.interfaceCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
     hd_nodes.fluidCount = h_nodes.fluidCount;
@@ -2523,6 +2576,7 @@ void LB2::initializeLists() {
     assert(!h_nodes.interfaceI);
     h_nodes.interfaceCount = static_cast<unsigned int>(interfaceNodes.size());
     h_nodes.interfaceI = static_cast<unsigned int*>(malloc(h_nodes.interfaceCount * sizeof(unsigned int)));
+    h_nodes.interfaceAlloc = h_nodes.interfaceCount;
     memcpy(h_nodes.interfaceI, interfaceNodes.data(), h_nodes.interfaceCount * sizeof(unsigned int));
 
     // Build a sorted active nodes list

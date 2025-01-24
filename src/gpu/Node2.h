@@ -32,6 +32,9 @@ struct Node2 {
 
     // The total number of interface nodes
     unsigned int interfaceCount = 0;
+    // The allocated size of interfaceI
+    // We don't shrink the buffer if the number of interface nodes decreases
+    unsigned int interfaceAlloc = 0;
     // Index of nodes marked as interface
     unsigned int* interfaceI = nullptr;
 
