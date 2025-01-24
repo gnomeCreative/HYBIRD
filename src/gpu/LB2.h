@@ -31,17 +31,16 @@ class LB2 {
 
     void init(cylinderList &cylinders, wallList &walls, particleList &particles, objectList &objects, bool externalSolveCoriolis, bool externalSolveCentrifugal);
     void allocateHostNodes(unsigned int count);
-    void initializeLatticeBoundaries(std::vector<curve> &curves);
-    void initializeTypes(const wallList &walls, const cylinderList &cylinders, const objectList &objects, std::vector<curve> &curves);
-    void initializeWallBoundaries(const wallList &walls, std::vector<curve> &curves);
-    void initializeObjectBoundaries(const objectList &objects, std::vector<curve> &curves);
-    void initializeCylinderBoundaries(const cylinderList &cylinders, std::vector<curve> &curves);
-    void initializeTopography(std::vector<curve> &curves);
-    void initializeInterface(std::vector<curve> &curves);
+    void initializeLatticeBoundaries();
+    void initializeTypes(const wallList &walls, const cylinderList &cylinders, const objectList &objects);
+    void initializeWallBoundaries(const wallList &walls);
+    void initializeObjectBoundaries(const objectList &objects);
+    void initializeCylinderBoundaries(const cylinderList &cylinders);
+    void initializeTopography();
+    void initializeInterface();
     void initializeVariables();
-    void generateNode(unsigned int coord, types typeHere, std::vector<curve>& curves);
+    void generateNode(unsigned int coord, types typeHere);
     void initializeWalls();
-    void initializeCurved(std::vector<curve>& curves);
     void initializeLists();
     /**
      * Execute all LB methods from hybird.cpp::goCycle()

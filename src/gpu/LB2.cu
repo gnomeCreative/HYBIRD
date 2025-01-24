@@ -1612,9 +1612,6 @@ void LB2::updateInterface<CUDA>() {
      *      > Need an updated list of FLUID/ACTIVE for return to LBM
      * Rebuild lists
      *      atomics vs scan + compact
-     * Assign all curves at init? (does TOPO ever move?, e.g. it's not dynamic)
-     *      Device generateNode() that supports curves?
-     *      Device eraseNode() how to remove curves?
      */
     // Initialise reduction variable
     auto& t = CubTempMem::GetTempSingleton();
@@ -1775,8 +1772,6 @@ Node2& LB2::getNodes() {
         h_nodes.solidIndex = static_cast<unsigned int*>(malloc(hd_nodes.count * sizeof(unsigned int)));
         if (h_nodes.d) free(h_nodes.d);
         h_nodes.d = static_cast<unsigned int*>(malloc(hd_nodes.count * lbmDirec * sizeof(unsigned int)));
-        if (h_nodes.curved) free(h_nodes.curved);
-        h_nodes.curved = static_cast<unsigned int*>(malloc(hd_nodes.count * sizeof(unsigned int)));
         if (h_nodes.type) free(h_nodes.type);
         h_nodes.type = static_cast<types*>(malloc(hd_nodes.count * sizeof(types)));
         if (h_nodes.p) free(h_nodes.p);
@@ -1804,11 +1799,6 @@ Node2& LB2::getNodes() {
         h_nodes.wallI = static_cast<unsigned int*>(malloc(hd_nodes.wallCount * sizeof(unsigned int)));
     }
     h_nodes.wallCount = hd_nodes.wallCount;
-    if (hd_nodes.curveCount > h_nodes.curveCount) {
-        if (h_nodes.curves) free(h_nodes.curves);
-        h_nodes.curves = static_cast<curve*>(malloc(hd_nodes.curveCount * sizeof(curve)));
-    }
-    h_nodes.curveCount = hd_nodes.curveCount;
     // Copy main buffers back to host
     // CUDA_CALL(cudaMemcpy(h_nodes.coord, hd_nodes.coord, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost)); // redundant?
     CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, h_nodes.count * lbmDirec * sizeof(double), cudaMemcpyDeviceToHost));
@@ -1825,7 +1815,6 @@ Node2& LB2::getNodes() {
     CUDA_CALL(cudaMemcpy(h_nodes.age, hd_nodes.age, h_nodes.count * sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.solidIndex, hd_nodes.solidIndex, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.d, hd_nodes.d, h_nodes.count * lbmDirec * sizeof(unsigned int), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_nodes.curved, hd_nodes.curved, h_nodes.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.type, hd_nodes.type, h_nodes.count * sizeof(types), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.p, hd_nodes.p, h_nodes.count * sizeof(bool), cudaMemcpyDeviceToHost));
     // Copy misc buffers back to host
@@ -1833,7 +1822,6 @@ Node2& LB2::getNodes() {
     CUDA_CALL(cudaMemcpy(h_nodes.interfaceI, hd_nodes.interfaceI, h_nodes.interfaceCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.fluidI, hd_nodes.fluidI, h_nodes.fluidCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.wallI, hd_nodes.wallI, h_nodes.wallCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_nodes.curves, hd_nodes.curves, h_nodes.curveCount * sizeof(curve), cudaMemcpyDeviceToHost));
 #endif
     return h_nodes;
 }
@@ -1860,9 +1848,6 @@ void LB2::initDeviceNodes() {
     hd_nodes.wallCount = h_nodes.wallCount;
     CUDA_CALL(cudaMalloc(&hd_nodes.wallI, hd_nodes.wallCount * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.wallI, h_nodes.wallI, hd_nodes.wallCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    hd_nodes.curveCount = h_nodes.curveCount;
-    CUDA_CALL(cudaMalloc(&hd_nodes.curves, hd_nodes.curveCount * sizeof(curve)));
-    CUDA_CALL(cudaMemcpy(hd_nodes.curves, h_nodes.curves, hd_nodes.curveCount * sizeof(curve), cudaMemcpyHostToDevice));
     hd_nodes.count = h_nodes.count;
     CUDA_CALL(cudaMalloc(&hd_nodes.f, hd_nodes.count * lbmDirec * sizeof(double)));
     CUDA_CALL(cudaMemcpy(hd_nodes.f, h_nodes.f, hd_nodes.count * lbmDirec * sizeof(double), cudaMemcpyHostToDevice));
@@ -1892,8 +1877,6 @@ void LB2::initDeviceNodes() {
     CUDA_CALL(cudaMemcpy(hd_nodes.solidIndex, h_nodes.solidIndex, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.d, hd_nodes.count * lbmDirec * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.d, h_nodes.d, hd_nodes.count * lbmDirec * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMalloc(&hd_nodes.curved, hd_nodes.count * sizeof(unsigned int)));
-    CUDA_CALL(cudaMemcpy(hd_nodes.curved, h_nodes.curved, hd_nodes.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.type, hd_nodes.count * sizeof(unsigned int)));
     CUDA_CALL(cudaMemcpy(hd_nodes.type, h_nodes.type, hd_nodes.count * sizeof(types), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMalloc(&hd_nodes.p, hd_nodes.count * sizeof(bool)));
@@ -1926,13 +1909,10 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     // This initialises them all as GAS
     allocateHostNodes(h_PARAMS.totPossibleNodes);
 
-    // Build a temporary buffer for curve data
-    std::vector<curve> curves;
-
     // application of lattice boundaries
-    initializeLatticeBoundaries(curves);
+    initializeLatticeBoundaries();
     // then the initial node type must be identified for every node (if not specified, it is already Fluid)
-    initializeTypes(walls, cylinders, objects, curves);
+    initializeTypes(walls, cylinders, objects);
 
     ifstream fluidFileID;
     if (h_PARAMS.lbRestart) {
@@ -1955,21 +1935,13 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
         // restartInterface(fluidFileID, restartNodes);
     } else {
         // initialize interface
-        initializeInterface(curves);
+        initializeInterface();
         // initialize variables for active nodes
         initializeVariables();
     }
 
     // initialize variables for wall nodes
     initializeWalls();
-
-    // initializing curved properties of walls
-    initializeCurved(curves);
-
-    // Allocate the curves storage
-    h_nodes.curveCount = static_cast<unsigned int>(curves.size());
-    h_nodes.curves = static_cast<curve*>(malloc(h_nodes.curveCount * sizeof(curve)));
-    memcpy(h_nodes.curves, curves.data(), h_nodes.curveCount * sizeof(curve));
 
     // initialize h_nodes's fluid, interface and active lists
     initializeLists();
@@ -2040,7 +2012,6 @@ void LB2::allocateHostNodes(const unsigned int count) {
     h_nodes.age = static_cast<float*>(malloc(h_nodes.count * sizeof(float)));
     h_nodes.solidIndex = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
     h_nodes.d = static_cast<unsigned int*>(malloc(h_nodes.count * lbmDirec * sizeof(unsigned int)));
-    h_nodes.curved = static_cast<unsigned int*>(malloc(h_nodes.count * sizeof(unsigned int)));
     h_nodes.type = static_cast<types*>(malloc(h_nodes.count * sizeof(types)));
     h_nodes.p = static_cast<bool*>(malloc(h_nodes.count * sizeof(bool)));
     // Zero initialisation
@@ -2058,12 +2029,11 @@ void LB2::allocateHostNodes(const unsigned int count) {
     memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
     memset(h_nodes.solidIndex, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
     memset(h_nodes.d, std::numeric_limits<unsigned int>::max(), h_nodes.count * lbmDirec * sizeof(unsigned int));
-    memset(h_nodes.curved, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
     std::fill(h_nodes.type, h_nodes.type + h_nodes.count, GAS);
     memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
 }
 
-void LB2::initializeLatticeBoundaries(std::vector<curve>& curves) {
+void LB2::initializeLatticeBoundaries() {
     // assign boundary characteristic to nodes (see class)
     // if not differently defined, type is 0 (fluid)
 
@@ -2078,12 +2048,12 @@ void LB2::initializeLatticeBoundaries(std::vector<curve>& curves) {
             // bottom
             indexHere = h_PARAMS.getIndex(x, y, 0);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[4], curves);
+                generateNode(indexHere, h_PARAMS.boundary[4]);
             }
             // top
             indexHere = h_PARAMS.getIndex(x, y, h_PARAMS.lbSize[2] - 1);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[5], curves);
+                generateNode(indexHere, h_PARAMS.boundary[5]);
             }
         }
     }
@@ -2094,12 +2064,12 @@ void LB2::initializeLatticeBoundaries(std::vector<curve>& curves) {
             // bottom
             indexHere = h_PARAMS.getIndex(0, y, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[0], curves);
+                generateNode(indexHere, h_PARAMS.boundary[0]);
             }
             // top
             indexHere = h_PARAMS.getIndex(h_PARAMS.lbSize[0] - 1, y, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[1], curves);
+                generateNode(indexHere, h_PARAMS.boundary[1]);
             }
         }
     }
@@ -2110,26 +2080,26 @@ void LB2::initializeLatticeBoundaries(std::vector<curve>& curves) {
             // bottom
             indexHere = h_PARAMS.getIndex(x, 0, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[2], curves);
+                generateNode(indexHere, h_PARAMS.boundary[2]);
             }
             // top
             indexHere = h_PARAMS.getIndex(x, h_PARAMS.lbSize[1] - 1, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[3], curves);
+                generateNode(indexHere, h_PARAMS.boundary[3]);
             }
         }
     }
 }
-void LB2::initializeTypes(const wallList& walls, const cylinderList& cylinders, const objectList& objects, std::vector<curve>& curves) {
-    initializeWallBoundaries(walls, curves);
+void LB2::initializeTypes(const wallList& walls, const cylinderList& cylinders, const objectList& objects) {
+    initializeWallBoundaries(walls);
     // application of solid cylinders
-    initializeCylinderBoundaries(cylinders, curves);
+    initializeCylinderBoundaries(cylinders);
     // application of objects
-    initializeObjectBoundaries(objects, curves);
+    initializeObjectBoundaries(objects);
     // initializing topography if one is present
-    initializeTopography(curves);
+    initializeTopography();
 }
-void LB2::initializeWallBoundaries(const wallList& walls, std::vector<curve>& curves) {
+void LB2::initializeWallBoundaries(const wallList& walls) {
     // const double wallThickness = 2.0 * h_PARAMS.unit.Length;
     // SOLID WALLS ////////////////////////
     for (unsigned int iw = 0; iw < walls.size(); ++iw) {
@@ -2159,7 +2129,7 @@ void LB2::initializeWallBoundaries(const wallList& walls, std::vector<curve>& cu
                 }
                 // Node is inside a wall
                 // generate node (tentatively as static wall)
-                generateNode(it, STAT_WALL, curves);
+                generateNode(it, STAT_WALL);
                 // setting solidIndex
                 h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use iw?
                 // setting type: 5-6=slip, 7-8=no-slip
@@ -2183,7 +2153,7 @@ void LB2::initializeWallBoundaries(const wallList& walls, std::vector<curve>& cu
     }
 
 }
-void LB2::initializeObjectBoundaries(const objectList& objects, std::vector<curve>& curves) {
+void LB2::initializeObjectBoundaries(const objectList& objects) {
     // SOLID WALLS ////////////////////////
     for (int io = 0; io < objects.size(); ++io) {
         const tVect convertedPosition = objects[io].x0 / h_PARAMS.unit.Length;
@@ -2193,13 +2163,13 @@ void LB2::initializeObjectBoundaries(const objectList& objects, std::vector<curv
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             const tVect nodePosition = h_PARAMS.getPosition(it);
             if (nodePosition.insideSphere(convertedPosition, convertedRadius)) {
-                generateNode(it, OBJ, curves);
+                generateNode(it, OBJ);
                 h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use io?
             }
         }
     }
 }
-void LB2::initializeCylinderBoundaries(const cylinderList& cylinders, std::vector<curve>& curves) {
+void LB2::initializeCylinderBoundaries(const cylinderList& cylinders) {
     // SOLID CYLINDERS ////////////////////////
     for (int ic = 0; ic < cylinders.size(); ++ic) {
         const tVect convertedCylinderp1 = cylinders[ic].p1 / h_PARAMS.unit.Length;
@@ -2227,7 +2197,7 @@ void LB2::initializeCylinderBoundaries(const cylinderList& cylinders, std::vecto
                 }
                 // Node is inside a cylinder
                 // tentatively static
-                generateNode(it, STAT_WALL, curves);
+                generateNode(it, STAT_WALL);
                 // setting solidIndex
                 h_nodes.solidIndex[it] = indexHere;  // TODO indexHere is redundant, use ic?
                 // setting type: 5-6=slip, 7-8=no-slip
@@ -2250,7 +2220,7 @@ void LB2::initializeCylinderBoundaries(const cylinderList& cylinders, std::vecto
         }
     }
 }
-void LB2::initializeTopography(std::vector<curve>& curves) {
+void LB2::initializeTopography() {
     // Based on initializeTopography()
     
     const double surfaceThickness = 1.75 * h_PARAMS.unit.Length;
@@ -2279,7 +2249,7 @@ void LB2::initializeTopography(std::vector<curve>& curves) {
                     
                     if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
                         const unsigned int it = ix + iy * h_PARAMS.lbSize[0] + iz * h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1];
-                        generateNode(it, STAT_WALL, curves);
+                        generateNode(it, STAT_WALL);
                         h_nodes.type[it] = TOPO;
                     }
                 }
@@ -2287,7 +2257,7 @@ void LB2::initializeTopography(std::vector<curve>& curves) {
         }
     }
 }
-void LB2::initializeInterface(std::vector<curve>& curves) {
+void LB2::initializeInterface() {
     // TODO Currently only default case is supported
     // creates an interface electing interface cells from active cells
     if (h_PARAMS.lbTopographySurface) {
@@ -2299,7 +2269,7 @@ void LB2::initializeInterface(std::vector<curve>& curves) {
                 const tVect nodePosition = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
                 const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
                 if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
-                    generateNode(it, LIQUID, curves);
+                    generateNode(it, LIQUID);
                 }
             }
         }
@@ -2357,7 +2327,7 @@ void LB2::initializeInterface(std::vector<curve>& curves) {
                             (pos.y < h_PARAMS.freeSurfaceBorders[3]) &&
                             (pos.z > h_PARAMS.freeSurfaceBorders[4]) &&
                             (pos.z < h_PARAMS.freeSurfaceBorders[5])) {
-                            generateNode(it, LIQUID, curves);
+                            generateNode(it, LIQUID);
                         }
                     }
                 }
@@ -2366,7 +2336,7 @@ void LB2::initializeInterface(std::vector<curve>& curves) {
         }
     }
 }
-void LB2::generateNode(unsigned int coord, types typeHere, std::vector<curve>& curves) {
+void LB2::generateNode(unsigned int coord, types typeHere) {
 
     // set type
     h_nodes.type[coord] = typeHere;
@@ -2394,23 +2364,6 @@ void LB2::generateNode(unsigned int coord, types typeHere, std::vector<curve>& c
             // if neighbor node is also active, link it to local node
             if (h_nodes.isActive(coord)) {
                 h_nodes.d[opp[j] * h_nodes.count + link] = coord;
-                // if the neighbor is a curved wall, set parameters accordingly
-                if (h_nodes.type[link] == TOPO) {
-                    if (h_nodes.curved[coord] == std::numeric_limits<unsigned int>::max()) {
-                        h_nodes.curved[coord] = static_cast<unsigned int>(curves.size());
-                        curves.emplace_back();
-                    }
-                    // set curved
-                    const tVect nodePosHere = PARAMS.unit.Length * h_nodes.getPosition(coord);
-                    // xf - xw
-                    const double topographyDistance = 1.0 * lbTop.directionalDistance(nodePosHere, vDirec[j]) / PARAMS.unit.Length;
-                    // wall normal
-                    curves.back().wallNormal = lbTop.surfaceNormal(nodePosHere);
-                    //cout << topographyDistance << endl;
-                    const double deltaHere = topographyDistance / vNorm[j];
-                    curves.back().delta[j] = std::min(0.99, std::max(0.01, deltaHere));
-                    curves.back().computeCoefficients();
-                }
                 if (h_nodes.isWall(link)) {
                     h_nodes.basal[coord] = true;
                 }
@@ -2543,22 +2496,6 @@ void LB2::initializeWalls() {
     h_nodes.wallCount = static_cast<unsigned int>(wallNodes.size());
     h_nodes.wallI = static_cast<unsigned int*>(malloc(h_nodes.wallCount * sizeof(unsigned int)));
     memcpy(h_nodes.wallI, wallNodes.data(), h_nodes.wallCount * sizeof(unsigned int));    
-}
-void LB2::initializeCurved(std::vector<curve> &curves) {
-    cout << "Initializing curved boundaries" << endl;
-    for (unsigned int i = 0; i < h_nodes.wallCount; ++i) {
-        const unsigned int w_i = h_nodes.wallI[i];
-        if (h_nodes.type[w_i] == CYL) {
-            assert(h_nodes.curved[w_i] == std::numeric_limits<unsigned int>::max());
-            h_nodes.curved[w_i] = static_cast<unsigned int>(curves.size());
-            curves.emplace_back();
-            const tVect nodePos = PARAMS.unit.Length * h_nodes.getPosition(w_i);
-            for (int j = 1; j < lbmDirec; ++j) {
-                curves.back().delta[j] = 1.0 - h_cylinders.segmentIntercept(0, nodePos, PARAMS.unit.Length * v[j]);
-                curves.back().computeCoefficients();
-            }
-        }
-    }
 }
 void LB2::initializeLists() {
     cout << "Resetting lists ...";

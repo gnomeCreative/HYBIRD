@@ -45,11 +45,6 @@ struct Node2 {
     // Index of nodes marked as walls
     unsigned int *wallI = nullptr;
 
-    // The total number of curves (only really required for copying)
-    unsigned int curveCount = 0;
-    // Buffer of curves, nodes index into this via curved
-    curve *curves = nullptr;
-
     // The total number of nodes
     unsigned int count = 0;
     /**
@@ -107,10 +102,6 @@ struct Node2 {
      * @note Unallocated/gas nodes are represented by std::numeric_limits<unsigned int>::max()
      */
     unsigned int *d = nullptr;
-    /**
-     * Index into curve databuffer, else std::numeric_limits<unsigned int>::max()
-     */
-    unsigned int *curved = nullptr;
     /**
      * @brief Identification of node type
      * @see types
@@ -778,7 +769,6 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
 }
 /**
  * CUDA capable version of generateNode()
- * This does not support TOPO nodes, which may be curved
  */
 __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index, types typeHere) {
     // set type
@@ -806,18 +796,6 @@ __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index,
             if (this->isActive(index)) {
                 /// TODO potential race condition
                 this->d[opp[j] * this->count + link] = index;
-#ifdef _DEBUG
-                if (this->type[link] == TOPO) {
-                    // curved walls cannot be created via this version of generateNode()
-#ifdef __CUDA_ARCH__
-                    printf("Attempting to create curve via common_generateNode(), please use generateNode() (host code only)\n");
-                    __trap();
-#else
-                    fprintf(stderr, "Attempting to create curve via common_generateNode(), please use generateNode() (host code only)\n");
-                    throw std::exception();
-#endif
-                }
-#endif
                 if (this->isWall(link)) {
                     this->basal[index] = true;
                 }
@@ -830,9 +808,6 @@ __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index,
 __host__ __device__ __forceinline__ void Node2::eraseNode(const unsigned int index) {
     // find neighbor indices
     std::array<unsigned int, lbmDirec> neighborCoord = findNeighbors(index);
-
-    /// TODO Cleanup curve
-    // delete nodeHere->curved;
 
     //remove from map;
     this->type[index] = GAS;
