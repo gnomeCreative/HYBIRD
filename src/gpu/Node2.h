@@ -297,7 +297,8 @@ __host__ __device__ __forceinline__ void Node2::scatterMass(unsigned int index, 
             unsigned int ln_i = d[j];
             if (ln_i != std::numeric_limits<unsigned int>::max()) {
                 if (this->type[ln_i] == INTERFACE) {
-                    this->extraMass[ln_i] += extraMass / double(totNodes);
+                    // https://github.com/gnomeCreative/HYBIRD/issues/16
+                    //this->extraMass[ln_i] += extraMass / double(totNodes);
                 }
             }
         }
