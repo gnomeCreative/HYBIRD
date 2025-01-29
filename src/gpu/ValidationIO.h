@@ -90,64 +90,116 @@ public:
         const Node2 nodes = lb.getNodes();
         // Write a new data row
         // node_count
-        fs << nodes.count << ",";
+        unsigned int sd_count = 0;
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            if (nodes.type[i] != GAS) {
+                ++sd_count;
+            }
+        }
+        fs << sd_count << ",";
         // n_average
-        fs << std::accumulate(nodes.n, nodes.n + nodes.count, 0.0) / static_cast<float>(nodes.count) << ",";
+        double sd_avg = 0;
         double sd_min = std::numeric_limits<double>::max();
         double sd_max = -std::numeric_limits<double>::max();
         for (unsigned int i = 0; i < nodes.count; ++i) {
-            sd_min = std::min(sd_min, nodes.n[i]);
-            sd_max = std::max(sd_max, nodes.n[i]);
+            if (nodes.type[i] != GAS) {
+                ++sd_count;
+                sd_avg += nodes.n[i];
+                sd_min = std::min(sd_min, nodes.n[i]);
+                sd_max = std::max(sd_max, nodes.n[i]);
+            }
         }
+        fs << sd_avg / sd_count << ",";
         fs << sd_min << ",";
         fs << sd_max << ",";
         // uX_average, uY_average, uZ_average
-        tVect t = std::accumulate(nodes.u, nodes.u + nodes.count, Zero);
+        tVect t_avg = Zero;
         tVect t_min = tVect(std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
         tVect t_max = tVect(-std::numeric_limits<double>::max(), -std::numeric_limits<double>::max(), -std::numeric_limits<double>::max());
         for (unsigned int i = 0; i < nodes.count; ++i) {
-            t_min.x = std::min(t_min.x, nodes.u[i].x);
-            t_min.y = std::min(t_min.y, nodes.u[i].y);
-            t_min.z = std::min(t_min.z, nodes.u[i].z);
-            t_max.x = std::max(t_max.x, nodes.u[i].x);
-            t_max.y = std::max(t_max.y, nodes.u[i].y);
-            t_max.z = std::max(t_max.z, nodes.u[i].z);
+            if (nodes.type[i] != GAS) {
+                t_avg.x = nodes.u[i].x;
+                t_avg.y = nodes.u[i].y;
+                t_avg.z = nodes.u[i].z;
+                t_min.x = std::min(t_min.x, nodes.u[i].x);
+                t_min.y = std::min(t_min.y, nodes.u[i].y);
+                t_min.z = std::min(t_min.z, nodes.u[i].z);
+                t_max.x = std::max(t_max.x, nodes.u[i].x);
+                t_max.y = std::max(t_max.y, nodes.u[i].y);
+                t_max.z = std::max(t_max.z, nodes.u[i].z);
+            }
         }
-        fs << t.x / static_cast<float>(nodes.count) << ",";
+        fs << t_avg.x / sd_count << ",";
         fs << t_min.x << ",";
         fs << t_max.x << ",";
-        fs << t.y / static_cast<float>(nodes.count) << ",";
+        fs << t_avg.y / sd_count << ",";
         fs << t_min.y << ",";
         fs << t_max.y << ",";
-        fs << t.z / static_cast<float>(nodes.count) << ",";
+        fs << t_avg.z / sd_count << ",";
         fs << t_min.z << ",";
         fs << t_max.z << ",";
         // hydroForceX_average, hydroForceY_average, hydroForceZ_average
-        t = std::accumulate(nodes.hydroForce, nodes.hydroForce + nodes.count, Zero);
-        fs << t.x / static_cast<float>(nodes.count) << ",";
-        fs << t.y / static_cast<float>(nodes.count) << ",";
-        fs << t.z / static_cast<float>(nodes.count) << ",";
+        t_avg = Zero;
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            if (nodes.type[i] != GAS) {
+                t_avg.x = nodes.hydroForce[i].x;
+                t_avg.y = nodes.hydroForce[i].y;
+                t_avg.z = nodes.hydroForce[i].z;
+            }
+        }
+        fs << t_avg.x / sd_count << ",";
+        fs << t_avg.y / sd_count << ",";
+        fs << t_avg.z / sd_count << ",";
         // centrifugalForceX_average, centrifugalForceY_average, centrifugalForceZ_average
-        t = std::accumulate(nodes.centrifugalForce, nodes.centrifugalForce + nodes.count, Zero);
-        fs << t.x / static_cast<float>(nodes.count) << ",";
-        fs << t.y / static_cast<float>(nodes.count) << ",";
-        fs << t.z / static_cast<float>(nodes.count) << ",";
-        // mass_average"
-        fs << std::accumulate(nodes.mass, nodes.mass + nodes.count, 0.0) / static_cast<float>(nodes.count) << ",";
+        t_avg = Zero;
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            if (nodes.type[i] != GAS) {
+                t_avg.x = nodes.centrifugalForce[i].x;
+                t_avg.y = nodes.centrifugalForce[i].y;
+                t_avg.z = nodes.centrifugalForce[i].z;
+            }
+        }
+        fs << t_avg.x / sd_count << ",";
+        fs << t_avg.y / sd_count << ",";
+        fs << t_avg.z / sd_count << ",";
+        // mass_average
+        sd_avg = 0;
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            if (nodes.type[i] != GAS) {
+                sd_avg += nodes.mass[i];
+            }
+        }
+        fs << sd_avg / sd_count << ",";
         // visc_average
-        fs << std::accumulate(nodes.visc, nodes.visc + nodes.count, 0.0) / static_cast<float>(nodes.count) << ",";
+        sd_avg = 0;
         sd_min = std::numeric_limits<double>::max();
         sd_max = -std::numeric_limits<double>::max();
         for (unsigned int i = 0; i < nodes.count; ++i) {
-            sd_min = std::min(sd_min, nodes.visc[i]);
-            sd_max = std::max(sd_max, nodes.visc[i]);
+            if (nodes.type[i] != GAS) {
+                sd_avg += nodes.visc[i];
+                sd_min = std::min(sd_min, nodes.visc[i]);
+                sd_max = std::max(sd_max, nodes.visc[i]);
+            }
         }
+        fs << sd_avg / sd_count << ",";
         fs << sd_min << ",";
         fs << sd_max << ",";
         // type_average
-        fs << std::accumulate(nodes.type, nodes.type + nodes.count, static_cast<uint64_t>(0)) / static_cast<float>(nodes.count) << ",";
+        sd_avg = 0;
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            if (nodes.type[i] != GAS) {
+                sd_avg += nodes.type[i];
+            }
+        }
+        fs << sd_avg / sd_count << ",";
         // p_average
-        fs << std::count(nodes.p, nodes.p + nodes.count, true) / static_cast<float>(nodes.count) << ",";
+        sd_avg = 0;
+        for (unsigned int i = 0; i < nodes.count; ++i) {
+            if (nodes.type[i] != GAS && nodes.p[i]) {
+                sd_avg += 1;
+            }
+        }
+        fs << sd_avg << ",";
         // active_count
         fs << nodes.activeCount << ",";
         // active_coord_average
@@ -178,15 +230,17 @@ public:
         fs << sum / static_cast<float>(nodes.wallCount) << ",";
         // f
         for (int j = 0; j < lbmDirec; ++j) {
-            double sd = 0;
+            sd_avg = 0;
             sd_min = std::numeric_limits<double>::max();
             sd_max = -std::numeric_limits<double>::max();
             for (int i = 0; i < nodes.count; ++i) {
-                sd += nodes.f[i * lbmDirec + j];
-                sd_min = std::min(sd_min, nodes.f[i * lbmDirec + j]);
-                sd_max = std::max(sd_max, nodes.f[i * lbmDirec + j]);
+                if (nodes.type[i] != GAS) {
+                    sd_avg += nodes.f[i * lbmDirec + j];
+                    sd_min = std::min(sd_min, nodes.f[i * lbmDirec + j]);
+                    sd_max = std::max(sd_max, nodes.f[i * lbmDirec + j]);
+                }
             }
-            fs << sd / static_cast<float>(nodes.count) << ",";
+            fs << sd_avg / sd_count << ",";
             fs << sd_min << ",";
             fs << sd_max << ",";
         }
