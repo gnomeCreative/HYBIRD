@@ -1467,12 +1467,12 @@ __host__ __device__ __forceinline__ void common_removeIsolated(const unsigned in
         if (surroundedFluid) {
             // update mass storage for balance
 #ifdef __CUDA_ARCH__
-        // CUDA atomics
-        atomicAdd(massSurplus, nodes->mass[in_i] - nodes->n[in_i]);
+            // CUDA atomics
+            atomicAdd(massSurplus, nodes->mass[in_i] - nodes->n[in_i]);
 #else
-        // CPU atomics
-        #pragma omp atomic update
-        *massSurplus += (nodes->mass[in_i] - nodes->n[in_i]);
+            // CPU atomics
+            #pragma omp atomic update
+            *massSurplus += (nodes->mass[in_i] - nodes->n[in_i]);
 #endif
             // update characteristics (inherited from the gas node)
             nodes->mass[in_i] = nodes->n[in_i];
@@ -1495,7 +1495,6 @@ __host__ __device__ __forceinline__ void common_removeIsolated(const unsigned in
         }
         // updating mass surplus
         if (surroundedGas) {
-            //            cout<<nodes[i].x<<" "<<nodes[i].y<<" "<<nodes[i].z<<" NEW GAS NODE from surrounding\n";
             // update mass
 #ifdef __CUDA_ARCH__
             // CUDA atomics
@@ -1600,7 +1599,7 @@ __global__ void d_buildList(unsigned int *counter, unsigned int *buffer, const t
         i += blockDim.x * gridDim.x)
     {
         if (types_buffer[i] == type_check) {
-            const unsigned int offset = atomicInc(counter, 1);
+            const unsigned int offset = atomicInc(counter, UINT_MAX);
             buffer[offset] = i;
         }
     }
@@ -1841,7 +1840,7 @@ void LB2::latticeBoltzmannFreeSurfaceStep() {
     // mass and free surface update
     this->updateMass<IMPL>();
     this->updateInterface<IMPL>();
-    this->cleanLists<IMPL>();
+    hd_nodes.cleanLists<IMPL>();
 }
 
 Node2& LB2::getNodes() {

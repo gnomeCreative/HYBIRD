@@ -195,8 +195,6 @@ class LB2 {
     void updateMass();
     template<int impl>
     void updateInterface();
-    template<int impl>
-    void cleanLists();
 
     Node2 &getNodes();
     void initDeviceNodes();
