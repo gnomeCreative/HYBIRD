@@ -825,7 +825,7 @@ __host__ __device__ __forceinline__ void Node2::eraseNode(const unsigned int ind
         // linearized coordinate of neighbor nodes
         const unsigned int ln_i = neighborCoord[j];
         // check if node at that location exists
-        if (this->type[ln_i] != std::numeric_limits<unsigned int>::max()) {
+        if (ln_i < this->count) {
             // if neighbor node is active, remove link to local node
             if (this->isActive(ln_i)) {
                 this->d[this->count * opp[j] + ln_i] = std::numeric_limits<unsigned int>::max();
