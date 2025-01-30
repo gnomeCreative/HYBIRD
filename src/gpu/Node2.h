@@ -148,7 +148,8 @@ struct Node2 {
         p[i] = t;
     }
     __host__ __device__ bool isActive(const unsigned int i) const {
-        return type[i] == LIQUID || type[i] == INTERFACE;
+        // Treat interface empty as active, so it takes the correct branch during eraseNode()
+        return type[i] == LIQUID || type[i] == INTERFACE || type[i] == INTERFACE_EMPTY;
     }
     __host__ __device__ void copy(unsigned int dest_index, unsigned int src_index);
     __host__ __device__ void scatterMass(unsigned int index, double& extraMass);
