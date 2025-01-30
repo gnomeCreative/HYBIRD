@@ -103,7 +103,6 @@ public:
         double sd_max = -std::numeric_limits<double>::max();
         for (unsigned int i = 0; i < nodes.count; ++i) {
             if (nodes.type[i] != GAS) {
-                ++sd_count;
                 sd_avg += nodes.n[i];
                 sd_min = std::min(sd_min, nodes.n[i]);
                 sd_max = std::max(sd_max, nodes.n[i]);
@@ -118,9 +117,9 @@ public:
         tVect t_max = tVect(-std::numeric_limits<double>::max(), -std::numeric_limits<double>::max(), -std::numeric_limits<double>::max());
         for (unsigned int i = 0; i < nodes.count; ++i) {
             if (nodes.type[i] != GAS) {
-                t_avg.x = nodes.u[i].x;
-                t_avg.y = nodes.u[i].y;
-                t_avg.z = nodes.u[i].z;
+                t_avg.x += nodes.u[i].x;
+                t_avg.y += nodes.u[i].y;
+                t_avg.z += nodes.u[i].z;
                 t_min.x = std::min(t_min.x, nodes.u[i].x);
                 t_min.y = std::min(t_min.y, nodes.u[i].y);
                 t_min.z = std::min(t_min.z, nodes.u[i].z);
