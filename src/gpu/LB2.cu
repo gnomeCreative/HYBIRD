@@ -1541,7 +1541,7 @@ void LB2::updateInterface<CPU>() {
     const double addMass = h_massSurplus / d_nodes->interfaceCount;
 #pragma omp parallel for
     for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
-        const unsigned int in_i = d_nodes->activeI[i];
+        const unsigned int in_i = d_nodes->interfaceI[i];
         // distributing surplus to interface cells
         d_nodes->mass[in_i] += addMass;
     }
@@ -1744,7 +1744,7 @@ void LB2::updateInterface<CUDA>() {
     buildActiveList<CUDA>();
     // distributing surplus to interface cells
     CUDA_CALL(cudaMemcpy(&h_massSurplus, d_massSurplus, sizeof(double), cudaMemcpyDeviceToHost));
-    const double addMass = h_massSurplus / h_nodes.interfaceCount;
+    const double addMass = h_massSurplus / hd_nodes.interfaceCount;
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, hd_nodes.interfaceCount);
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
