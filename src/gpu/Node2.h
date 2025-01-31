@@ -85,7 +85,7 @@ struct Node2 {
     tVect *centrifugalForce = nullptr;
     // mass functions
     double *mass = nullptr;
-    double *newMass = nullptr;
+    double *newMass = nullptr; // @todo newMass appears redundant, could be replaced with a local variable inside common_updateMassInterface()
     // viscosity functions
     double *visc = nullptr;
     bool *basal = nullptr;
@@ -802,7 +802,7 @@ __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index,
             this->d[j * this->count + index] = link;
             // if neighbor node is also active, link it to local node
             if (this->isActive(index)) {
-                /// TODO potential race condition
+                // This shouldn't be a race condition during free surface, as neighbours are reciprocal
                 this->d[opp[j] * this->count + link] = index;
                 if (this->isWall(link)) {
                     this->basal[index] = true;
@@ -827,6 +827,7 @@ __host__ __device__ __forceinline__ void Node2::eraseNode(const unsigned int ind
         // check if node at that location exists
         if (ln_i < this->count) {
             // if neighbor node is active, remove link to local node
+            // @note If another empty node was erased first, and is now GAS, it won't be reset (harmless)
             if (this->isActive(ln_i)) {
                 this->d[this->count * opp[j] + ln_i] = std::numeric_limits<unsigned int>::max();
             }

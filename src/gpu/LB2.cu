@@ -1236,6 +1236,7 @@ void LB2::enforceMassConservation<CUDA>() {
  * updateMass()
  */
 __host__ __device__ __forceinline__ void common_updateMassInterface(const unsigned int in_i, Node2 *nodes) {
+    // mass for interface nodes is regulated by the evolution equation
     nodes->newMass[in_i] = nodes->mass[in_i];
     // additional mass streaming to/from interface
     double deltaMass = 0.0;
@@ -1344,7 +1345,7 @@ void LB2::updateMass<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, maxThreads);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMass, 0, maxThreads);
     // Round up to accommodate required threads
     gridSize = (maxThreads + blockSize - 1) / blockSize;
     d_updateMass<<<gridSize, blockSize>>>(d_nodes);
@@ -1357,14 +1358,10 @@ __host__ __device__ __forceinline__ void common_findInterfaceMutants(const unsig
     if (nodes->mass[in_i] > nodes->n[in_i]) {
         // updating type
         nodes->type[in_i] = INTERFACE_FILLED;
-        // updating lists (interface -> fluid)
-        // @TODO ADD to fluidNodes
-        // @TODO Remove from interfaceNodes
     }// CHECKING FOR NEW GAS NODES from emptying
     else if (nodes->mass[in_i] < 0.0) {
         // updating type
         nodes->type[in_i] = INTERFACE_EMPTY;
-        // @TODO Remove from interfaceNodes
     }
 }
 __host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned int in_i, Node2* nodes) {
@@ -1378,18 +1375,17 @@ __host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned
             // neighbor index
             const unsigned int ln_i = neighborCoord[j];
             // checking if node is gas (so to be transformed into interface)
-            if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY
+            if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
                 // create new interface node
-                nodes->generateNode(ln_i, INTERFACE);  // @TODO potential race condition
+                nodes->generateNode(ln_i, INTERFACE);
                 // add it to interface node list
-                // @TODO add to interfaceNodes
                 // node is becoming active and needs to be initialized
                 double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
                 // same density and velocity; 1% of the mass
                 nodes->copy(ln_i, in_i);
                 nodes->mass[ln_i] = -massSurplusHere;
                 // the 1% of the mass is taken form the surplus
-                nodes->scatterMass(ln_i, massSurplusHere);  // @TODO race condition on extraMass?
+                nodes->scatterMass(ln_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
                 // massSurplus += massSurplusHere;
             }
         }
@@ -1541,7 +1537,7 @@ void LB2::updateInterface<CPU>() {
         // remove isolated interface cells (both surrounded by gas and by fluid)
         common_removeIsolated(in_i, d_nodes, &h_massSurplus);
     }
-    /// @todo rebuild lists
+    // @todo Rebuild interface list
     const double addMass = h_massSurplus / d_nodes->interfaceCount;
 #pragma omp parallel for
     for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
@@ -1549,6 +1545,7 @@ void LB2::updateInterface<CPU>() {
         // distributing surplus to interface cells
         d_nodes->mass[in_i] += addMass;
     }
+    // @todo Rebuild all lists
 }
 #ifdef USE_CUDA
 __global__ void d_findInterfaceMutants(Node2* d_nodes) {
