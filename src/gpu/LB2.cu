@@ -1364,7 +1364,7 @@ __host__ __device__ __forceinline__ void common_findInterfaceMutants(const unsig
         nodes->type[in_i] = INTERFACE_EMPTY;
     }
 }
-__host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned int in_i, Node2* nodes) {
+__host__ __device__ __forceinline__ void common_smoothenInterface_find(const unsigned int in_i, Node2* nodes) {
     constexpr double marginalMass = 1.0e-2;
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
     if (nodes->type[in_i] == INTERFACE_FILLED) {
@@ -1376,17 +1376,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned
             const unsigned int ln_i = neighborCoord[j];
             // checking if node is gas (so to be transformed into interface)
             if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
-                // create new interface node
-                nodes->generateNode(ln_i, INTERFACE);
-                // add it to interface node list
-                // node is becoming active and needs to be initialized
-                double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
-                // same density and velocity; 1% of the mass
-                nodes->copy(ln_i, in_i);
-                nodes->mass[ln_i] = -massSurplusHere;
-                // the 1% of the mass is taken form the surplus
-                nodes->scatterMass(ln_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
-                // massSurplus += massSurplusHere;
+                nodes->type[ln_i] = NEW_INTERFACE;
             }
         }
     }
@@ -1401,6 +1391,48 @@ __host__ __device__ __forceinline__ void common_smoothenInterface(const unsigned
             // neighbor node
             const unsigned int ln_i = neighborCoord[j];
             if (ln_i < nodes->count && (nodes->type[ln_i] == LIQUID || nodes->type[ln_i] == INTERFACE_FILLED)) {
+                nodes->type[ln_i] = NEW_GAS;
+            }
+        }
+    }
+}
+__host__ __device__ __forceinline__ void common_smoothenInterface_update(const unsigned int in_i, Node2* nodes) {
+    constexpr double marginalMass = 1.0e-2;
+    // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
+    if (nodes->type[in_i] == INTERFACE_FILLED) {
+        // neighor indices
+        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
+        // cycling through neighbors
+        for (int j = 1; j < lbmDirec; ++j) {
+            // neighbor index
+            const unsigned int ln_i = neighborCoord[j];
+            // checking if node is gas (so to be transformed into interface)
+            if (ln_i < nodes->count && nodes->type[ln_i] == NEW_INTERFACE) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
+                // create new interface node
+                nodes->generateNode(ln_i, INTERFACE);
+                // add it to interface node list
+                // node is becoming active and needs to be initialized
+                double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
+                // same density and velocity; 1% of the mass
+                nodes->copy(ln_i, in_i);
+                nodes->mass[ln_i] = -massSurplusHere;
+                // the 1% of the mass is taken form the surplus
+                nodes->scatterMass(ln_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
+                // massSurplus += massSurplusHere;
+            }
+        }
+}
+
+    // CHECKING FOR NEW INTERFACE NODES from neighboring a new gas node
+    // tested unordered_set, was slower
+    if (nodes->type[in_i] == INTERFACE_EMPTY) {
+        // neighor indices
+        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
+        // cycling through neighbors
+        for (int j = 1; j < lbmDirec; ++j) {
+            // neighbor node
+            const unsigned int ln_i = neighborCoord[j];
+            if (ln_i < nodes->count && nodes->type[ln_i] == NEW_GAS) {
                 // ln_i should equal nodes->d[in_i * nodes.count + j];
                 nodes->type[ln_i] = INTERFACE;
                 double massSurplusHere = marginalMass * nodes->n[ln_i];
@@ -1521,7 +1553,13 @@ void LB2::updateInterface<CPU>() {
         // Convert index to interface node index
         const unsigned int in_i = d_nodes->interfaceI[i];
         // fixing the interface (always one interface between fluid and gas)
-        common_smoothenInterface(in_i, d_nodes);
+        common_smoothenInterface_find(in_i, d_nodes);
+    }
+    for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
+        // Convert index to interface node index
+        const unsigned int in_i = d_nodes->interfaceI[i];
+        // fixing the interface (always one interface between fluid and gas)
+        common_smoothenInterface_update(in_i, d_nodes);
     }
 #pragma omp parallel for
     for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
@@ -1558,7 +1596,7 @@ __global__ void d_findInterfaceMutants(Node2* d_nodes) {
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_findInterfaceMutants(in_i, d_nodes);
 }
-__global__ void d_smoothenInterface(Node2* d_nodes) {
+__global__ void d_smoothenInterface_find(Node2* d_nodes) {
     // Get unique CUDA thread index, which corresponds to interface node 
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
@@ -1566,7 +1604,17 @@ __global__ void d_smoothenInterface(Node2* d_nodes) {
         return;
     // Convert index to interface node index
     const unsigned int in_i = d_nodes->interfaceI[i];
-    common_smoothenInterface(in_i, d_nodes);
+    common_smoothenInterface_find(in_i, d_nodes);
+}
+__global__ void d_smoothenInterface_update(Node2* d_nodes) {
+    // Get unique CUDA thread index, which corresponds to interface node 
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (i >= d_nodes->interfaceCount)
+        return;
+    // Convert index to interface node index
+    const unsigned int in_i = d_nodes->interfaceI[i];
+    common_smoothenInterface_update(in_i, d_nodes);
 }
 __global__ void d_updateMutants(Node2* d_nodes, double* d_massSurplus) {
     // Get unique CUDA thread index, which corresponds to interface node 
@@ -1725,9 +1773,12 @@ void LB2::updateInterface<CUDA>() {
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_findInterfaceMutants<<<gridSize, blockSize>>>(d_nodes);
     // fixing the interface (always one interface between fluid and gas)
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface, 0, hd_nodes.interfaceCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_find, 0, hd_nodes.interfaceCount);
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
-    d_smoothenInterface<<<gridSize, blockSize>>>(d_nodes);
+    d_smoothenInterface_find<<<gridSize, blockSize>>>(d_nodes);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_update, 0, hd_nodes.interfaceCount);
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
+    d_smoothenInterface_update<<<gridSize, blockSize>>>(d_nodes);
     // updating characteristics of mutant nodes
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, hd_nodes.interfaceCount);
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
