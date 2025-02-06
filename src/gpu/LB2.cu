@@ -1399,50 +1399,32 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_find(const uns
 __host__ __device__ __forceinline__ void common_smoothenInterface_update(const unsigned int in_i, Node2* nodes) {
     constexpr double marginalMass = 1.0e-2;
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
-    if (nodes->type[in_i] == INTERFACE_FILLED) {
-        // neighor indices
-        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
-        // cycling through neighbors
-        for (int j = 1; j < lbmDirec; ++j) {
-            // neighbor index
-            const unsigned int ln_i = neighborCoord[j];
-            // checking if node is gas (so to be transformed into interface)
-            if (ln_i < nodes->count && nodes->type[ln_i] == NEW_INTERFACE) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
-                // create new interface node
-                nodes->generateNode(ln_i, INTERFACE);
-                // add it to interface node list
-                // node is becoming active and needs to be initialized
-                double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
-                // same density and velocity; 1% of the mass
-                nodes->copy(ln_i, in_i);
-                nodes->mass[ln_i] = -massSurplusHere;
-                // the 1% of the mass is taken form the surplus
-                nodes->scatterMass(ln_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
-                // massSurplus += massSurplusHere;
-            }
-        }
-}
+    if (nodes->type[in_i] == NEW_INTERFACE) {
+        // create new interface node
+        nodes->generateNode(in_i, INTERFACE);
+        // add it to interface node list
+        // node is becoming active and needs to be initialized
+        double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
+        // same density and velocity; 1% of the mass
+        nodes->copy(in_i, in_i);
+        nodes->mass[in_i] = -massSurplusHere;
+        // the 1% of the mass is taken form the surplus
+        nodes->scatterMass(in_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
+        // massSurplus += massSurplusHere;
+    }
+
 
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new gas node
     // tested unordered_set, was slower
-    if (nodes->type[in_i] == INTERFACE_EMPTY) {
-        // neighor indices
-        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
-        // cycling through neighbors
-        for (int j = 1; j < lbmDirec; ++j) {
-            // neighbor node
-            const unsigned int ln_i = neighborCoord[j];
-            if (ln_i < nodes->count && nodes->type[ln_i] == NEW_GAS) {
-                // ln_i should equal nodes->d[in_i * nodes.count + j];
-                nodes->type[ln_i] = INTERFACE;
-                double massSurplusHere = marginalMass * nodes->n[ln_i];
-                // characteristics are inherited by previous fluid cell. Only mass must be updated to 99% of initial mass
-                nodes->mass[ln_i] = nodes->n[ln_i] - massSurplusHere;
-                // the remaining 1% of the mass is added to the surplus
-                nodes->scatterMass(ln_i, massSurplusHere);
-                //massSurplus += massSurplusHere;
-            }
-        }
+    else if (nodes->type[in_i] == NEW_GAS) {
+        // ln_i should equal nodes->d[in_i * nodes.count + j];
+        nodes->type[in_i] = INTERFACE;
+        double massSurplusHere = marginalMass * nodes->n[in_i];
+        // characteristics are inherited by previous fluid cell. Only mass must be updated to 99% of initial mass
+        nodes->mass[in_i] = nodes->n[in_i] - massSurplusHere;
+        // the remaining 1% of the mass is added to the surplus
+        nodes->scatterMass(in_i, massSurplusHere);
+        //massSurplus += massSurplusHere;
     }
 }
 __host__ __device__ __forceinline__ void common_updateMutants(const unsigned int in_i, Node2* nodes, double *massSurplus) {
