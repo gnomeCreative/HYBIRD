@@ -26,9 +26,8 @@
  *
  */
 
-
 enum ExitCode {
-    UNFINISHED = -1, SUCCESS = 0, TIME_LIMIT_REACHED, SIGNAL_CAUGHT, ERROR
+    UNFINISHED = -1, SUCCESS = 0, TIME_LIMIT_REACHED, SIGNAL_CAUGHT, ERR
 };
 
 
@@ -150,7 +149,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
     std::ifstream configFile(io.configFileName.c_str());
     if (!configFile) {
         cout << "ERROR: Can't open config file \"" << io.configFileName << "\" for reading!\n";
-        //        return ERROR;
+        //        return ERR;
     }
     configFile.close();
 }
@@ -559,7 +558,7 @@ int main(int argc, char** argv) {
 
             //            // exit abnormally if a serious problem has occurred
             //            if (io.problem) {
-            //                exit_code = ERROR;
+            //                exit_code = ERR;
             //            }
         }
 

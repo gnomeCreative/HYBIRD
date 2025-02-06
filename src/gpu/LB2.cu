@@ -1376,7 +1376,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_find(const uns
             const unsigned int ln_i = neighborCoord[j];
             // checking if node is gas (so to be transformed into interface)
             if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
-                nodes->type[ln_i] = NEW_INTERFACE;
+                nodes->type[ln_i] = GAS_TO_INTERFACE;
             }
         }
     }
@@ -1391,7 +1391,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_find(const uns
             // neighbor node
             const unsigned int ln_i = neighborCoord[j];
             if (ln_i < nodes->count && (nodes->type[ln_i] == LIQUID || nodes->type[ln_i] == INTERFACE_FILLED)) {
-                nodes->type[ln_i] = NEW_GAS;
+                nodes->type[ln_i] = FLUID_TO_INTERFACE;
             }
         }
     }
@@ -1399,7 +1399,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_find(const uns
 __host__ __device__ __forceinline__ void common_smoothenInterface_update(const unsigned int in_i, Node2* nodes) {
     constexpr double marginalMass = 1.0e-2;
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
-    if (nodes->type[in_i] == NEW_INTERFACE) {
+    if (nodes->type[in_i] == GAS_TO_INTERFACE) {
         // create new interface node
         nodes->generateNode(in_i, INTERFACE);
         // add it to interface node list
@@ -1416,7 +1416,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
 
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new gas node
     // tested unordered_set, was slower
-    else if (nodes->type[in_i] == NEW_GAS) {
+    else if (nodes->type[in_i] == FLUID_TO_INTERFACE) {
         // ln_i should equal nodes->d[in_i * nodes.count + j];
         nodes->type[in_i] = INTERFACE;
         double massSurplusHere = marginalMass * nodes->n[in_i];
@@ -1763,7 +1763,7 @@ unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len, bool update_devi
     // Launch kernel as grid stride loop
     int numSMs;
     cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
-    d_buildDualList<<<32 * numSMs, 256>>>(builderI, &builderI[1], NEW_INTERFACE, NEW_GAS, hd_nodes.type, hd_nodes.count);
+    d_buildDualList<<<32 * numSMs, 256>>>(builderI, &builderI[1], GAS_TO_INTERFACE, FLUID_TO_INTERFACE, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
     // This is a temporary list, so just return the device pointer
     return builderI;

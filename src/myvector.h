@@ -30,7 +30,8 @@ enum ProblemName {NONE, SHEARCELL, AVALANCHE, DRUM, NET, BARRIER,
     HOURGLASS, IERVOLINO,IERVOLINO_2D, IERVOLINO_CYLINDERTEST, HEAP, TRIAXIAL, JOP, WILL, WILL_SETTLING, MANGENEY, GRAY, ESERCITAZIONE, FILIPPO_SILOS, HK_SMALL, HK_LARGE, KELVIN, SHEARCELL2023,
     INTRUDER, OBJMOVING};
     
-enum types : unsigned char {LIQUID, UNUSED, GAS, INTERFACE, PERIODIC, SLIP_STAT_WALL, SLIP_DYN_WALL, STAT_WALL, DYN_WALL, CYL, OBJ, TOPO, OUTLET, INTERFACE_EMPTY, INTERFACE_FILLED, NEW_INTERFACE, NEW_GAS};
+enum types : unsigned char {LIQUID, UNUSED, GAS, INTERFACE, PERIODIC, SLIP_STAT_WALL, SLIP_DYN_WALL, STAT_WALL, DYN_WALL, CYL, OBJ, TOPO, OUTLET, INTERFACE_EMPTY, INTERFACE_FILLED, GAS_TO_INTERFACE, FLUID_TO_INTERFACE
+};
 
 __host__ __device__ inline const char* typeString(types v)
 {
@@ -50,8 +51,8 @@ __host__ __device__ inline const char* typeString(types v)
         case OUTLET:      return "OUTLET";
         case INTERFACE_EMPTY:      return "INTERFACE_EMPTY";
         case INTERFACE_FILLED:      return "INTERFACE_FILLED";
-        case NEW_INTERFACE:      return "NEW_INTERFACE";
-        case NEW_GAS:      return "NEW_GAS";
+        case GAS_TO_INTERFACE:      return "GAS_TO_INTERFACE";
+        case FLUID_TO_INTERFACE:      return "FLUID_TO_INTERFACE";
         case GAS:      return "GAS";
 
         default:       return "[Unknown type]";
