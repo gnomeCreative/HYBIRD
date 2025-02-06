@@ -1377,6 +1377,8 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_find(const uns
             // checking if node is gas (so to be transformed into interface)
             if (ln_i < nodes->count && nodes->type[ln_i] == GAS) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
                 nodes->type[ln_i] = GAS_TO_INTERFACE;
+                // Track source node for the copy in part 2
+                nodes->d[ln_i] = in_i; // race condition, but eh
             }
         }
     }
@@ -1405,23 +1407,8 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
         // add it to interface node list
         // node is becoming active and needs to be initialized
         double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
-        // neighor indices
-        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
-        unsigned int src_i = std::numeric_limits<unsigned int>::max();
-        // cycling through neighbors
-        for (int j = 1; j < lbmDirec; ++j) {
-            // neighbor index
-            const unsigned int ln_i = neighborCoord[j];
-            // checking if node is gas (so to be transformed into interface)
-            if (ln_i < nodes->count && nodes->type[ln_i] == INTERFACE_FILLED) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
-                src_i = ln_i;
-            }
-        }
-        if (src_i == std::numeric_limits<unsigned int>::max()) {
-            printf("Error\n");
-        }
         // same density and velocity; 1% of the mass
-        nodes->copy(in_i, src_i);
+        nodes->copy(in_i, nodes->d[in_i]);
         nodes->mass[in_i] = -massSurplusHere;
         // the 1% of the mass is taken form the surplus
         nodes->scatterMass(in_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
@@ -1679,7 +1666,7 @@ void LB2::buildInterfaceList<CUDA>(unsigned int max_len, bool update_device_stru
     CUDA_CHECK();
     // Copy back result to main list
     unsigned int new_interface_count = 0;
-    CUDA_CALL(cudaMemcpy(&new_interface_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(&new_interface_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // illegal memory access?
     if (new_interface_count > hd_nodes.interfaceAlloc) {
         // Resize interface buffer (it doesn't currently ever scale back down)
         if (hd_nodes.interfaceI) {
