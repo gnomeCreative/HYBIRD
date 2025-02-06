@@ -1555,6 +1555,7 @@ void LB2::updateInterface<CPU>() {
         // fixing the interface (always one interface between fluid and gas)
         common_smoothenInterface_find(in_i, d_nodes);
     }
+    // @todo build temporary list of new/interface/new_gas
     for (unsigned int i = 0; i < d_nodes->interfaceCount; ++i) {
         // Convert index to interface node index
         const unsigned int in_i = d_nodes->interfaceI[i];
@@ -1606,14 +1607,14 @@ __global__ void d_smoothenInterface_find(Node2* d_nodes) {
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_smoothenInterface_find(in_i, d_nodes);
 }
-__global__ void d_smoothenInterface_update(Node2* d_nodes) {
+__global__ void d_smoothenInterface_update(Node2* d_nodes, unsigned int *count, unsigned int *list) {
     // Get unique CUDA thread index, which corresponds to interface node 
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     // Kill excess threads early
-    if (i >= d_nodes->interfaceCount)
+    if (i >= *count)
         return;
     // Convert index to interface node index
-    const unsigned int in_i = d_nodes->interfaceI[i];
+    const unsigned int in_i = list[i];
     common_smoothenInterface_update(in_i, d_nodes);
 }
 __global__ void d_updateMutants(Node2* d_nodes, double* d_massSurplus) {
@@ -1644,6 +1645,18 @@ __global__ void d_buildList(unsigned int *counter, unsigned int *buffer, const t
         i += blockDim.x * gridDim.x)
     {
         if (types_buffer[i] == type_check) {
+            const unsigned int offset = atomicInc(counter, UINT_MAX);
+            buffer[offset] = i;
+        }
+    }
+}
+__global__ void d_buildDualList(unsigned int* counter, unsigned int* buffer, const types type_check1, const types type_check2, const types* types_buffer, const unsigned int threadCount) {
+    // Grid stride loop
+    for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+        i < threadCount;
+        i += blockDim.x * gridDim.x)
+    {
+        if (types_buffer[i] == type_check1 || types_buffer[i] == type_check2) {
             const unsigned int offset = atomicInc(counter, UINT_MAX);
             buffer[offset] = i;
         }
@@ -1753,6 +1766,26 @@ void LB2::buildActiveList<CUDA>() {
     // Update device struct (new size and ptr, but whole struct because eh)
     CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
 }
+template<>
+unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len, bool update_device_struct) {
+    // This is a simple implementation, there may be faster approaches
+    // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
+
+    // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+    auto& ctb = CubTempMem::GetBufferSingleton();
+    const unsigned int max_interface = min(max_len, hd_nodes.count) + 1;
+    ctb.resize(max_interface * sizeof(unsigned int));
+    unsigned int* builderI = reinterpret_cast<unsigned int*>(ctb.getPtr());
+    // Init index 0 to 0, this will be used as an atomic counter
+    CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
+    // Launch kernel as grid stride loop
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
+    d_buildDualList<<<32 * numSMs, 256>>>(builderI, &builderI[1], NEW_INTERFACE, NEW_GAS, hd_nodes.type, hd_nodes.count);
+    CUDA_CHECK();
+    // This is a temporary list, so just return the device pointer
+    return builderI;
+}
 
 template<>
 void LB2::updateInterface<CUDA>() {
@@ -1776,9 +1809,10 @@ void LB2::updateInterface<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_find, 0, hd_nodes.interfaceCount);
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_smoothenInterface_find<<<gridSize, blockSize>>>(d_nodes);
+    unsigned int *d_templist = buildTempNewList<CUDA>(lbmDirec * hd_nodes.interfaceCount);
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_update, 0, hd_nodes.interfaceCount);
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
-    d_smoothenInterface_update<<<gridSize, blockSize>>>(d_nodes);
+    d_smoothenInterface_update<<<gridSize, blockSize>>>(d_nodes, d_templist, d_templist+1);
     // updating characteristics of mutant nodes
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, hd_nodes.interfaceCount);
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;

@@ -48,6 +48,8 @@ class LB2 {
     template<int impl>
     void buildFluidList(unsigned int max_len = std::numeric_limits<unsigned int>::max(), bool update_device_struct = true);
     template<int impl>
+    unsigned int *buildTempNewList(unsigned int max_len = std::numeric_limits<unsigned int>::max(), bool update_device_struct = true);
+    template<int impl>
     void buildActiveList();
     /**
      * Execute all LB methods from hybird.cpp::goCycle()
