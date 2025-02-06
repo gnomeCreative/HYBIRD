@@ -1405,8 +1405,23 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
         // add it to interface node list
         // node is becoming active and needs to be initialized
         double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
+        // neighor indices
+        const std::array<unsigned int, lbmDirec> neighborCoord = nodes->findNeighbors(in_i);
+        unsigned int src_i = std::numeric_limits<unsigned int>::max();
+        // cycling through neighbors
+        for (int j = 1; j < lbmDirec; ++j) {
+            // neighbor index
+            const unsigned int ln_i = neighborCoord[j];
+            // checking if node is gas (so to be transformed into interface)
+            if (ln_i < nodes->count && nodes->type[ln_i] == INTERFACE_FILLED) { // @todo this should probably include INTERFACE_EMPTY (see issue #5)
+                src_i = ln_i;
+            }
+        }
+        if (src_i == std::numeric_limits<unsigned int>::max()) {
+            printf("Error\n");
+        }
         // same density and velocity; 1% of the mass
-        nodes->copy(in_i, in_i);
+        nodes->copy(in_i, src_i);
         nodes->mass[in_i] = -massSurplusHere;
         // the 1% of the mass is taken form the surplus
         nodes->scatterMass(in_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
