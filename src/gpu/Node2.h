@@ -779,6 +779,18 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
  * CUDA capable version of generateNode()
  */
 __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index, types typeHere) {
+    // Constructor initialisers
+    this->n[index] = 0;
+    this->u[index].reset();
+    this->hydroForce[index].reset();
+    this->centrifugalForce[index].reset();
+    this->centrifugalForce[index].reset();
+    this->mass[index] = 0;
+    this->newMass[index] = 0;
+    this->visc[index] = 1.0;
+    this->friction[index] = 0;
+    this->solidIndex[index] = std::numeric_limits<unsigned int>::max();
+    memset(&this->f[index * lbmDirec], 0, sizeof(double) * lbmDirec);
     // set type
     this->type[index] = typeHere;
     this->p[index] = false;  // setOutsideParticle()
