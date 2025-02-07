@@ -1167,15 +1167,15 @@ __global__ void d_redistributeMass(Node2 *d_nodes, const double addMass) {
 }
 template<>
 void LB2::redistributeMass<CUDA>(const double& massSurplus) {
-    const double addMass = massSurplus / d_nodes->interfaceCount;
+    const double addMass = massSurplus / hd_nodes.interfaceCount;
     // Launch enough threads to accommodate all interface nodes
     // Launch cuda kernel to update
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.interfaceCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, h_nodes.interfaceCount);
     // Round up to accommodate required threads
-    gridSize = (h_nodes.interfaceCount + blockSize - 1) / blockSize;
+    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
     CUDA_CHECK();
 }
