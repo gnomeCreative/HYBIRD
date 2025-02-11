@@ -1365,7 +1365,6 @@ __host__ __device__ __forceinline__ void common_findInterfaceMutants(const unsig
     }
 }
 __host__ __device__ __forceinline__ void common_smoothenInterface_find(const unsigned int in_i, Node2* nodes) {
-    constexpr double marginalMass = 1.0e-2;
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
     if (nodes->type[in_i] == INTERFACE_FILLED) {
         // neighor indices
@@ -1408,7 +1407,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
         // node is becoming active and needs to be initialized
         double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
         // same density and velocity; 1% of the mass
-        nodes->copy(in_i, nodes->d[in_i]);
+        nodes->copy(in_i, nodes->d[in_i]); // d[0] contains src node
         nodes->mass[in_i] = -massSurplusHere;
         // the 1% of the mass is taken form the surplus
         nodes->scatterMass(in_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
