@@ -286,16 +286,16 @@ __host__ __device__ __forceinline__ void Node2::scatterMass(unsigned int index, 
 
     unsigned int totNodes = 0;
     for (int j = 1; j < lbmDirec; ++j) {
-        unsigned int ln_i = d[j];
+        unsigned int ln_i = this->d[j * this->count + index];
         if (ln_i != std::numeric_limits<unsigned int>::max()) {
-            if (this->type[ln_i] == INTERFACE) {
+            if (this->type[ln_i] == INTERFACE) {  // @todo race condition, due to other nodes becoming interface in same step
                 ++totNodes;
             }
         }
     }
     if (totNodes) {
         for (int j = 1; j < lbmDirec; ++j) {
-            unsigned int ln_i = d[j];
+            unsigned int ln_i = this->d[j * this->count + index];
             if (ln_i != std::numeric_limits<unsigned int>::max()) {
                 if (this->type[ln_i] == INTERFACE) {
                     // https://github.com/gnomeCreative/HYBIRD/issues/16
@@ -779,11 +779,10 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
  * CUDA capable version of generateNode()
  */
 __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index, types typeHere) {
-    // Constructor initialisers
+    // Constructor initialisers (most of this is redundant, as copyNode() is called directly after)
     this->n[index] = 0;
     this->u[index].reset();
     this->hydroForce[index].reset();
-    this->centrifugalForce[index].reset();
     this->centrifugalForce[index].reset();
     this->mass[index] = 0;
     this->newMass[index] = 0;

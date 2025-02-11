@@ -450,7 +450,7 @@ __global__ void d_initializeParticleBoundaries(Node2* d_nodes, Particle2* d_part
 template<>
 double LB2::initializeParticleBoundaries<CUDA>() {
     // Reset all nodes to outside
-    CUDA_CALL(cudaMemset(hd_nodes.p, 0, h_nodes.count * sizeof(bool)));
+    CUDA_CALL(cudaMemset(hd_nodes.p, 0, hd_nodes.count * sizeof(bool)));
     // Initialise reduction variable
     auto &t = CubTempMem::GetTempSingleton();
     t.resize(sizeof(double));
@@ -463,9 +463,9 @@ double LB2::initializeParticleBoundaries<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
-    gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
+    gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_initializeParticleBoundaries << <gridSize, blockSize >> > (d_nodes, d_particles, d_return);
     CUDA_CHECK();
 
@@ -533,9 +533,9 @@ void LB2::findNewActive<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
-    gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
+    gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_findNewActive << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
@@ -607,9 +607,9 @@ void LB2::findNewSolid<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewSolid, 0, h_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewSolid, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
-    gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
+    gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_findNewSolid << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
@@ -769,9 +769,9 @@ void LB2::reconstructHydroCollide<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, h_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
-    gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
+    gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_reconstructHydroCollide << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
     CUDA_CHECK();
 }
@@ -1062,16 +1062,16 @@ void LB2::streaming<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, h_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_streaming, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
-    gridSize = (h_nodes.activeCount + blockSize - 1) / blockSize;
+    gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_streaming << <gridSize, blockSize >> > (d_nodes, d_walls);
     CUDA_CHECK();
 
 #ifdef _DEBUG
-    CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, sizeof(double) * h_nodes.count * lbmDirec, cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_nodes.activeI, hd_nodes.activeI, sizeof(unsigned int) * h_nodes.activeCount, cudaMemcpyDeviceToHost));
-    for (unsigned int in = 0; in < h_nodes.activeCount; ++in) {
+    CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, sizeof(double) * hd_nodes.count * lbmDirec, cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_nodes.activeI, hd_nodes.activeI, sizeof(unsigned int) * hd_nodes.activeCount, cudaMemcpyDeviceToHost));
+    for (unsigned int in = 0; in < hd_nodes.activeCount; ++in) {
         const unsigned int a_i = h_nodes.activeI[in];
         for (unsigned int j = 1; j < lbmDirec; ++j) {
             if (h_nodes.f[a_i * lbmDirec + j] == 0) {
@@ -1173,7 +1173,7 @@ void LB2::redistributeMass<CUDA>(const double& massSurplus) {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, h_nodes.interfaceCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, hd_nodes.interfaceCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
@@ -1340,7 +1340,7 @@ __global__ void d_updateMass(Node2* d_nodes) {
 template<>
 void LB2::updateMass<CUDA>() {
     // Enough threads for interface or fluid
-    const unsigned int maxThreads = std::max(h_nodes.interfaceCount, h_nodes.fluidCount);
+    const unsigned int maxThreads = std::max(hd_nodes.interfaceCount, hd_nodes.fluidCount);
     // Launch cuda kernel to update
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
@@ -1652,7 +1652,7 @@ void LB2::buildInterfaceList<CUDA>(unsigned int max_len, bool update_device_stru
     // This is a simple implementation, there may be faster approaches
     // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
 
-    // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+    // Ensure builder list is atleast min(19*hd_nodes.activeCount, count)
     auto& ctb = CubTempMem::GetBufferSingleton();
     const unsigned int max_interface = min(max_len, hd_nodes.count) + 1;
     ctb.resize(max_interface * sizeof(unsigned int));
@@ -1692,7 +1692,7 @@ void LB2::buildFluidList<CUDA>(unsigned int max_len, bool update_device_struct) 
     // This is a simple implementation, there may be faster approaches
     // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
 
-    // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+    // Ensure builder list is atleast min(19*hd_nodes.activeCount, count)
     auto& ctb = CubTempMem::GetBufferSingleton();
     const unsigned int max_interface = min(max_len, hd_nodes.count) + 1;
     ctb.resize(max_interface * sizeof(unsigned int));
@@ -1755,7 +1755,7 @@ unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len, bool update_devi
     // This is a simple implementation, there may be faster approaches
     // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
 
-    // Ensure builder list is atleast min(19*h_nodes.activeCount, count)
+    // Ensure builder list is atleast min(19*hd_nodes.activeCount, count)
     auto& ctb = CubTempMem::GetBufferSingleton();
     const unsigned int max_interface = min(max_len, hd_nodes.count) + 1;
     ctb.resize(max_interface * sizeof(unsigned int));
@@ -1813,10 +1813,7 @@ void LB2::updateInterface<CUDA>() {
     buildActiveList<CUDA>();
     // distributing surplus to interface cells
     CUDA_CALL(cudaMemcpy(&h_massSurplus, d_massSurplus, sizeof(double), cudaMemcpyDeviceToHost));
-    const double addMass = h_massSurplus / hd_nodes.interfaceCount;
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_redistributeMass, 0, hd_nodes.interfaceCount);
-    gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
-    d_redistributeMass<<<gridSize, blockSize>>>(d_nodes, addMass);
+    redistributeMass<CUDA>(h_massSurplus);
 #ifdef DEBUG
     // computeSurfaceNormal()
 #endif
@@ -2413,14 +2410,14 @@ void LB2::initializeTopography() {
         cout << "lbTop.coordY[lbTop.sizeY - 1]=" << lbTop.coordY[lbTop.sizeY - 1] << endl;
         cout << "lbSize[1]) * unit.Length=" << h_PARAMS.lbSize[1] * h_PARAMS.unit.Length << endl;
         ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_PARAMS.lbSize[1] * h_PARAMS.unit.Length);
-        
+
         // @todo This was previously OpenMP parallel, critical section around generateNode()
         for (unsigned int ix = 1; ix < h_PARAMS.lbSize[0] - 1; ++ix) {
             for (unsigned int iy = 1; iy < h_PARAMS.lbSize[1] - 1; ++iy) {
                 for (unsigned int iz = 1; iz < h_PARAMS.lbSize[2] - 1; ++iz) {
                     const tVect nodePosition = tVect(ix, iy, iz) * h_PARAMS.unit.Length;
                     const double distanceFromTopography = lbTop.distance(nodePosition);
-                    
+
                     if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
                         const unsigned int it = ix + iy * h_PARAMS.lbSize[0] + iz * h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1];
                         generateNode(it, STAT_WALL);
