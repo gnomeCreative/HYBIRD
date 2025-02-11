@@ -1625,11 +1625,11 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
      */
     // Allocate a buffer equal to size of the largest data array
     // Allocate once rather than allocating and freeing per export
-    static char *const t_buffer = static_cast<char*>(malloc(nodes.activeCount * 3 * sizeof(double)));
-    static unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
-    static double *const d_buffer = reinterpret_cast<double*>(t_buffer);
-    static tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
-    static unsigned int* const ui_buffer = reinterpret_cast<unsigned int*>(t_buffer);
+    char *const t_buffer = static_cast<char*>(malloc(nodes.activeCount * 3 * sizeof(double)));
+    unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
+    double *const d_buffer = reinterpret_cast<double*>(t_buffer);
+    tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
+    unsigned int* const ui_buffer = reinterpret_cast<unsigned int*>(t_buffer);
     // Velocity
     offset = nodes.activeCount * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
@@ -1717,6 +1717,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     paraviewFluidFile << "</VTKFile>\n";
     // data file closing
     paraviewFluidFile.close();
+    free(t_buffer);
 }
 void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile) {
     /**
