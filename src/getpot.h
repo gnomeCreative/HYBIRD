@@ -849,9 +849,48 @@ GetPot::_read_in_file(const std::string& FileName)
     return _read_in_stream(i);
 }
 
+#include <regex>
 inline STRING_VECTOR
 GetPot::_read_in_stream(std::istream& istr)
 {
+    // Read file line by line
+    // Pass each line to a regex that fuzzily looks for "[name]" (sections) or "key=val" (key value pairs)
+    // and build an arglist of [name]key=val
+    STRING_VECTOR  arglist;
+    std::string line;
+
+    // Use https://www.regexpal.com/ if you want to understand/modify these regex patterns
+    // copy the "foo" part of "R(foo)" into the regular expression field
+    // you can then copy an input file into the test string field
+    const std::regex section_pattern(R"(^[\[]([\w]+)[\]].*)");
+    const std::regex keyval_pattern(R"(^([\w]+)[\s]*=[\s]*([^\s#]+).*)");
+
+    std::string current_section; // inits to empty string
+
+    while (std::getline(istr, line)) {
+        std::smatch matches;
+        if (std::regex_match(line, matches, section_pattern)) {
+            if (matches.size() == 2) {  // Right number of groups in result
+                current_section = std::string("[") + matches[1].str() + "]";
+            } else {
+                fprintf(stderr, "Error parsing input file, reading line '%s' as section\n", line.c_str());
+            }
+        } else if (std::regex_match(line, matches, keyval_pattern)) {
+            if (matches.size() == 3) {
+                // Add "key=val" to arglist
+                arglist.push_back(matches[1].str() + "=" + matches[2].str());
+                if (!current_section.empty()) {
+                    // Add a second "[section]key=val" to arglist
+                    arglist.push_back(current_section + matches[1].str() + "=" + matches[2].str());
+                }
+            } else {
+                fprintf(stderr, "Error parsing input file, reading line '%s' as keyval\n", line.c_str());
+            }
+        }
+    }
+    return arglist;
+
+    /** Old version that doesn't always work under Visual Studi
     STRING_VECTOR  brute_tokens;
     while(istr) {
 	_skip_whitespace(istr);
@@ -910,6 +949,7 @@ GetPot::_read_in_stream(std::istream& istr)
         arglist.push_back(result);
     }
     return arglist;
+    **/
 }
 
 inline void
