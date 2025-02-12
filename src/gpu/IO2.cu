@@ -1610,7 +1610,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     paraviewFluidFile << "    <DataArray type=\"UInt32\" Name=\"offsets\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
     offset += nodes.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"types\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += nodes.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
+    offset += nodes.activeCount * sizeof(unsigned char) + sizeof(unsigned int);
     paraviewFluidFile << "   </Cells>\n";
     paraviewFluidFile << "  </Piece>\n";
     paraviewFluidFile << " </UnstructuredGrid>\n";
@@ -1711,7 +1711,8 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     paraviewFluidFile.write(t_buffer, offset);
     // Types
     offset = nodes.activeCount * sizeof(unsigned char);
-    std::fill(uc_buffer, uc_buffer + nodes.activeCount, 1);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    std::fill(uc_buffer, uc_buffer + nodes.activeCount, static_cast<unsigned char>(1));
     paraviewFluidFile.write(t_buffer, offset);
     paraviewFluidFile << "</AppendedData>";
     paraviewFluidFile << "</VTKFile>\n";
