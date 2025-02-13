@@ -862,8 +862,8 @@ GetPot::_read_in_stream(std::istream& istr)
     // Use https://www.regexpal.com/ if you want to understand/modify these regex patterns
     // copy the "foo" part of "R(foo)" into the regular expression field
     // you can then copy an input file into the test string field
-    const std::regex section_pattern(R"(^[\[]([\w]+)[\]].*)");
-    const std::regex keyval_pattern(R"(^([\w]+)[\s]*=[\s]*([^\s#]+).*)");
+    const std::regex section_pattern(R"(^[\[]([\w]+)[\]][^\n]*)");
+    const std::regex keyval_pattern(R"(^([\w]+)[\s]*=[\s]*([^\s#]+)[^\n]*)");
 
     std::string current_section; // inits to empty string
 
