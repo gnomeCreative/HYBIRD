@@ -273,7 +273,7 @@ void LB2::syncParticles<CUDA>(const particleList &particles) {
     hd_particles.count = static_cast<unsigned int>(particles.size());
     if (updateDeviceStruct) {
         // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_particles, &h_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(d_particles, &hd_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
     }else {
         // Copy updated particle count to device
         CUDA_CALL(cudaMemcpy(&d_particles->count, &hd_particles.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
@@ -539,7 +539,7 @@ void LB2::findNewActive<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, hd_nodes.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewActive, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_findNewActive << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
@@ -1134,7 +1134,7 @@ void LB2::shiftToPhysical<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, maxCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_shiftToPhysical, 0, maxCount);
     // Round up to accommodate required threads
     gridSize = (maxCount + blockSize - 1) / blockSize;
     d_shiftToPhysical << <gridSize, blockSize >> > (d_elements, d_walls, d_objects);
