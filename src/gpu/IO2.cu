@@ -1076,6 +1076,172 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile.close();
 }
 
+void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile) {
+    /**
+     * This function is a rewrite of exportLagrangianParaviewFluid() that writes to a binary vtkhdf5 format
+     * It is intended to provide much faster fluid export performance
+     **/
+    const Node2 nodes = lb.getNodes();
+
+    // start printing all the crap required for Paraview
+    // header file opening
+    ofstream paraviewFluidFile;
+
+    paraviewFluidFile.open(fluidFile.c_str(), std::ios::binary);
+//    paraviewFluidFile << std::scientific << std::setprecision(4);
+    // writing on header file
+
+    // Endianness (the order of bits within a byte) depends on the processor hardware
+    // but it's probably LittleEndian, IBM processors are the only default BigEndian you're likely to come across
+    static const uint16_t m_endianCheck(0x00ff);
+    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
+    paraviewFluidFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
+    paraviewFluidFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
+    paraviewFluidFile << "  <Piece NumberOfPoints=\"" << nodes.activeCount << "\" NumberOfCells=\"" << nodes.activeCount << "\">\n";
+    paraviewFluidFile << "   <PointData>\n";
+    unsigned int offset = 0;
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
+    offset += nodes.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
+    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+        offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
+    }
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"mass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"16\"/>\n";
+    offset += nodes.activeCount * sizeof(unsigned char) + sizeof(unsigned int);
+#ifdef DEBUG
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"age\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
+    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
+#endif
+    paraviewFluidFile << "   </PointData>\n";
+    paraviewFluidFile << "   <CellData>\n";
+    paraviewFluidFile << "   </CellData>\n";
+    paraviewFluidFile << "   <Points>\n";
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += nodes.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "   </Points>\n";
+    paraviewFluidFile << "   <Cells>\n";
+    paraviewFluidFile << "    <DataArray type=\"UInt32\" Name=\"connectivity\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += nodes.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"UInt32\" Name=\"offsets\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += nodes.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"types\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += nodes.activeCount * sizeof(unsigned char) + sizeof(unsigned int);
+    paraviewFluidFile << "   </Cells>\n";
+    paraviewFluidFile << "  </Piece>\n";
+    paraviewFluidFile << " </UnstructuredGrid>\n";
+    paraviewFluidFile << " <AppendedData encoding=\"raw\">\n  _";
+    /**
+     * Based on the sparse documentation at https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
+     * and alot of testing.
+     * Inside <AppendedData> the binary dump must be preceded by an underscore (_)
+     * Each DataArray's binary dump must be preceded by it's length.
+     * The length should be exported as the integer type specified as header_type in the opening <VTKFile> tag
+     * The offset specified in the above <DataArray> tag refers to the offset from the start of the whole binary dump to the start of the length
+     */
+    // Allocate a buffer equal to size of the largest data array
+    // Allocate once rather than allocating and freeing per export
+    char *const t_buffer = static_cast<char*>(malloc(nodes.activeCount * 3 * sizeof(double)));
+    unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
+    double *const d_buffer = reinterpret_cast<double*>(t_buffer);
+    tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
+    unsigned int* const ui_buffer = reinterpret_cast<unsigned int*>(t_buffer);
+    // Velocity
+    offset = nodes.activeCount * 3 * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        v_buffer[i] = nodes.u[nodes.activeI[i]] * PARAMS.unit.Speed;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Pressure
+    offset = nodes.activeCount * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        d_buffer[i] = (nodes.n[nodes.activeI[i]] - PARAMS.fluidMaterial.initDensity) * THIRD_PRESSURE;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Dynamic Viscosity
+    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+        offset = nodes.activeCount * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < nodes.activeCount; ++i) {
+            d_buffer[i] = nodes.visc[nodes.activeI[i]] * PARAMS.unit.DynVisc;
+        }
+        paraviewFluidFile.write(t_buffer, offset);
+    }
+    // Friction
+    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+        offset = nodes.activeCount * sizeof(double);
+        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+        for (int i = 0; i < nodes.activeCount; ++i) {
+            d_buffer[i] = nodes.friction[nodes.activeI[i]];
+        }
+        paraviewFluidFile.write(t_buffer, offset);
+    }
+    // Mass
+    offset = nodes.activeCount * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        d_buffer[i] = nodes.mass[nodes.activeI[i]] * PARAMS.unit.Density;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Type
+    offset = nodes.activeCount * sizeof(unsigned char);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    std::fill(uc_buffer, uc_buffer + nodes.activeCount, 2);
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        uc_buffer[i] = nodes.type[nodes.activeI[i]];
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+#ifdef DEBUG
+    // Age
+    offset = nodes.activeCount * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    memset(d_buffer, 0, sizeof(double)* nodes.activeCount);
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        d_buffer[i] = nodes.age[nodes.activeI[i]];
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+#endif
+    // Points
+    offset = nodes.activeCount * 3 * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        v_buffer[i] = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Connectivity
+    offset = nodes.activeCount * sizeof(unsigned int);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        ui_buffer[i] = i ;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Offsets
+    offset = nodes.activeCount * sizeof(unsigned int);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (int i = 0; i < nodes.activeCount; ++i) {
+        ui_buffer[i] = i + 1;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Types
+    offset = nodes.activeCount * sizeof(unsigned char);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    std::fill(uc_buffer, uc_buffer + nodes.activeCount, static_cast<unsigned char>(1));
+    paraviewFluidFile.write(t_buffer, offset);
+    paraviewFluidFile << "</AppendedData>";
+    paraviewFluidFile << "</VTKFile>\n";
+    // data file closing
+    paraviewFluidFile.close();
+    free(t_buffer);
+}
+
 //void IO2::exportEulerianParaviewFluid(const LB2& lb, const string& fluidFile) {
 //
 //    const double zero = 0.0;
@@ -1555,171 +1721,6 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
 //    paraviewFluidFile.close();
 //}
 
-void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile) {
-    /**
-     * This function is a rewrite of exportLagrangianParaviewFluid() that writes to a binary vtkhdf5 format
-     * It is intended to provide much faster fluid export performance
-     **/
-    const Node2 nodes = lb.getNodes();
-
-    // start printing all the crap required for Paraview
-    // header file opening
-    ofstream paraviewFluidFile;
-
-    paraviewFluidFile.open(fluidFile.c_str(), std::ios::binary);
-//    paraviewFluidFile << std::scientific << std::setprecision(4);
-    // writing on header file
-
-    // Endianness (the order of bits within a byte) depends on the processor hardware
-    // but it's probably LittleEndian, IBM processors are the only default BigEndian you're likely to come across
-    static const uint16_t m_endianCheck(0x00ff);
-    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
-    paraviewFluidFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
-    paraviewFluidFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
-    paraviewFluidFile << "  <Piece NumberOfPoints=\"" << nodes.activeCount << "\" NumberOfCells=\"" << nodes.activeCount << "\">\n";
-    paraviewFluidFile << "   <PointData>\n";
-    unsigned int offset = 0;
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
-    offset += nodes.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
-        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-        offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-    }
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"mass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"16\"/>\n";
-    offset += nodes.activeCount * sizeof(unsigned char) + sizeof(unsigned int);
-#ifdef DEBUG
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"age\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
-    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-#endif
-    paraviewFluidFile << "   </PointData>\n";
-    paraviewFluidFile << "   <CellData>\n";
-    paraviewFluidFile << "   </CellData>\n";
-    paraviewFluidFile << "   <Points>\n";
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += nodes.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
-    paraviewFluidFile << "   </Points>\n";
-    paraviewFluidFile << "   <Cells>\n";
-    paraviewFluidFile << "    <DataArray type=\"UInt32\" Name=\"connectivity\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += nodes.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"UInt32\" Name=\"offsets\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += nodes.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"types\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += nodes.activeCount * sizeof(unsigned char) + sizeof(unsigned int);
-    paraviewFluidFile << "   </Cells>\n";
-    paraviewFluidFile << "  </Piece>\n";
-    paraviewFluidFile << " </UnstructuredGrid>\n";
-    paraviewFluidFile << " <AppendedData encoding=\"raw\">\n  _";
-    /**
-     * Based on the sparse documentation at https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
-     * and alot of testing.
-     * Inside <AppendedData> the binary dump must be preceded by an underscore (_)
-     * Each DataArray's binary dump must be preceded by it's length.
-     * The length should be exported as the integer type specified as header_type in the opening <VTKFile> tag
-     * The offset specified in the above <DataArray> tag refers to the offset from the start of the whole binary dump to the start of the length
-     */
-    // Allocate a buffer equal to size of the largest data array
-    // Allocate once rather than allocating and freeing per export
-    char *const t_buffer = static_cast<char*>(malloc(nodes.activeCount * 3 * sizeof(double)));
-    unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
-    double *const d_buffer = reinterpret_cast<double*>(t_buffer);
-    tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
-    unsigned int* const ui_buffer = reinterpret_cast<unsigned int*>(t_buffer);
-    // Velocity
-    offset = nodes.activeCount * 3 * sizeof(double);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        v_buffer[i] = nodes.u[nodes.activeI[i]] * PARAMS.unit.Speed;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-    // Pressure
-    offset = nodes.activeCount * sizeof(double);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        d_buffer[i] = (nodes.n[nodes.activeI[i]] - PARAMS.fluidMaterial.initDensity) * THIRD_PRESSURE;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-    // Dynamic Viscosity
-    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
-        offset = nodes.activeCount * sizeof(double);
-        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < nodes.activeCount; ++i) {
-            d_buffer[i] = nodes.visc[nodes.activeI[i]] * PARAMS.unit.DynVisc;
-        }
-        paraviewFluidFile.write(t_buffer, offset);
-    }
-    // Friction
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
-        offset = nodes.activeCount * sizeof(double);
-        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < nodes.activeCount; ++i) {
-            d_buffer[i] = nodes.friction[nodes.activeI[i]];
-        }
-        paraviewFluidFile.write(t_buffer, offset);
-    }
-    // Mass
-    offset = nodes.activeCount * sizeof(double);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        d_buffer[i] = nodes.mass[nodes.activeI[i]] * PARAMS.unit.Density;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-    // Type
-    offset = nodes.activeCount * sizeof(unsigned char);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + nodes.activeCount, 2);
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        uc_buffer[i] = nodes.isInsideParticle(nodes.activeI[i]) ? nodes.type[i] : 1;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-#ifdef DEBUG
-    // Age
-    offset = nodes.activeCount * sizeof(double);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    memset(d_buffer, 0, sizeof(double)* nodes.activeCount);
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        d_buffer[i] = nodes.age[nodes.activeI[i]];
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-#endif
-    // Points
-    offset = nodes.activeCount * 3 * sizeof(double);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        v_buffer[i] = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-    // Connectivity
-    offset = nodes.activeCount * sizeof(unsigned int);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        ui_buffer[i] = i ;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-    // Offsets
-    offset = nodes.activeCount * sizeof(unsigned int);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
-        ui_buffer[i] = i + 1;
-    }
-    paraviewFluidFile.write(t_buffer, offset);
-    // Types
-    offset = nodes.activeCount * sizeof(unsigned char);
-    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + nodes.activeCount, static_cast<unsigned char>(1));
-    paraviewFluidFile.write(t_buffer, offset);
-    paraviewFluidFile << "</AppendedData>";
-    paraviewFluidFile << "</VTKFile>\n";
-    // data file closing
-    paraviewFluidFile.close();
-    free(t_buffer);
-}
 void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile) {
     /**
      * This function is a rewrite of exportEulerianParaviewFluid() that writes to a binary vtkhdf5 format
