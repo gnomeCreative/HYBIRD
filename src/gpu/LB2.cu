@@ -19,7 +19,7 @@ std::unique_ptr<CubTempMem> CubTempMem::_singletonB;
 template<>
 bool LB2::syncElements<CPU>(const elmtList &elements) {
     bool componentsHasGrown = false;
-    if (h_elements.count < elements.size()) {
+    if (h_elements.alloc < elements.size()) {
         // Grow host buffers
          if (h_elements.x1) {
              free(h_elements.x1);
@@ -28,6 +28,7 @@ bool LB2::syncElements<CPU>(const elmtList &elements) {
              free(h_elements.MHydro);
              free(h_elements.fluidVolume);
          }
+         h_elements.alloc = elements.size();
          h_elements.x1 = (tVect*)malloc(elements.size() * sizeof(tVect));
          h_elements.wGlobal = (tVect*)malloc(elements.size() * sizeof(tVect));
          h_elements.FHydro = (tVect*)malloc(elements.size() * sizeof(tVect));
@@ -74,7 +75,7 @@ bool LB2::syncElements<CPU>(const elmtList &elements) {
 }
 template<>
 void LB2::syncParticles<CPU>(const particleList &particles) {
-    if (h_particles.count < particles.size()) {
+    if (h_particles.alloc < particles.size()) {
         // Grow host buffers
         if (h_particles.clusterIndex) {
             free(h_particles.clusterIndex);
@@ -82,6 +83,7 @@ void LB2::syncParticles<CPU>(const particleList &particles) {
             free(h_particles.x0);
             free(h_particles.radiusVec);
         }
+        h_particles.alloc = particles.size();
         h_particles.clusterIndex = (unsigned int*)malloc(particles.size() * sizeof(unsigned int));
         h_particles.r = (double*)malloc(particles.size() * sizeof(double));
         h_particles.x0 = (tVect*)malloc(particles.size() * sizeof(tVect));
@@ -190,13 +192,12 @@ bool LB2::syncElements<CUDA>(const elmtList &elements) {
     if (!d_elements) {
         CUDA_CALL(cudaMalloc(&d_elements, sizeof(Element2)));
     }
-    // @todo copy hd_elements to d_elements
     // Copy latest particle data from HOST DEM to the device
     // @todo Can these copies be done ahead of time async?
-    // @todo These copies will be redundant when DEM is moved to CUDA
+    // @todo These copies will be redundant if/when DEM is moved to CUDA
     bool componentsHasGrown = this->syncElements<CPU>(elements);
     bool updateDeviceStruct = false;
-    if (hd_elements.count < elements.size()) {
+    if (hd_elements.alloc < h_elements.count) {
         if (hd_elements.x1) {
             CUDA_CALL(cudaFree(hd_elements.x1));
             CUDA_CALL(cudaFree(hd_elements.wGlobal));
@@ -204,14 +205,17 @@ bool LB2::syncElements<CUDA>(const elmtList &elements) {
             CUDA_CALL(cudaFree(hd_elements.MHydro));
             CUDA_CALL(cudaFree(hd_elements.fluidVolume));
         }
+        hd_elements.alloc = h_elements.count;
         // Initially allocate device buffers except components
-        CUDA_CALL(cudaMalloc(&hd_elements.x1, hd_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.wGlobal, hd_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.FHydro, hd_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.MHydro, hd_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.fluidVolume, hd_elements.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wGlobal, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FHydro, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.MHydro, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.fluidVolume, h_elements.count * sizeof(double)));
         updateDeviceStruct = true;
     }
+    // Update size
+    hd_elements.count = elements.size();
     if (componentsHasGrown || !hd_elements.componentsIndex) {
         // Allocate components
         if (hd_elements.componentsIndex)
@@ -223,8 +227,6 @@ bool LB2::syncElements<CUDA>(const elmtList &elements) {
         CUDA_CALL(cudaMalloc(&hd_elements.componentsData, h_elements.componentsIndex[h_elements.count] * sizeof(unsigned int)));
         updateDeviceStruct = true;
     }
-    // Update size
-    hd_elements.count = elements.size();
     if (updateDeviceStruct) {
         // Copy updated device pointers to device (@todo When/where is d_elements allocated??)
         CUDA_CALL(cudaMemcpy(d_elements, &hd_elements, sizeof(Element2), cudaMemcpyHostToDevice));
@@ -233,9 +235,9 @@ bool LB2::syncElements<CUDA>(const elmtList &elements) {
         CUDA_CALL(cudaMemcpy(&d_elements->count, &hd_elements.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
     }
     // Copy data to device buffers
-    CUDA_CALL(cudaMemcpy(hd_elements.x1, &h_elements.x1, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_elements.wGlobal, &h_elements.wGlobal, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_elements.FHydro, &h_elements.FHydro, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x1, h_elements.x1, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wGlobal, h_elements.wGlobal, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FHydro, h_elements.FHydro, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
     // CUDA_CALL(cudaMemcpy(hd_elements.MHydro, &h_elements.MHydro, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice)); // This is zero'd before use in latticeBoltzmannStep()
     // CUDA_CALL(cudaMemcpy(hd_elements.fluidVolume, &h_elements.fluidVolume, h_elements.count * sizeof(double), cudaMemcpyHostToDevice)); // This is zero'd before use in latticeBoltzmannStep()
     CUDA_CALL(cudaMemcpy(hd_elements.componentsIndex, h_elements.componentsIndex, (h_elements.count + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice));
@@ -251,7 +253,8 @@ void LB2::syncParticles<CUDA>(const particleList &particles) {
     // @todo Can these copies be done ahead of time async?
     // @todo These copies will be redundant when DEM is moved to CUDA
     this->syncParticles<CPU>(particles);
-    if (hd_particles.count < particles.size()) {
+    bool updateDeviceStruct = false;
+    if (hd_particles.alloc < h_particles.count) {
         // Grow device buffers
         if (hd_particles.clusterIndex) {
             CUDA_CALL(cudaFree(hd_particles.clusterIndex));
@@ -259,18 +262,21 @@ void LB2::syncParticles<CUDA>(const particleList &particles) {
             CUDA_CALL(cudaFree(hd_particles.x0));
             CUDA_CALL(cudaFree(hd_particles.radiusVec));
         }
+        hd_particles.alloc = h_particles.count;
         CUDA_CALL(cudaMalloc(&hd_particles.clusterIndex, h_particles.count * sizeof(unsigned int)));
         CUDA_CALL(cudaMalloc(&hd_particles.r, h_particles.count * sizeof(double)));
         CUDA_CALL(cudaMalloc(&hd_particles.x0, h_particles.count * sizeof(tVect)));
         CUDA_CALL(cudaMalloc(&hd_particles.radiusVec, h_particles.count * sizeof(tVect)));
         hd_particles.count = h_particles.count;
-        // Copy updated device pointers to device (@todo When/where is d_particles allocated??)
+        updateDeviceStruct = true;
+    }
+    hd_particles.count = static_cast<unsigned int>(particles.size());
+    if (updateDeviceStruct) {
+        // Copy updated device pointers to device
         CUDA_CALL(cudaMemcpy(d_particles, &h_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
-    } else if(hd_particles.count != particles.size()) {
-        // Buffer has shrunk, so just update size
-        hd_particles.count = static_cast<unsigned int>(particles.size());
+    }else {
         // Copy updated particle count to device
-        CUDA_CALL(cudaMemcpy(&d_particles->count, &h_particles.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+        CUDA_CALL(cudaMemcpy(&d_particles->count, &hd_particles.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
     }
     // Copy data to device buffers
     CUDA_CALL(cudaMemcpy(hd_particles.clusterIndex, h_particles.clusterIndex, h_particles.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
@@ -2710,13 +2716,18 @@ void LB2::initializeLists() {
     cout << " done" << endl;
 }
 void LB2::step(const DEM &dem, bool io_demSolver) {
+
+    MassTrack mt = {};
+    CUDA_CALL(cudaMemcpyToSymbol(mass_tracker, &mt, sizeof(MassTrack)));
+
+
     this->syncDEM(dem.elmts, dem.particles, dem.walls, dem.objects);
 
     if (io_demSolver) {
         this->latticeBoltzmannCouplingStep(dem.newNeighborList);
     }
 
-    if (dem.demTime >= dem.demInitialRepeat) {
+    if (dem.demTime >= dem.demInitialRepeat && hd_nodes.activeCount) {
         this->latticeBoltzmannStep();
 
         // Lattice Boltzmann core steps
