@@ -10,6 +10,8 @@ struct Element2 {
     // The total number of elements
     // @note This is currently fixed at runtime, but may become variable in future
     unsigned int count = 0;
+    // Size of allocated buffer, as it never shrinks
+    unsigned int alloc = 0;
 
     // velocity of the center of the element
     tVect *x1 = nullptr;
