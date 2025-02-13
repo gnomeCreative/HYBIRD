@@ -2717,10 +2717,6 @@ void LB2::initializeLists() {
 }
 void LB2::step(const DEM &dem, bool io_demSolver) {
 
-    MassTrack mt = {};
-    CUDA_CALL(cudaMemcpyToSymbol(mass_tracker, &mt, sizeof(MassTrack)));
-
-
     this->syncDEM(dem.elmts, dem.particles, dem.walls, dem.objects);
 
     if (io_demSolver) {
