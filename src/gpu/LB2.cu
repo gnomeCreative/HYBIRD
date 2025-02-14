@@ -12,6 +12,7 @@
 std::unique_ptr<CubTempMem> CubTempMem::_singletonT;
 std::unique_ptr<CubTempMem> CubTempMem::_singletonB;
 
+__device__ bool KILL_SWITCH = false;
 /**
  * (Temporary) DEM data synchronisation
  * Reformat DEM data to structure of arrays (for CPU), and copy it to device (for CUDA)
@@ -1582,6 +1583,10 @@ __global__ void d_findInterfaceMutants(Node2* d_nodes) {
     // Kill excess threads early
     if (i >= d_nodes->interfaceCount)
         return;
+    if (isnan(d_nodes->mass[d_nodes->interfaceI[i]])) {
+        KILL_SWITCH = true;
+        printf("Interface#%u has mass NAN, in d_findInterfaceMutants, at step %u\n", d_nodes->interfaceI[i], PARAMS.time);
+    }
     // Convert index to interface node index
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_findInterfaceMutants(in_i, d_nodes);
@@ -1592,6 +1597,10 @@ __global__ void d_smoothenInterface_find(Node2* d_nodes) {
     // Kill excess threads early
     if (i >= d_nodes->interfaceCount)
         return;
+    if (isnan(d_nodes->mass[d_nodes->interfaceI[i]])) {
+        KILL_SWITCH = true;
+        printf("Interface#%u has mass NAN, in d_smoothenInterface_find, at step %u\n", d_nodes->interfaceI[i], PARAMS.time);
+    }
     // Convert index to interface node index
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_smoothenInterface_find(in_i, d_nodes);
@@ -1602,6 +1611,10 @@ __global__ void d_smoothenInterface_update(Node2* d_nodes, unsigned int *count, 
     // Kill excess threads early
     if (i >= *count)
         return;
+    if (isnan(d_nodes->mass[list[i]])) {
+        KILL_SWITCH = true;
+        printf("Interface#%u has mass NAN, in d_smoothenInterface_update, at step %u\n", list[i], PARAMS.time);
+    }
     // Convert index to interface node index
     const unsigned int in_i = list[i];
     common_smoothenInterface_update(in_i, d_nodes);
@@ -1612,6 +1625,10 @@ __global__ void d_updateMutants(Node2* d_nodes, double* d_massSurplus) {
     // Kill excess threads early
     if (i >= d_nodes->interfaceCount)
         return;
+    if (isnan(d_nodes->mass[d_nodes->interfaceI[i]])) {
+        KILL_SWITCH = true;
+        printf("Interface#%u has mass NAN, in d_updateMutants, at step %u\n", d_nodes->interfaceI[i], PARAMS.time);
+    }
     // Convert index to interface node index
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_updateMutants(in_i, d_nodes, d_massSurplus);
@@ -1622,6 +1639,10 @@ __global__ void d_removeIsolated(Node2* d_nodes, double* d_massSurplus) {
     // Kill excess threads early
     if (i >= d_nodes->interfaceCount)
         return;
+    if (isnan(d_nodes->mass[d_nodes->interfaceI[i]])) {
+        KILL_SWITCH = true;
+        printf("Interface#%u has mass NAN, in removeIsolated, at step %u\n", d_nodes->interfaceI[i], PARAMS.time);
+    }
     // Convert index to interface node index
     const unsigned int in_i = d_nodes->interfaceI[i];
     common_removeIsolated(in_i, d_nodes, d_massSurplus);
@@ -1823,6 +1844,12 @@ void LB2::updateInterface<CUDA>() {
     // computeSurfaceNormal()
 #endif
     CUDA_CHECK();
+    bool ks = false;
+    CUDA_CALL(cudaMemcpyFromSymbol(&ks, KILL_SWITCH, sizeof(bool)));
+    if (ks) {
+        printf("Exiting at step: %u\n", PARAMS.time);
+        exit(EXIT_FAILURE);
+    }
 }
 #endif
 

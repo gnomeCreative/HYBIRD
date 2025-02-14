@@ -480,7 +480,7 @@ int main(int argc, char** argv) {
     GetPot commandLine(argc, argv);
     commandLine.print();
     parseCommandLine(io, commandLine);
-    ValidationIO vio(io.workDirectory);
+    //ValidationIO vio(io.workDirectory);
 
     // parsing LBM input file
     GetPot configFile(io.configFileName);
@@ -531,7 +531,7 @@ int main(int argc, char** argv) {
     }
         
     // initial output
-    vio.output(lb);
+    //vio.output(lb);
     io.outputStep(lb, dem);
 
     // CYCLE /////////////////////////////
@@ -553,7 +553,7 @@ int main(int argc, char** argv) {
 
             // core of the code, performs time steps
             lb.step(dem, io.demSolver);
-            vio.output(lb);
+            //vio.output(lb);
             io.outputStep(lb, dem);
 
             //            // exit abnormally if a serious problem has occurred
