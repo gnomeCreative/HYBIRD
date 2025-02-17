@@ -551,8 +551,17 @@ int main(int argc, char** argv) {
             ++h_PARAMS.time;
             lb.syncParams(); // Update time on device
 
-            // core of the code, performs time steps
-            lb.step(dem, io.demSolver);
+            dem.evolveBoundaries();
+            //    dem.evolveObj();
+            if (io.demSolver) {
+
+                dem.discreteElementStep();
+            }
+
+            if (io.lbmSolver) {
+                // core of the code, performs time steps
+                lb.step(dem, io.demSolver);
+            }
             //vio.output(lb);
             io.outputStep(lb, dem);
 

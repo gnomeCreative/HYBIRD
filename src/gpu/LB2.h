@@ -62,7 +62,7 @@ class LB2 {
      * @param io_demSolver The result of io.demSolver in the calling method
      * @note io_demSolver may be redundant, surely dem can be probed to detect if DEM is active
      */
-    void step(const DEM &dem, bool io_demSolver);
+    void step(DEM &dem, bool io_demSolver);
     /**
      * @brief Sync DEM data to structure of arrays format (and device memory)
      * @param elmts Objects, such as walls within the DEM
@@ -71,7 +71,17 @@ class LB2 {
      * @param objects Objects that are not walls, e.g. cylinders??
      * @note Most of this will be removed once DEM is also moved to CUDA
      */
-    void syncDEM(const elmtList &elmts, const particleList &particles, const wallList &walls, const objectList &objects);
+    void syncDEMIn(const elmtList &elmts, const particleList &particles, const wallList &walls, const objectList &objects);
+    /**
+     * @brief Sync DEM data to structure from arrays format (and device memory)
+     * @param elmts Objects, such as walls within the DEM
+     * @param particles Spherical particles, which represent a decomposition of the elmts
+     * @param walls Wall elmts??
+     * @param objects Objects that are not walls, e.g. cylinders??
+     * @note Most of this will be removed once DEM is also moved to CUDA
+     * @note Much of this synchronisation is redundant, as the LBM coupling does not impact most DEM properties
+     */
+    void syncDEMOut(elmtList &elmts, particleList &particles, wallList &walls, objectList &objects);
     /**
      * @brief Following the DEM model being stepped, this updates impacted LBM nodes
      * @param newNeighbourList If a new neighbour table has been defined, the indexing will be reinitialised
@@ -90,31 +100,61 @@ class LB2 {
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
-    bool syncElements(const elmtList &elements);
+    bool syncElementsIn(const elmtList &elements);
     /**
      * @brief Sync DEM particle list to h_particles/d_particles
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
-    void syncParticles(const particleList &particles);
+    void syncParticlesIn(const particleList &particles);
     /**
      * @brief Sync DEM cylinder list to h_cylinders/d_cylinders
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
-    void syncCylinders(const cylinderList &cylinders);
+    void syncCylindersIn(const cylinderList &cylinders);
     /**
      * @brief Sync DEM wall list to h_walls/d_walls
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
-    void syncWalls(const wallList &walls);
+    void syncWallsIn(const wallList &walls);
     /**
      * @brief Sync DEM object list to h_objects/d_objects
      * @note Should be redundant once DEM is also ported to CUDA
      */
     template<int impl>
-    void syncObjects(const objectList &objects);
+    void syncObjectsIn(const objectList &objects);
+    /**
+     * @brief Sync DEM elements list from h_elements/d_elements
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncElementsOut(elmtList &elements);
+    /**
+     * @brief Sync DEM particle list from h_particles/d_particles
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncParticlesOut(particleList &particles);
+    /**
+     * @brief Sync DEM cylinder list from h_cylinders/d_cylinders
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncCylindersOut(cylinderList &cylinders);
+    /**
+     * @brief Sync DEM wall list from h_walls/d_walls
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncWallsOut(wallList &walls);
+    /**
+     * @brief Sync DEM object list from h_objects/d_objects
+     * @note Should be redundant once DEM is also ported to CUDA
+     */
+    template<int impl>
+    void syncObjectsOut(objectList &objects);
     /**
      * Set the LBM params
      * This copies them to GPU storage if required
