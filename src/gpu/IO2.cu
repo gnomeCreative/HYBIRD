@@ -258,29 +258,28 @@ void IO2::createFiles(LB2& lb, const DEM& dem) {
 
     }
 
-    //if (demSolver) {
+    if (demSolver) {
+            const unsigned int partExpCounter = (partExpTime > 0 ? static_cast<unsigned int> (realTime / partExpTime) + 1 : 0);
+            if (partExpCounter > lastPartExp) {
+                lastPartExp = partExpCounter;
+                char filePathBuffer [1024];
+                sprintf(filePathBuffer, partFileFormat.c_str(), currentTimeStep);
+                if (partExpFormat == ParaviewFormat::Ascii) {
+                    exportParaviewParticles(dem.elmts, dem.particles, filePathBuffer);
+                } else {
+                    exportParaviewParticles_binaryv3(dem.elmts, dem.particles, filePathBuffer);
+                }
+            }
 
-    //    const unsigned int partExpCounter = (partExpTime > 0 ? static_cast<unsigned int> (realTime / partExpTime) + 1 : 0);
-    //    if (partExpCounter > lastPartExp) {
-    //        lastPartExp = partExpCounter;
-    //        char filePathBuffer [1024];
-    //        sprintf(filePathBuffer, partFileFormat.c_str(), currentTimeStep);
-    //        if (partExpFormat == ParaviewFormat::Ascii) {
-    //            exportParaviewParticles(dem.elmts, dem.particles, filePathBuffer);
-    //        } else {
-    //            exportParaviewParticles_binaryv3(dem.elmts, dem.particles, filePathBuffer);
-    //        }
-    //    }
-
-    //    const unsigned int partRecycleExpCounter = (partRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / partRecycleExpTime) + 1 : 0);
-    //    if (partRecycleExpCounter > lastPartRecycleExp) {
-    //        lastPartRecycleExp = partRecycleExpCounter;
-    //        char filePathBuffer [1024];
-    //        sprintf(filePathBuffer, partRecycleFileFormat.c_str(), currentTimeStep);
-    //        // requires the pbcShift, contained int he neighborList function
-    //        exportRecycleParticles(dem.elmts, dem.pbcs, filePathBuffer);
-    //    }
-    //}
+            //const unsigned int partRecycleExpCounter = (partRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / partRecycleExpTime) + 1 : 0);
+            //if (partRecycleExpCounter > lastPartRecycleExp) {
+            //    lastPartRecycleExp = partRecycleExpCounter;
+            //    char filePathBuffer [1024];
+            //    sprintf(filePathBuffer, partRecycleFileFormat.c_str(), currentTimeStep);
+            //    // requires the pbcShift, contained in the neighbourList function
+            //    exportRecycleParticles(dem.elmts, dem.pbcs, filePathBuffer);
+            //}
+    }
     //if (dem.objects.size() > 0) {
 
     //    const unsigned int objectExpCounter = (objectExpTime > 0 ? static_cast<unsigned int> (realTime / objectExpTime) + 1 : 0);
@@ -489,7 +488,7 @@ void IO2::exportFlowLevel(const LB2& lb) {
         flowLevelFile.close();
     }
 }
-
+*/
 void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile) {
 
     const int one = 1;
@@ -916,7 +915,7 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     // header file closing
     paraviewParticleFile.close();
 }
-
+/*
 void IO2::exportRecycleFluid(const LB2& lb, const string& fluidRecycleFile) {
     // exports a format readable by this code itself, allowing the re-use of computed particle data.
     // needs further work...

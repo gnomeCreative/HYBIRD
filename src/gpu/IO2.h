@@ -16,6 +16,11 @@ class IO2 : public IO {
 
     // PARAVIEW /////////////////////////////////////////////////////////////////////////////////////////
     
+    // particle paraview file
+    void exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile);
+    void exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile);
+
+    
     // Eulerian fluid paraview file
     // void exportEulerianParaviewFluid(LB2& lb, const string& fluidFile);
     // void exportEulerianParaviewFluid_binary(LB2& lb, const string& fluidFile);

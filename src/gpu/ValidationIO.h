@@ -141,9 +141,9 @@ public:
         t_avg = Zero;
         for (unsigned int i = 0; i < nodes.count; ++i) {
             if (nodes.type[i] != GAS) {
-                t_avg.x = nodes.hydroForce[i].x;
-                t_avg.y = nodes.hydroForce[i].y;
-                t_avg.z = nodes.hydroForce[i].z;
+                t_avg.x += nodes.hydroForce[i].x;
+                t_avg.y += nodes.hydroForce[i].y;
+                t_avg.z += nodes.hydroForce[i].z;
             }
         }
         fs << t_avg.x / sd_count << ",";
@@ -153,9 +153,9 @@ public:
         t_avg = Zero;
         for (unsigned int i = 0; i < nodes.count; ++i) {
             if (nodes.type[i] != GAS) {
-                t_avg.x = nodes.centrifugalForce[i].x;
-                t_avg.y = nodes.centrifugalForce[i].y;
-                t_avg.z = nodes.centrifugalForce[i].z;
+                t_avg.x += nodes.centrifugalForce[i].x;
+                t_avg.y += nodes.centrifugalForce[i].y;
+                t_avg.z += nodes.centrifugalForce[i].z;
             }
         }
         fs << t_avg.x / sd_count << ",";
@@ -198,7 +198,7 @@ public:
                 sd_avg += 1;
             }
         }
-        fs << sd_avg << ",";
+        fs << sd_avg / sd_count << ",";
         // active_count
         fs << nodes.activeCount << ",";
         // active_coord_average
