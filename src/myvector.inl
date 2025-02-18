@@ -162,15 +162,6 @@ inline int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) c
     const int zc = static_cast<int>(floor(z/cellWidth[2])+1);
     const int index = static_cast<int>(xc+nCells[0]*(yc+ nCells[1]*zc));
     return index;
-    cout<<"x="<<x<<endl;
-    cout<<"y="<<y<<endl;
-    cout<<"z="<<z<<endl;
-    cout<<"floor(x/cellWidth[0])+1="<<floor(x/cellWidth[0])+1<<endl;
-    cout<<"floor(y/cellWidth[1])+1="<<floor(y/cellWidth[1])+1<<endl;
-    cout<<"floor(z/cellWidth[2]))+1="<<floor(z/cellWidth[2])+1<<endl;
-    cout<<"index="<<index<<endl;
-    
-
 }
 
 // geometric position functions

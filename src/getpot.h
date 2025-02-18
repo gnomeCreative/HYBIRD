@@ -29,6 +29,7 @@
 #define __GETPOT_H__
 
 #if defined(WIN32) || defined(SOLARIS_RAW) || (__GNUC__ == 2) || defined(__HP_aCC)
+#define _CRT_SECURE_NO_WARNINGS
 #define strtok_r(a, b, c) strtok(a, b)
 #endif // WINDOWS or SOLARIS or gcc 2.* or HP aCC
 
@@ -229,7 +230,7 @@ public:
     // (*) nominus arguments ---------------------------------------------------
     inline void            reset_nominus_cursor();
     inline STRING_VECTOR   nominus_vector() const;
-    inline unsigned        nominus_size() const  { return idx_nominus.size(); }
+    inline unsigned        nominus_size() const  { return (unsigned) idx_nominus.size(); }
     inline const char*     next_nominus();
 
     // (*) unidentified flying objects -----------------------------------------
@@ -982,7 +983,7 @@ GetPot::_skip_whitespace(std::istream& istr)
 
 	// -- comment starter found -> search for comment ender
 	unsigned match_no=0;
-	while(1+1 == 2) {
+	while(true) {
 	    tmp = istr.get();
 	    if( ! istr ) { istr.unget(); return; }
 
@@ -1011,13 +1012,13 @@ GetPot::_get_next_token(std::istream& istr)
     std::string token;
     int    tmp = 0;
     int    last_letter = 0;
-    while(1+1 == 2) {
+    while(true) {
 	last_letter = tmp; tmp = istr.get();
         if( tmp == '=' )
         {
           // Always break at '='.
           // This separates '=' at the beginning of a word into its own word.
-          token += tmp;
+          token += (char)tmp;
           return token;
         }
         else if( tmp == EOF
@@ -1034,12 +1035,12 @@ GetPot::_get_next_token(std::istream& istr)
 	    continue;
 	}
 	else if( tmp == '$' && last_letter == '\\') {
-	    token += tmp; tmp = 0;  //  so that last_letter will become = 0, not '$';
+	    token += (char)tmp; tmp = 0;  //  so that last_letter will become = 0, not '$';
 	    continue;
 	}
 	else if( tmp == '\\' && last_letter != '\\')
 	    continue;              // don't append un-backslashed backslashes
-	token += tmp;
+	token += (char)tmp;
     }
 }
 
@@ -1050,14 +1051,14 @@ GetPot::_get_string(std::istream& istr)
     std::string str;
     int    tmp = 0;
     int    last_letter = 0;
-    while(1 + 1 == 2) {
+    while(true) {
 	last_letter = tmp; tmp = istr.get();
 	if( tmp == EOF)  return str;
 	// un-backslashed quotes => it's the end of the string
 	else if( tmp == '\'' && last_letter != '\\')  return str;
 	else if( tmp == '\\' && last_letter != '\\')  continue; // don't append
 
-	str += tmp;
+	str += (char)tmp;
     }
 }
 
@@ -1069,7 +1070,7 @@ GetPot::_get_until_closing_bracket(std::istream& istr)
     int    tmp = 0;
     int    last_letter = 0;
     int    brackets = 1;
-    while(1 + 1 == 2) {
+    while(true) {
 	last_letter = tmp; tmp = istr.get();
 	if( tmp == EOF) return str;
 	else if( tmp == '{' && last_letter == '$') brackets += 1;
@@ -1080,7 +1081,7 @@ GetPot::_get_until_closing_bracket(std::istream& istr)
 	    else if( tmp == '\\' && last_letter != '\\')
 		continue;  // do not append an unbackslashed backslash
 	}
-	str += tmp;
+	str += (char)tmp;
     }
 }
 
@@ -1122,12 +1123,12 @@ GetPot::_process_section_label(const std::string& Section,
 	}
 	section_stack.push_back(sname);
     }
-    std::string section = "";
+    std::string section2 = "";
     if( !section_stack.empty() ) {
 	victorate(std::string, section_stack, it)
-	    section += *it + "/";
+	    section2 += *it + "/";
     }
-    return section;
+    return section2;
 }
 
 // Use C++ istream/ostream to handle most type conversions.
@@ -1167,7 +1168,7 @@ GetPot::_convert_to_type<bool>(const std::string& String, const bool& Default) c
   //std::transform(newstring.begin(), newstring.end(), newstring.begin(), std::toupper);
   for (unsigned int i=0; i<newstring.length(); ++i)
   {
-    newstring[i]=toupper(newstring[i]);
+    newstring[i]= (char)toupper(newstring[i]);
   }
 
   // "true"/"True"/"TRUE" should work
@@ -1227,7 +1228,7 @@ GetPot::_convert_to_type_no_default<bool>(const char* VarName, const std::string
   //std::transform(newstring.begin(), newstring.end(), newstring.begin(), std::toupper);
   for (unsigned int i=0; i<newstring.length(); ++i)
   {
-    newstring[i]=toupper(newstring[i]);
+    newstring[i]= (char)toupper(newstring[i]);
   }
 
   // "true"/"True"/"TRUE" should work
@@ -1305,7 +1306,7 @@ GetPot::search(const char* Option)
     // (*) record requested arguments for later ufo detection
     _record_argument_request(SearchTerm);
 
-    if( OldCursor >= argv.size() ) OldCursor = argv.size() - 1;
+    if( OldCursor >= argv.size() ) OldCursor = (unsigned int)argv.size() - 1;
     search_failed_f = true;
 
     // (*) first loop from cursor position until end
@@ -1396,7 +1397,7 @@ GetPot::get(unsigned int Idx, const char* Default) const
 
 inline unsigned
 GetPot::size() const
-{ return argv.size(); }
+{ return (unsigned int)argv.size(); }
 
 
 //     -- next() function group
@@ -1407,7 +1408,7 @@ GetPot::next(const T& Default)
     if( search_failed_f ) return Default;
     cursor++;
     if( cursor >= argv.size() )
-    { cursor = argv.size(); return Default; }
+    { cursor = (unsigned int)argv.size(); return Default; }
 
     // (*) record requested argument for later ufo detection
     _record_argument_request(argv[cursor]);
@@ -1499,7 +1500,7 @@ GetPot::direct_follow(const T& Default, const char* Option)
     _record_argument_request(std::string(Option) + FollowStr);
 
     if( FollowStr == 0 )                    return Default;
-    if( ++cursor >= argv.size() ) cursor = argv.size();
+    if( ++cursor >= argv.size() ) cursor = (unsigned int)argv.size();
     return _convert_to_type(FollowStr, Default);
 }
 
@@ -1515,10 +1516,10 @@ GetPot::_match_starting_string(const char* StartString)
     //          the match inside the found argument starts.
     // 0        no argument matches the starting string.
 {
-    const unsigned N         = strlen(StartString);
+    const unsigned N         = (unsigned int)strlen(StartString);
     unsigned       OldCursor = cursor;
 
-    if( OldCursor >= argv.size() ) OldCursor = argv.size() - 1;
+    if( OldCursor >= argv.size() ) OldCursor = (unsigned int)argv.size() - 1;
     search_failed_f = true;
 
     // (*) first loop from cursor position until end
@@ -1862,7 +1863,7 @@ GetPot::vector_variable_size(const char* VarName) const
 {
     const variable*  sv = _request_variable(VarName);
     if( sv == 0 ) return 0;
-    return sv->value.size();
+    return (unsigned int)sv->value.size();
 }
 
 inline unsigned
@@ -1934,13 +1935,13 @@ GetPot::print(std::ostream &out_stream) const
 // PECOS Development Team: (ks. 4/16/09)
 
 inline int
-GetPot::print(const char* prefix, std::ostream &out_stream, unsigned int skip_count) const
+GetPot::print(const char* prefix2, std::ostream &out_stream, unsigned int skip_count) const
 {
     STRING_VECTOR::const_iterator it = argv.begin();
     it += skip_count;
     for(; it != argv.end(); ++it)
       {
-	out_stream << prefix;
+	out_stream << prefix2;
         out_stream << *it << std::endl;
       }
     out_stream << std::endl;
@@ -2041,7 +2042,7 @@ GetPot::_DBE_get_expr_list(const std::string& str_, const unsigned ExpectedNumbe
     unsigned         open_brackets = 0;
     std::vector<unsigned> start_idx;
     unsigned         start_new_string = i;
-    unsigned         l = str.size();
+    unsigned         l = (unsigned int)str.size();
 
     // (2) search for ${ } expressions ...
     while( i < l ) {
@@ -2078,8 +2079,8 @@ GetPot::_DBE_get_expr_list(const std::string& str_, const unsigned ExpectedNumbe
 		str = Replacement + str.substr(i+1);
 	    else
 		str = str.substr(0, start-2) + Replacement + str.substr(i+1);
-	    l = str.size();
-	    i = start + Replacement.size() - 3;
+	    l = (unsigned int)str.size();
+	    i = (unsigned int)(start + (int)Replacement.size() - 3);
 	    open_brackets--;
 	}
 	i++;
@@ -2143,7 +2144,7 @@ GetPot::_DBE_expand(const std::string& expr)
     else if( expr.length() >= 3 && expr.substr(0, 3) == "<->" ) {
 	STRING_VECTOR A = _DBE_get_expr_list(expr.substr(3), 3);
 	size_t tmp = 0;
-	const unsigned L = A[1].length();
+	const unsigned L = (unsigned int)A[1].length();
 	while( (tmp = A[0].find(A[1])) != std::string::npos ) {
 	    A[0].replace(tmp, L, A[2]);
 	}
@@ -2321,7 +2322,7 @@ GetPot::_DBE_expand(const std::string& expr)
 	    if ( y != 1e37 && y > 0 && y <= Var->value.size() && y > x)
 		end = int(y+1.5);
 	    else if( y == -1 )
-		end = Var->value.size();
+		end = (int)Var->value.size();
 	    else
 		return "<<2nd index out of range>>";
 

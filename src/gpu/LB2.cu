@@ -29,7 +29,7 @@ bool LB2::syncElementsIn<CPU>(const elmtList &elements) {
              free(h_elements.MHydro);
              free(h_elements.fluidVolume);
          }
-         h_elements.alloc = elements.size();
+         h_elements.alloc = (unsigned int)elements.size();
          h_elements.x1 = (tVect*)malloc(elements.size() * sizeof(tVect));
          h_elements.wGlobal = (tVect*)malloc(elements.size() * sizeof(tVect));
          h_elements.FHydro = (tVect*)malloc(elements.size() * sizeof(tVect));
@@ -37,7 +37,7 @@ bool LB2::syncElementsIn<CPU>(const elmtList &elements) {
          h_elements.fluidVolume = (double*)malloc(elements.size() * sizeof(double));
     }
     // Update size
-    h_elements.count = static_cast<unsigned int>(elements.size());
+    h_elements.count = (unsigned int)elements.size();
     // Repackage host particle data from array of structures, to structure of arrays
      for (unsigned int i = 0; i < h_elements.count; ++i) {
          h_elements.x1[i] = elements[i].x1;
@@ -84,7 +84,7 @@ void LB2::syncParticlesIn<CPU>(const particleList &particles) {
             free(h_particles.x0);
             free(h_particles.radiusVec);
         }
-        h_particles.alloc = particles.size();
+        h_particles.alloc = (unsigned int)particles.size();
         h_particles.clusterIndex = (unsigned int*)malloc(particles.size() * sizeof(unsigned int));
         h_particles.r = (double*)malloc(particles.size() * sizeof(double));
         h_particles.x0 = (tVect*)malloc(particles.size() * sizeof(tVect));
@@ -93,7 +93,7 @@ void LB2::syncParticlesIn<CPU>(const particleList &particles) {
     // Update size
     h_particles.count = static_cast<unsigned int>(particles.size());
     // Repackage host particle data from array of structures, to structure of arrays
-    for (int i = 0; i < h_particles.count; ++i) {
+    for (unsigned int i = 0; i < h_particles.count; ++i) {
         h_particles.clusterIndex[i] = particles[i].clusterIndex;
         h_particles.r[i] = particles[i].r;
         h_particles.x0[i] = particles[i].x0;
@@ -120,7 +120,7 @@ void LB2::syncCylindersIn<CPU>(const cylinderList &cylinders) {
         h_cylinders.moving = (bool*)malloc(cylinders.size() * sizeof(bool));
     }
     // Update size
-    h_cylinders.count = static_cast<unsigned int>(cylinders.size());
+    h_cylinders.count = (unsigned int)cylinders.size();
     // Repackage host particle data from array of structures, to structure of arrays
     for (unsigned int i = 0; i < h_cylinders.count; ++i) {
         h_cylinders.p1[i] = cylinders[i].p1;
@@ -204,7 +204,7 @@ template<>
 void LB2::syncParticlesOut<CPU>(particleList &particles) {
     // Assumes memory is already allocated
     // Repackage device particle data from structure of arrays to array of structures 
-    for (int i = 0; i < h_particles.count; ++i) {
+    for (unsigned int i = 0; i < h_particles.count; ++i) {
         particles[i].clusterIndex = h_particles.clusterIndex[i];
         particles[i].r = h_particles.r[i];
         particles[i].x0 = h_particles.x0[i];
@@ -277,7 +277,7 @@ bool LB2::syncElementsIn<CUDA>(const elmtList &elements) {
         updateDeviceStruct = true;
     }
     // Update size
-    hd_elements.count = elements.size();
+    hd_elements.count = static_cast<unsigned int>(elements.size());
     if (componentsHasGrown || !hd_elements.componentsIndex) {
         // Allocate components
         if (hd_elements.componentsIndex)
@@ -1356,9 +1356,9 @@ void LB2::enforceMassConservation<CPU>() {
  * This unary operator allows us to reduce across a mapped array
  */
 template<typename T>
-struct unmapper : thrust::unary_function<unsigned int, T> {
+struct unmapper {
     T* d_map;
-    unmapper(T* d_map_init)
+    explicit unmapper(T* d_map_init)
         : d_map(d_map_init) { }
     __host__ __device__ T operator()(const unsigned int& x) const {
         return d_map[x];
@@ -1920,7 +1920,7 @@ void LB2::buildActiveList<CUDA>() {
     CUDA_CALL(cudaMemcpy(d_nodes, &hd_nodes, sizeof(Node2), cudaMemcpyHostToDevice));
 }
 template<>
-unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len, bool update_device_struct) {
+unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len) {
     // This is a simple implementation, there may be faster approaches
     // Alternate approach, stable pair-sort indices by type, then scan to identify boundaries
 
@@ -2299,33 +2299,16 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     const double inside_mass = initializeParticleBoundaries<IMPL>();
 
     // in case mass needs to be kept constant, compute it here
-    h_PARAMS.totalMass = 0.0;
     if (h_PARAMS.imposeFluidVolume) {
         // volume and mass is the same in lattice units
         h_PARAMS.totalMass = h_PARAMS.imposedFluidVolume / h_PARAMS.unit.Volume;
     } else {
-        switch (problemName) {
-        case DRUM:
-        {
+        if (problemName == DRUM) {
             h_PARAMS.totalMass = h_PARAMS.fluidMass / h_PARAMS.unit.Mass;
-            break;
-        }
-        case STAVA:
-        {
+        } else if(problemName == STAVA) {
             h_PARAMS.totalMass = 200000.0 / h_PARAMS.unit.Volume;
-            break;
-        }
-        default:
-        {
-            // @todo This needs to be calculated on device if using CUDA, h_nodes is out of date follow initializeParticleBoundaries
-            for (int i = 0; i < h_nodes.activeCount; ++i) {
-                const unsigned int a_i = h_nodes.activeI[i];
-                if (!h_nodes.isInsideParticle(a_i)) {
-                    h_PARAMS.totalMass += h_nodes.mass[a_i];
-                }
-            }
-            break;
-        }
+        } else {
+            h_PARAMS.totalMass = inside_mass;
         }
     }
     if (h_PARAMS.increaseVolume) {
@@ -2373,8 +2356,8 @@ void LB2::allocateHostNodes(const unsigned int count) {
     memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
     memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
     memset(h_nodes.age, 0, h_nodes.count * sizeof(float));
-    memset(h_nodes.solidIndex, std::numeric_limits<unsigned int>::max(), h_nodes.count * sizeof(unsigned int));
-    memset(h_nodes.d, std::numeric_limits<unsigned int>::max(), h_nodes.count * lbmDirec * sizeof(unsigned int));
+    memset(h_nodes.solidIndex, UINT_MAX, h_nodes.count * sizeof(unsigned int));
+    memset(h_nodes.d, UINT_MAX, h_nodes.count * lbmDirec * sizeof(unsigned int));
     std::fill(h_nodes.type, h_nodes.type + h_nodes.count, GAS);
     memset(h_nodes.p, 0, h_nodes.count * sizeof(bool));
 }

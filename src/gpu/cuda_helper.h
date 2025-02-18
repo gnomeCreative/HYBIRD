@@ -13,6 +13,7 @@ enum Implementation {
 };
 
 #ifdef USE_CUDA
+#pragma warning( disable: 4505 )    // unreferenced function has been removed
 #include <cuda_runtime.h>
 #include <thrust/transform_reduce.h>
 

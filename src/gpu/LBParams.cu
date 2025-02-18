@@ -25,29 +25,29 @@ void LBParams::latticeDefinition() {
     // order is O,x,y,z,xy,yz,zx.
     ne[0] = 0;
     //
-    ne[1] = shift[0];
-    ne[2] = -shift[0];
+    ne[1] = (int)shift[0];
+    ne[2] = -(int)shift[0];
     //
-    ne[3] = shift[1];
-    ne[4] = -shift[1];
+    ne[3] = (int)shift[1];
+    ne[4] = -(int)shift[1];
     //
-    ne[5] = shift[2];
-    ne[6] = -shift[2];
+    ne[5] = (int)shift[2];
+    ne[6] = -(int)shift[2];
     //
-    ne[7] = shift[0] + shift[1];
-    ne[8] = -shift[0] - shift[1];
-    ne[9] = -shift[0] + shift[1];
-    ne[10] = shift[0] - shift[1];
+    ne[7] = (int)shift[0] + shift[1];
+    ne[8] = -(int)shift[0] - shift[1];
+    ne[9] = -(int)shift[0] + shift[1];
+    ne[10] = (int)shift[0] - shift[1];
     //
-    ne[11] = shift[1] + shift[2];
-    ne[12] = -shift[1] - shift[2];
-    ne[13] = -shift[1] + shift[2];
-    ne[14] = shift[1] - shift[2];
+    ne[11] = (int)shift[1] + shift[2];
+    ne[12] = -(int)shift[1] - shift[2];
+    ne[13] = -(int)shift[1] + shift[2];
+    ne[14] = (int)shift[1] - shift[2];
     //
-    ne[15] = shift[2] + shift[0];
-    ne[16] = -shift[2] - shift[0];
-    ne[17] = -shift[2] + shift[0];
-    ne[18] = shift[2] - shift[0];
+    ne[15] = (int)shift[2] + shift[0];
+    ne[16] = -(int)shift[2] - shift[0];
+    ne[17] = -(int)shift[2] + shift[0];
+    ne[18] = (int)shift[2] - shift[0];
 
 }
 
@@ -72,7 +72,7 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     // increase volume
     PARSE_CLASS_MEMBER(configFile, increaseVolume, "increaseVolume", false);
     if (increaseVolume) {
-        ASSERT(imposedFluidVolume == false);
+        ASSERT(imposedFluidVolume == 0.0);
         PARSE_CLASS_MEMBER(configFile, deltaVolume, "deltaVolume", 0.0);
         PARSE_CLASS_MEMBER(configFile, deltaTime, "deltaTime", 0.0);
     }

@@ -680,7 +680,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
                 }
             }
         }
-        if (pos[0] == PARAMS.lbSize[0] - 1) {
+        if (pos[0] == (int)PARAMS.lbSize[0] - 1) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Xp) > 0.0) {
                     neighborCoord[j] = index;
@@ -694,7 +694,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
                 }
             }
         }
-        if (pos[1] == PARAMS.lbSize[1] - 1) {
+        if (pos[1] == (int)PARAMS.lbSize[1] - 1) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Yp) > 0.0) {
                     neighborCoord[j] = index;
@@ -708,7 +708,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
                 }
             }
         }
-        if (pos[2] == PARAMS.lbSize[2] - 1) {
+        if (pos[2] == (int)PARAMS.lbSize[2] - 1) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Zp) > 0.0) {
                     neighborCoord[j] = index;

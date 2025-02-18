@@ -500,12 +500,12 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
         }
     }
 
-    const int Pnumber = particles.size();
-    const tVect nx(1.0, 0.0, 0.0), ny(0.0, 1.0, 0.0), nz(0.0, 0.0, 1.0);
-    tVect n1, n2, n3;
+    const int Pnumber = (int)particles.size();
+    // const tVect nx(1.0, 0.0, 0.0), ny(0.0, 1.0, 0.0), nz(0.0, 0.0, 1.0);
+    // tVect n1, n2, n3;
 
     std::cout.precision(10);
-    std::cout.fixed;
+    // std::cout << std::fixed;
 
 
     // file opening
@@ -675,17 +675,17 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
     paraviewParticleFile << "   </Points>\n";
     paraviewParticleFile << "   <Cells>\n";
     paraviewParticleFile << "    <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n";
-    for (int i = 1; i < activeNumber + 1; ++i) {
+    for (unsigned int i = 1; i < activeNumber + 1; ++i) {
         paraviewParticleFile << i - 1 << "\n";
     }
     paraviewParticleFile << "    </DataArray>\n";
     paraviewParticleFile << "    <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n";
-    for (int i = 1; i < activeNumber + 1; ++i) {
+    for (unsigned int i = 1; i < activeNumber + 1; ++i) {
         paraviewParticleFile << i << "\n";
     }
     paraviewParticleFile << "    </DataArray>\n";
     paraviewParticleFile << "    <DataArray type=\"Int64\" Name=\"types\" format=\"ascii\">\n";
-    for (int i = 0; i < activeNumber; ++i) {
+    for (unsigned int i = 0; i < activeNumber; ++i) {
         paraviewParticleFile << one << "\n";
     }
     paraviewParticleFile << "    </DataArray>\n";
@@ -701,7 +701,7 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
 void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile) {
     // Build a list of active particles for faster access
     std::vector<unsigned int> active_particles;
-    for (int i = 0; i < particles.size(); ++i) {
+    for (unsigned int i = 0; i < particles.size(); ++i) {
         if (particles[i].active) {
             active_particles.push_back(i);
         }
@@ -718,7 +718,7 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     paraviewParticleFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
     paraviewParticleFile << "  <Piece NumberOfPoints=\"" << active_particles.size() << "\" NumberOfCells=\"" << active_particles.size() << "\">\n";
     paraviewParticleFile << "   <PointData>\n";
-    unsigned int offset = 0;
+    size_t offset = 0;
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radius\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
     offset += active_particles.size() * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"particleIndex\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
@@ -779,84 +779,84 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     // radius
     offset = active_particles.size() * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         d_buffer[i] = particles[active_particles[i]].r;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // particleIndex
     offset = active_particles.size() * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         u_buffer[i] = particles[active_particles[i]].particleIndex;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // clusterIndex
     offset = active_particles.size() * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         u_buffer[i] = particles[active_particles[i]].clusterIndex;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // coordinationNumber
     offset = active_particles.size() * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         u_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].coordination;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // v
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = particles[active_particles[i]].x1;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // w
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].wGlobal;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // FParticle
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FParticle;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // FGrav
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FGrav;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // solidIntensity
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].solidIntensity;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // MParticle
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MParticle;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // FWall
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FWall;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // MWall
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MWall;
     }
     paraviewParticleFile.write(t_buffer, offset);
@@ -864,21 +864,21 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
         // FHydro
         offset = active_particles.size() * 3 * sizeof(double);
         paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < active_particles.size(); ++i) {
+        for (unsigned int i = 0; i < active_particles.size(); ++i) {
             v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FHydro;
         }
         paraviewParticleFile.write(t_buffer, offset);
         // MHydro
         offset = active_particles.size() * 3 * sizeof(double);
         paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < active_particles.size(); ++i) {
+        for (unsigned int i = 0; i < active_particles.size(); ++i) {
             v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MHydro;
         }
         paraviewParticleFile.write(t_buffer, offset);
         // fluidIntensity
         offset = active_particles.size() * 3 * sizeof(double);
         paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < active_particles.size(); ++i) {
+        for (unsigned int i = 0; i < active_particles.size(); ++i) {
             v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FHydro;
         }
         paraviewParticleFile.write(t_buffer, offset);
@@ -887,7 +887,7 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     // Points
     offset = active_particles.size() * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = particles[active_particles[i]].x0;
     }
     paraviewParticleFile.write(t_buffer, offset);
@@ -908,7 +908,7 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     // types
     offset = active_particles.size() * sizeof(unsigned char);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + active_particles.size(), 1u);
+    std::fill(uc_buffer, uc_buffer + active_particles.size(), (unsigned char)1);
     paraviewParticleFile.write(t_buffer, offset);
     paraviewParticleFile << "</AppendedData>";
     paraviewParticleFile << "</VTKFile>";
@@ -959,12 +959,12 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile << "  <Piece NumberOfPoints=\"" << nodes.activeCount << "\" NumberOfCells=\"" << nodes.activeCount << "\">\n";
     paraviewFluidFile << "   <PointData>\n";
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"ascii\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         tVect uPhysic = nodes.u[nodes.activeI[i]] * PARAMS.unit.Speed;
         uPhysic.printLine(paraviewFluidFile);
     }
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         paraviewFluidFile << 0.3333333 * (nodes.n[nodes.activeI[i]] - PARAMS.fluidMaterial.initDensity) * PARAMS.unit.Pressure << "\n";
     }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"smoothedPressure\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
@@ -976,7 +976,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //        paraviewFluidFile << nodes.n[nodes.activeI[i]] << "\n";
     //    }
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         paraviewFluidFile << nodes.visc[nodes.activeI[i]] * PARAMS.unit.DynVisc << "\n";
     }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"applySlip\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
@@ -989,7 +989,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
 //    }
     if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-        for (int i = 0; i < nodes.activeCount; ++i) {
+        for (unsigned int i = 0; i < nodes.activeCount; ++i) {
             paraviewFluidFile << nodes.friction[nodes.activeI[i]] << "\n";
         }
     }
@@ -998,16 +998,16 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //        paraviewFluidFile << nodes.friction[nodes.activeI[i]] << "\n";
     //    }
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"mass\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         paraviewFluidFile << nodes.mass[nodes.activeI[i]] * PARAMS.unit.Density << "\n";
     }
     paraviewFluidFile << "    <DataArray type=\"Int8\" Name=\"type\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         paraviewFluidFile << static_cast<unsigned>(nodes.type[nodes.activeI[i]]) << "\n";
     }
-    //    for (int j = 1; j < lbmDirec; ++j) {
+    //    for (unsigned int j = 1; j < lbmDirec; ++j) {
     //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"delta" << j << "\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-    //        for (int i = 0; i < nodes.activeCount; ++i) {
+    //        for (unsigned int i = 0; i < nodes.activeCount; ++i) {
     //            if (nodes.curved[nodes.activeI[i]] != std::numeric_limits<unsigned int>::max())) {
     //                const tVect deltaVector = nodes.curves[nodes.curved[nodes.activeI[i]]].delta[j] * PARAMS.unit.Length * v[j];
     //                deltaVector.printLine(paraviewFluidFile);
@@ -1019,21 +1019,21 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //    }
 #ifdef DEBUG 
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"age\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         paraviewFluidFile << nodes.age[nodes.activeI[i]] << "\n";
     }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"vv0\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    //    for (int i = 0; i < nodes.activeCount; ++i) {
+    //    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
     //        const double deltaZero = (nodes.f[nodes.activeI[i]*lbmDirec + 0] - coeff[0]);
     //        paraviewFluidFile << deltaZero << "\n";
     //    }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"surfNormal\" NumberOfComponents=\"3\" format=\"ascii\"/>\n";
-    //    for (int i = 0; i < nodes.activeCount; ++i) {
+    //    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
     //        nodeHere->surfaceNormal.printLine(paraviewFluidFile);
     //    }
-    //    for (int j = 1; j < lbmDirec2D; ++j) {
+    //    for (unsigned int j = 1; j < lbmDirec2D; ++j) {
     //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"vv" << j << "\" NumberOfComponents=\"3\" format=\"ascii\"/>\n";
-    //        for (int i = 0; i < nodes.activeCount; ++i) {
+    //        for (unsigned int i = 0; i < nodes.activeCount; ++i) {
     //            const tVect deltaVector = (nodes.f[nodes.activeI[i]*lbmDirec + two_dim[j]] - coeff[two_dim[j]]) * v[two_dim[j]];
     //            deltaVector.printLine(paraviewFluidFile);
     //        }
@@ -1044,24 +1044,24 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile << "   </CellData>\n";
     paraviewFluidFile << "   <Points>\n";
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\"/>\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         const tVect positionHere = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
         positionHere.printLine(paraviewFluidFile);
     }
     paraviewFluidFile << "   </Points>\n";
     paraviewFluidFile << "   <Cells>\n";
     paraviewFluidFile << "    <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n";
-    for (int i = 1; i < nodes.activeCount + 1; ++i) {
+    for (unsigned int i = 1; i < nodes.activeCount + 1; ++i) {
         paraviewFluidFile << i - 1 << "\n";
     }
     paraviewFluidFile << "    </DataArray>\n";
     paraviewFluidFile << "    <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n";
-    for (int i = 1; i < nodes.activeCount + 1; ++i) {
+    for (unsigned int i = 1; i < nodes.activeCount + 1; ++i) {
         paraviewFluidFile << i << "\n";
     }
     paraviewFluidFile << "    </DataArray>\n";
     paraviewFluidFile << "    <DataArray type=\"Int64\" Name=\"types\" format=\"ascii\">\n";
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         paraviewFluidFile << one << "\n";
     }
     paraviewFluidFile << "    </DataArray>\n";
@@ -1153,7 +1153,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     // Velocity
     offset = nodes.activeCount * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         v_buffer[i] = nodes.u[nodes.activeI[i]] * PARAMS.unit.Speed;
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1161,7 +1161,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     offset = nodes.activeCount * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         d_buffer[i] = (nodes.n[nodes.activeI[i]] - PARAMS.fluidMaterial.initDensity) * THIRD_PRESSURE;
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1169,7 +1169,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
         offset = nodes.activeCount * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < nodes.activeCount; ++i) {
+        for (unsigned int i = 0; i < nodes.activeCount; ++i) {
             d_buffer[i] = nodes.visc[nodes.activeI[i]] * PARAMS.unit.DynVisc;
         }
         paraviewFluidFile.write(t_buffer, offset);
@@ -1178,7 +1178,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
         offset = nodes.activeCount * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (int i = 0; i < nodes.activeCount; ++i) {
+        for (unsigned int i = 0; i < nodes.activeCount; ++i) {
             d_buffer[i] = nodes.friction[nodes.activeI[i]];
         }
         paraviewFluidFile.write(t_buffer, offset);
@@ -1186,15 +1186,15 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     // Mass
     offset = nodes.activeCount * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         d_buffer[i] = nodes.mass[nodes.activeI[i]] * PARAMS.unit.Density;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Type
     offset = nodes.activeCount * sizeof(unsigned char);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + nodes.activeCount, 2);
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    std::fill(uc_buffer, uc_buffer + nodes.activeCount, (unsigned char)2);
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         uc_buffer[i] = nodes.type[nodes.activeI[i]];
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1203,7 +1203,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     offset = nodes.activeCount * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     memset(d_buffer, 0, sizeof(double)* nodes.activeCount);
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         d_buffer[i] = nodes.age[nodes.activeI[i]];
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1211,28 +1211,28 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     // Points
     offset = nodes.activeCount * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         v_buffer[i] = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Connectivity
     offset = nodes.activeCount * sizeof(unsigned int);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         ui_buffer[i] = i ;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Offsets
     offset = nodes.activeCount * sizeof(unsigned int);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (int i = 0; i < nodes.activeCount; ++i) {
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         ui_buffer[i] = i + 1;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Types
     offset = nodes.activeCount * sizeof(unsigned char);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + nodes.activeCount, static_cast<unsigned char>(1));
+    std::fill(uc_buffer, uc_buffer + nodes.activeCount, (unsigned char)1);
     paraviewFluidFile.write(t_buffer, offset);
     paraviewFluidFile << "</AppendedData>";
     paraviewFluidFile << "</VTKFile>\n";
@@ -1791,8 +1791,8 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     // Type
     offset = PARAMS.totPossibleNodes * sizeof(unsigned char);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + PARAMS.totPossibleNodes, 2);
-    for (int i = 0; i < nodes.count; ++i) {
+    std::fill(uc_buffer, uc_buffer + PARAMS.totPossibleNodes, (unsigned char)2);
+    for (unsigned int i = 0; i < nodes.count; ++i) {
         uc_buffer[i] = nodes.isInsideParticle(i) ? nodes.type[i] : 1;
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1800,7 +1800,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     offset = PARAMS.totPossibleNodes * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     memset(v_buffer, 0, sizeof(tVect) * PARAMS.totPossibleNodes);
-    for (int i = 0; i < nodes.count; ++i) {
+    for (unsigned int i = 0; i < nodes.count; ++i) {
         v_buffer[i] = nodes.u[i] * PARAMS.unit.Speed;
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1809,7 +1809,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
     const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
-    for (int i = 0; i < nodes.count; ++i) {
+    for (unsigned int i = 0; i < nodes.count; ++i) {
         d_buffer[i] = (nodes.n[i] - 1.0) * THIRD_PRESSURE;
     }
     paraviewFluidFile.write(t_buffer, offset);
@@ -1818,7 +1818,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
         offset = PARAMS.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
         memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
-        for (int i = 0; i < nodes.count; ++i) {
+        for (unsigned int i = 0; i < nodes.count; ++i) {
             d_buffer[i] = nodes.visc[i] * PARAMS.unit.DynVisc;
         }
         paraviewFluidFile.write(t_buffer, offset);
@@ -1828,7 +1828,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
         offset = PARAMS.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
         memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
-        for (int i = 0; i < nodes.count; ++i) {
+        for (unsigned int i = 0; i < nodes.count; ++i) {
             d_buffer[i] = nodes.friction[i];
         }
         paraviewFluidFile.write(t_buffer, offset);
@@ -1838,7 +1838,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
         offset = PARAMS.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
         memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
-        for (int i = 0; i < nodes.count; ++i) {
+        for (unsigned int i = 0; i < nodes.count; ++i) {
             d_buffer[i] = nodes.mass[i] * PARAMS.unit.Density;
         }
         paraviewFluidFile.write(t_buffer, offset);
@@ -1848,7 +1848,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
         offset = PARAMS.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
         memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
-        for (int i = 0; i < nodes.count; ++i) {
+        for (unsigned int i = 0; i < nodes.count; ++i) {
             if (nodes.type[i] == TOPO) {
                 d_buffer[i] = 1.0;
             }
