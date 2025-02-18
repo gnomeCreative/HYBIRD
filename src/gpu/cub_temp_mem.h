@@ -56,7 +56,11 @@ class CubTempMem {
     /**
      * Release any allocated memory
      */
-    ~CubTempMem() { CUDA_CALL(cudaFree(d_cub_temp)); }  // @todo CUDAError, driver shutting down.
+    ~CubTempMem() {
+        // Don't error check here
+        // it's normally an error at program exit, as CUDA driver is killed first 
+        cudaFree(d_cub_temp);
+    }
     /**
      * Grow the size of the allocated buffer
      */
