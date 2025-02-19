@@ -620,7 +620,7 @@ inline void Node2::cleanLists<CPU>() {
     memcpy(activeI, interfaceI, sizeof(unsigned int) * interfaceCount);
     // Copy fluid IDs (there shouldn't be duplicates)
     memcpy(activeI + interfaceCount, fluidI, sizeof(unsigned int) * fluidCount);
-    // Sort (@todo it is assumed, not known, that nodes are in coord order)
+    // Sort
     std::sort(activeI, activeI + activeCount);
 }
 #ifdef USE_CUDA
@@ -642,7 +642,7 @@ inline void Node2::cleanLists<CUDA>() {
     // Copy fluid IDs (there shouldn't be duplicates)
     CUDA_CALL(cudaMemcpy(activeI + interfaceCount, fluidI, sizeof(unsigned int)* fluidCount, cudaMemcpyDeviceToDevice));
     /**
-     * Sort (@todo it is assumed, not known, that nodes are in coord order)
+     * Sort
      */
     // Prepare the sort, calculate how much and allocate temporary memory for cub
     const int max_bit = static_cast<int>(floor(log2(count))) + 1;
