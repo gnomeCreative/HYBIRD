@@ -23,8 +23,8 @@ struct LBInitParams {
 
 /**
  * Lattice Boltzmann model parameters
- * These should not change during after initialisation
- * @note This struct has been moved into a seperate file to avoid a circular dependency
+ * These should not change after initialisation
+ * @note This struct has been moved into a separate file to avoid a circular dependency
  *       whilst maximising how much code can be inlined
  * @note Members marked t have not been checked whether redundant
  */

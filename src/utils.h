@@ -120,7 +120,7 @@ public:
     double directionalDistance(const tVect& point, const tVect& dir) const;
 };
 
-enum cylinderType {EMPTY, FULL};
+enum cylinderType : char {EMPTY, FULL};
 
 class cylinder {
     // Cylinder class, defined by two points and a radius. Cylinder is of infinite length

@@ -607,7 +607,7 @@ void DEM::initializeWalls(const std::array<types, 6> &externalBoundary, const st
             dummyWall.limited = false;
             ++index;
             walls.push_back(dummyWall);
-            if (depositArea) {
+            if (dem_p.depositArea) {
                 // deposit area
                 dummyWall.p = tVect(25.2795, 0.5008, 0.0);
                 dummyWall.n = tVect(-0.342020, 0.939693, 0.0);

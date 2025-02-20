@@ -12,7 +12,8 @@
 #include "getpot.h"
 
 #include "IO.h"
-#include "DEM.h"
+#include "gpu/DEM2.h"
+#include "gpu/DEMParams.h"
 #include "gpu/IO2.h"
 #include "gpu/LB2.h"
 #include "gpu/LBParams.h"
@@ -154,7 +155,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
     configFile.close();
 }
 
-void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, GetPot& configFile, GetPot& commandLine) {
+void parseConfigFile(IO& io, DEMParams& dem, Element2& elmts, Object2& objects, LBParams& lb, LBInitParams& lbi, GetPot& configFile, GetPot& commandLine) {
 
     cout << "Parsing input file" << endl;
     // PROBLEM NAME //////////////
@@ -352,7 +353,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, GetPot& 
     // getting LBM parameters
     lb.latticeBoltzmannGet(configFile, commandLine, lbi);
     // getting DEM parameters and particle initial status
-    dem.discreteElementGet(configFile, commandLine);
+    dem.discreteElementGet(configFile, commandLine, elmts, objects);
 
     // problem specific parameters
     switch (problemName) {
@@ -458,7 +459,8 @@ int main(int argc, char** argv) {
     IO2 io;
 
     // DECLARATION OF VARIABLES - DEM ///////////////
-    DEM dem;
+    DEM2 dem;
+    DEMParams dem_p;
 
     // DECLARATION OF VARIABLES - LB ///////////////
     LBParams lb_p;
@@ -484,7 +486,7 @@ int main(int argc, char** argv) {
 
     // parsing LBM input file
     GetPot configFile(io.configFileName);
-    parseConfigFile(io, dem, lb_p, lb_ip, configFile, commandLine);
+    parseConfigFile(io, dem_p, dem.h_elements, dem.h_objects, lb_p, lb_ip, configFile, commandLine);
 
     printUfo(commandLine, configFile);
 
@@ -512,22 +514,22 @@ int main(int argc, char** argv) {
     const tVect externalForce = lb_p.lbF * lb_p.unit.Accel;
     const tVect externalRotation = lb_p.rotationSpeed * lb_p.unit.AngVel;
     const tVect externalRotationCenter = lb_p.rotationCenter * lb_p.unit.Length;
-
-    dem.discreteElementInit(lb_p.boundary, lb_p.lbPhysicalSize, lb_p.lbBoundaryLocation, externalForce,
+    
+    dem.discreteElementInit(dem_p, lb_p.boundary, lb_p.lbPhysicalSize, lb_p.lbBoundaryLocation, externalForce,
             externalRotation, externalRotationCenter, io.coriolisSolver, io.centrifugalSolver, lb_p.unit.Time);
 
     // setting time
     lb_p.time = 0;
-    dem.demTime = 0.0;
+    dem_p.demTime = 0.0;
     io.realTime = 0.0;
-    dem.demTimeStep = 0;
+    dem_p.demTimeStep = 0;
 
     // Allocate the LB runner
     LB2 lb;
     lb.setParams(lb_p, lb_ip);
 
     if (io.lbmSolver) {
-        lb.init(dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
+        lb.init(dem.h_cylinders, dem.h_walls, dem.h_particles, dem.h_objects, io.coriolisSolver, io.centrifugalSolver);
     }
         
     // initial output

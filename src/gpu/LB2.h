@@ -12,10 +12,10 @@
 #include "Cylinder2.h"
 #include "Wall2.h"
 
-class DEM;
+class DEM2;
 
 /**
- * V2 if LB.cpp
+ * V2 of LB.cpp
  * An experimental attempt to produce a combined CPU-CUDA codebase
  * which can be compiled as either CPU or GPU code with as much shared code as possible
  */
@@ -260,11 +260,6 @@ class LB2 {
 
     // The temporary host, and device particle storage
     // Until DEM model is moved to CUDA, host copy only acts as a location to build data before copying to device
-    Particle2 h_particles, hd_particles, *d_particles = nullptr;
-    Element2 h_elements, hd_elements, *d_elements = nullptr;
-    Wall2 h_walls, hd_walls, *d_walls = nullptr;
-    Cylinder2 h_cylinders, hd_cylinders, * d_cylinders = nullptr;
-    Object2 h_objects, hd_objects, *d_objects = nullptr;
     
     LBInitParams init_params; // Host only parameters used during initialisation
     // topography container
