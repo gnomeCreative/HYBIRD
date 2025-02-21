@@ -831,6 +831,14 @@ __host__ __device__ __forceinline__ void Node2::eraseNode(const unsigned int ind
     //remove from map;
     this->type[index] = GAS;
 
+    // Zero properties used by Eulerian output
+    this->p[index] = false;
+    this->u[index] = {0.0,0.0,0.0};
+    this->n[index] = 0.0;
+    this->visc[index] = 0.0;
+    this->friction[index] = 0.0;
+    this->mass[index] = 0.0;
+
     // assign neighbor nodes
     for (int j = 1; j < lbmDirec; ++j) {
         // linearized coordinate of neighbor nodes
