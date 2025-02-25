@@ -24,9 +24,55 @@ class DEM2 {
     // Total number of standard objects (i.e. not ghosts) which needs to be saved (Devis))
     unsigned int stdObjects;
  public:
-    void discreteElementInit(DEMParams& dem_p, const std::array<types, 6>& externalBoundary, const std::array<double, 3>& externalSize, const std::array<tVect, 6>& externalBoundaryLocation,
+    void discreteElementInit(const std::array<types, 6>& externalBoundary, const std::array<double, 3>& externalSize, const std::array<tVect, 6>& externalBoundaryLocation,
         const tVect &externalAccel, const tVect &externalRotation, const tVect &externalRotationCenter, bool externalSolveCoriolis, bool externalSolveCentrifugal, double externalTimeStep);
+    /**
+     * Initializes all parameters useful for neighbor list algorithm
+     * cellWidth, nCells, nebrRange, maxDisp
+     */
+    void initNeighborParameters();
+    void determineTimeStep(double externalTimeStep);
+    double criticalTimeStep() const;
+    /**
+     * (re)construct the neighbour table
+     */
+    template<int impl>
+    void evalNeighborTable(bool sync_data = false);
 
+    void evolveBoundaries();
+    void discreteElementStep();
+
+    ///
+    /// Discrete element step functions
+    ///
+    template<int impl>
+    void buildActiveLists();
+    template<int impl>
+    void predictor();
+    template<int impl>
+    void updateParticlesPredicted();
+    template<int impl>
+    void evaluateForces();
+    template<int impl>
+    void particleParticleContacts();
+    template<int impl>
+    void wallParticleContacts();
+    template<int impl>
+    void objectParticleContacts();
+    template<int impl>
+    void cylinderParticelContacts();
+
+    Particle2 &getParticles();
+    Element2 &getElements();
+    DEMParams &getParams();
+    void syncParamsToDevice();
+    /**
+     * Copy h_particles to d_particles (and hd_particles)
+     * This also allocates memory for d_particles if required
+     */
+    void syncParticlesToDevice();
+    void syncParticlesFromDevice();
+    void syncElementsFromDevice();
  public: // Public for convenience
     Particle2 h_particles, hd_particles, * d_particles = nullptr;
     Wall2 h_walls, hd_walls, * d_walls = nullptr;

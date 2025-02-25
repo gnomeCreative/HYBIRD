@@ -43,7 +43,7 @@ struct Cylinder2 {
      */
     template<int impl>
     void memoryAlloc(unsigned int num);
-    void initialize(const DEMParams& dem_p);
+    void initialize();
     // axes variables initialization
     void initAxes(unsigned int i);
     void cylinderShow(unsigned int i) const;

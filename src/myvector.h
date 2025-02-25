@@ -91,13 +91,15 @@ typedef class tinyMatrix tMat;
 // VECTOR CLASS
 class tVect {
 public:
-    double x,y,z;
+    double x, y, z;
 public:
     constexpr tVect()
         : x(0), y(0), z(0){}
     //tinyVector(double a, double b, double c){
     constexpr tVect(const double& a, const double& b, const double& c)
         : x(a), y(b), z(c){}
+    __host__ __device__  double& operator[](unsigned int index);
+    __host__ __device__  constexpr double operator[](unsigned int index) const;
     void get(std::ifstream& inputFile);
     void show() const;
     void printLine(std::ofstream& outputFile) const;
@@ -126,7 +128,10 @@ public:
     constexpr tMat outer(const tVect& vec) const;
     double norm() const;
     __host__ __device__ double norm2() const;
-    int linearizePosition(double cellWidth[], unsigned int nCells[]) const;
+    /**
+     * Convert a particle location to the index of a bin within the neighbour grid
+     */
+    __host__ __device__ int linearizePosition() const;
     //friend tVect newtonAcc(tVect moment, tVect I, tVect wBf);
     //friend tQuat vec2quat(tVect vec);
     //friend tVect project(tVect& vec, tQuat quat);

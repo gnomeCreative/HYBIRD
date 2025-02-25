@@ -184,8 +184,8 @@ struct LBParams {
  * Therefore, the host replacement is also defined this way
  *
  * In order for them to share a name within shared host/device code
- * we selectively define the macro PARAMS, which maps to h_PARAMS
- * or d_PARAMS subject to whether __CUDA_ARCH__ has been defined.
+ * we selectively define the macro LB_P, which maps to h_LB_P
+ * or d_LB_P subject to whether __CUDA_ARCH__ has been defined.
  * __CUDA_ARCH__ is automatically defined by the CUDA compiler whilst
  * it compiles device code, to specify the target architecture,
  * it is not defined whilst the CUDA compiler builds host code.
@@ -193,21 +193,21 @@ struct LBParams {
  * host and device code if compiled by the CUDA compiler.
  *
  * If you wish to specifically access the host or device versions
- * h_PARAMS and d_PARAMS can be used respectively.
+ * h_LB_P and d_LB_P can be used respectively.
  *
- * It may be possible to replace PARAMS with a reference,
+ * It may be possible to replace LB_P with a reference,
  * however this would require careful CUDA testing.
  */
 // Declare the global storage variables
 #ifdef USE_CUDA
-extern __constant__ LBParams d_PARAMS;
+extern __constant__ LBParams d_LB_P;
 #endif
-extern LBParams h_PARAMS;
-// Define the PARAMS macro which maps to the corresponding storage variable
+extern LBParams h_LB_P;
+// Define the LB_P macro which maps to the corresponding storage variable
 #ifdef __CUDA_ARCH__
-#define PARAMS d_PARAMS
+#define LB_P d_LB_P
 #else
-#define PARAMS h_PARAMS
+#define LB_P h_LB_P
 #endif
 
 #endif  // LBPARAMS_H

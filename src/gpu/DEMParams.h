@@ -15,6 +15,19 @@ class GetPot;
  * @note Members marked t have not been checked whether redundant
  */
 struct DEMParams {
+    // neighbor list (here COMMENTS are needed)
+    // neighbor parameters
+    // Used in the transformation of wrapped positions to ghost positions
+    tVect half_demSize;
+    /// ?
+    double maxDisp;
+    /// ?
+    double nebrRange;
+    //double nebrShell;
+    // With of neighbour grid cells in each dimension
+    tVect cellWidth;
+    // Number of neighbour grid cells in each dimension
+    unsigned int nCells[3];
     // numerical viscosity to avoid energy problems
     double numVisc;
 
@@ -30,8 +43,8 @@ struct DEMParams {
     }, {
         // prototypes[3]
         tVect(0.0, 1.0, 0.0),
-        tVect(-sqrt(3) / 2, -1 / 2, 0.0),
-        tVect(sqrt(3) / 2, -1 / 2, 0.0)
+        tVect(-sqrt(3) / 2, -1 / 2, 0.0), // @bug, see issue #19
+        tVect(sqrt(3) / 2, -1 / 2, 0.0)   // @bug, see issue #19
     }, {
         // prototypes[4]
         tVect(0.0, 0.0, 1.0),
@@ -44,7 +57,7 @@ struct DEMParams {
      */
     void discreteElementGet(GetPot& configFile, GetPot& commandLine, Element2& elmts, Object2& objects);
     // domain size: DEM grid is orthogonal
-    doubleList demSize = { 1.0, 1.0, 1.0 };
+    tVect demSize = { 1.0, 1.0, 1.0 };
     // switchers for rotating local system
     bool solveCoriolis;
     bool solveCentrifugal;
@@ -54,6 +67,12 @@ struct DEMParams {
     double demInitialRepeat = 0;
     // time step
     unsigned int demTimeStep = 0;
+    // time step duration
+    double deltat = 1.0;
+    // C1 and C2 used by DEM::predictor()
+    std::array<double, 5> c1;
+    std::array<double, 5> c2;
+    void init_prototypeC1C2();
     // total time duration
     double demTime = 0.0;
     // force field (if not constant need to be calculated inside cycle) // should not be here!!!!!
@@ -88,5 +107,38 @@ struct DEMParams {
     // stuff for Usman
     bool depositArea = false;
 };
+/**
+ *
+ * Global scope Discrete Element Model parameters structure
+ * It is defined (e.g. sans 'extern') inside DEMParams.cu
+ * CUDA constant's can only be defined in global (or file) scope
+ * Therefore, the host replacement is also defined this way
+ *
+ * In order for them to share a name within shared host/device code
+ * we selectively define the macro DEM_P, which maps to h_DEM_P
+ * or d_DEM_P subject to whether __CUDA_ARCH__ has been defined.
+ * __CUDA_ARCH__ is automatically defined by the CUDA compiler whilst
+ * it compiles device code, to specify the target architecture,
+ * it is not defined whilst the CUDA compiler builds host code.
+ * However d_params is behind USE_CUDA, as it must exist in both
+ * host and device code if compiled by the CUDA compiler.
+ *
+ * If you wish to specifically access the host or device versions
+ * h_DEM_P and d_DEM_P can be used respectively.
+ *
+ * It may be possible to replace DEM_P with a reference,
+ * however this would require careful CUDA testing.
+ */
+ // Declare the global storage variables
+#ifdef USE_CUDA
+extern __constant__ DEMParams d_DEM_P;
+#endif
+extern DEMParams h_DEM_P;
+// Define the DEM_P macro which maps to the corresponding storage variable
+#ifdef __CUDA_ARCH__
+#define DEM_P d_DEM_P
+#else
+#define DEM_P h_DEM_P
+#endif
 
 #endif  // DEMPARAMS_H

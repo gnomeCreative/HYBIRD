@@ -1,6 +1,7 @@
 #ifndef PARTICLE2_H
 #define PARTICLE2_H
 #include "DEMParams.h"
+#include "Element2.h"
 
 /**
  * \brief Elements within the DEM are decomposed into spherical particles.
@@ -9,13 +10,27 @@
  * @todo/note original member vars coord and d are fixed at runtime
  */
 struct Particle2 {
+    // The total number of active particles
+    unsigned int activeCount = 0;
+    // The allocated size of activeI
+    // We don't shrink the buffer if the number of active particles decreases
+    unsigned int activeAlloc = 0;
+    // Index of nodes marked as active
+    unsigned int* activeI = nullptr;
+
+    // The neighbour grid index
+    unsigned int PBM_alloc = 0;
+    unsigned int* PBM = nullptr;
+    // Index of particle found within neighbour grid
+    // This buffer's length matches the number of particles
+    unsigned int *neighbour_index = nullptr;
+
     // The total number of particles
     // @note This is variable at runtime
     unsigned int count = 0;
     // Size of allocated buffer, as it never shrinks
     unsigned int alloc = 0;
-
-
+    
     // belonging element index
     unsigned  *particleIndex = nullptr;
     // belonging element index
@@ -27,7 +42,7 @@ struct Particle2 {
     // is it a ghost?
     bool *isGhost = nullptr;
     // belonging cell for neighbor list
-    unsigned int *tableCell = nullptr;
+    //unsigned int *tableCell = nullptr;
     // particle radius
     double *r = nullptr;
     // position of the particle
@@ -50,39 +65,26 @@ struct Particle2 {
      * @param p_i Index of the particle to operate on
      * @param elements elements structure
      * @param e_i Index of mother element
-     * @param dem_p DEM parameters
      */
-    void updateCorrected(const unsigned int p_i, const Element2& elements, const unsigned int e_i, const DEMParams& dem_p);
+    void updateCorrected(unsigned int p_i, const Element2& elements, unsigned int e_i);
+
+
+    __host__ __device__ __forceinline__ void updatePredicted(unsigned int i, const Element2* elements);
 
 };
+__host__ __device__ __forceinline__ void Particle2::updatePredicted(const unsigned int i, const Element2 *elements) {
+    // Mother element index
+    const unsigned int me_i = clusterIndex[i];
+    // updating position and velocity for simple case
+    x0[i] = elements->xp0[me_i];
+    radiusVec[i] = Zero;
+    x1[i] = elements->xp1[me_i];
 
-template<>
-inline void Particle2::memoryAlloc<CPU>(unsigned int num) {
-    alloc = num;
-    if (!num) return;
-    
-    particleIndex = (unsigned int*)malloc(alloc * sizeof(unsigned int));
-    clusterIndex = (unsigned int*)malloc(alloc * sizeof(unsigned int));
-    protoIndex = (unsigned int*)malloc(alloc * sizeof(unsigned int));
-    active = (bool*)malloc(alloc * sizeof(bool));
-    isGhost = (bool*)malloc(alloc * sizeof(bool));
-    tableCell = (unsigned int*)malloc(alloc * sizeof(unsigned int));
-    r = (double*)malloc(alloc * sizeof(double));
-    x0 = (tVect*)malloc(alloc * sizeof(tVect));
-    x1 = (tVect*)malloc(alloc * sizeof(tVect));
-    radiusVec = (tVect*)malloc(alloc * sizeof(tVect));
-    // @todo springs
-    // Init
-    memset(particleIndex, 0, alloc * sizeof(unsigned int));
-    memset(clusterIndex, 0, alloc * sizeof(unsigned int));
-    memset(protoIndex, 0, alloc * sizeof(unsigned int));
-    // active?
-    memset(tableCell, 0, alloc * sizeof(unsigned int));
-    std::fill(isGhost, isGhost + alloc, false);
-    memset(r, 0, alloc * sizeof(double));
-    memset(x0, 0, alloc * sizeof(tVect));
-    memset(x1, 0, alloc * sizeof(tVect));
-    memset(radiusVec, 0, alloc * sizeof(tVect));
-    // @todo springs
+    if (elements->size[me_i] > 1) {
+        x0[i] = x0[i] + r[i] * project(DEM_P.prototypes[elements->size[me_i]][protoIndex[i]], elements->qp0[me_i]);
+        // updating radius (distance of particle center of mass to element center of mass)
+        radiusVec[i] = x0[i] - elements->xp0[me_i];
+        x1[i] = x1[i] + elements->wpGlobal[me_i].cross(radiusVec[i]);
+    }
 }
 #endif  // PARTICLE2_H

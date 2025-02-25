@@ -460,7 +460,7 @@ int main(int argc, char** argv) {
 
     // DECLARATION OF VARIABLES - DEM ///////////////
     DEM2 dem;
-    DEMParams dem_p;
+    DEMParams& dem_p = dem.getParams();
 
     // DECLARATION OF VARIABLES - LB ///////////////
     LBParams lb_p;
@@ -515,7 +515,7 @@ int main(int argc, char** argv) {
     const tVect externalRotation = lb_p.rotationSpeed * lb_p.unit.AngVel;
     const tVect externalRotationCenter = lb_p.rotationCenter * lb_p.unit.Length;
     
-    dem.discreteElementInit(dem_p, lb_p.boundary, lb_p.lbPhysicalSize, lb_p.lbBoundaryLocation, externalForce,
+    dem.discreteElementInit(lb_p.boundary, lb_p.lbPhysicalSize, lb_p.lbBoundaryLocation, externalForce,
             externalRotation, externalRotationCenter, io.coriolisSolver, io.centrifugalSolver, lb_p.unit.Time);
 
     // setting time
@@ -529,9 +529,10 @@ int main(int argc, char** argv) {
     lb.setParams(lb_p, lb_ip);
 
     if (io.lbmSolver) {
-        lb.init(dem.h_cylinders, dem.h_walls, dem.h_particles, dem.h_objects, io.coriolisSolver, io.centrifugalSolver);
+        lb.init(dem, io.coriolisSolver, io.centrifugalSolver);
     }
-        
+
+
     // initial output
     vio.output(lb);
     io.outputStep(lb, dem);
@@ -548,13 +549,13 @@ int main(int argc, char** argv) {
             exit_code = SUCCESS;
         } else {
             // advance one step in time
-            io.realTime += h_PARAMS.unit.Time;
+            io.realTime += h_LB_P.unit.Time;
             ++io.currentTimeStep;
-            ++h_PARAMS.time;
-            lb.syncParams(); // Update time on device
+            ++h_LB_P.time;
+            lb.syncParamsToDevice(); // Update time on device
 
             dem.evolveBoundaries();
-            //    dem.evolveObj();
+            // dem.evolveObj();
             if (io.demSolver) {
 
                 dem.discreteElementStep();

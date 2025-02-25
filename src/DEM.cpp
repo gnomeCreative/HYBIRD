@@ -205,6 +205,10 @@ void DEM::discreteElementInit(const std::array<types, 6> &externalBoundary, cons
     demSize[0] = externalSize[0];
     demSize[1] = externalSize[1];
     demSize[2] = externalSize[2];
+    // @todo do lattice coords need to be converted to dem coords?
+    h_DEM_P.half_demSize.x = externalSize[0] / 2;
+    h_DEM_P.half_demSize.y = externalSize[1] / 2;
+    h_DEM_P.half_demSize.z = externalSize[2] / 2;
 
     // switchers for apparent accelerations
     solveCoriolis = externalSolveCoriolis;
@@ -2125,7 +2129,7 @@ void DEM::evalCellTable() {
         // system with 4*6*9 cells, then it will be c = particleSize + 2 + (5*4 + 7)*6 = particleSize + 164 <- bullshit :D
         // basically is a system to store the cell coordinate of a particle in a line vector
         // Here the code: floor(x/cellWidth[0]) + nCells[0]*( floor(y/cellWidth[1]) + (nCells[1]*floor(z/cellWidth[2])) );
-        const int c = particles[p].x0.linearizePosition(cellWidth, nCells) + particles.size();
+        const int c = 0; // TODO removed during CUDA implementation particles[p].x0.linearizePosition(cellWidth, nCells) + particles.size();
         particles[p].tableCell = c;
         // if the coordinate exceeds the borders of the box, a message is displayed
         if (c > cellTable.size() || c < 0) { // just put control over ghost, here !!!!!!!!!!!!!!!!!!!!!!

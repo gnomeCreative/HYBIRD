@@ -5,7 +5,7 @@
 
 extern ProblemName problemName;
 
-void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation) {
+void Wall2::initialize(const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation) {
     // boundary directors
     vecList boundaryDirec;
     boundaryDirec.resize(6);
@@ -30,7 +30,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
         case HK_LARGE:
         {
             // 1-2 extra walls
-            memoryAlloc<CPU>(basic_wall_count + (dem_p.depositArea ? 2 : 1));
+            memoryAlloc<CPU>(basic_wall_count + (DEM_P.depositArea ? 2 : 1));
             // storage container
             this->p[index] = tVect(10.0, 0.0, 0.0);
             this->n[index] = tVect(0.17365, 0.98481, 0.0);
@@ -42,7 +42,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             this->translating[index] = false;
             this->limited[index] = false;
             ++index;
-            if (dem_p.depositArea) {
+            if (DEM_P.depositArea) {
                 // deposit area
                 this->p[index] = tVect(25.2795, 0.5008, 0.0);
                 this->n[index] = tVect(-0.342020, 0.939693, 0.0);
@@ -174,15 +174,15 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
         {
             const double width = 0.2;
 
-            if (dem_p.hongkongSlitSize < 0.9 * width && dem_p.hongkongSmoothWall) {
+            if (DEM_P.hongkongSlitSize < 0.9 * width && DEM_P.hongkongSmoothWall) {
                 // 4 extra walls
                 memoryAlloc<CPU>(basic_wall_count + 4);
 
                 const double edgeRadius = 0.005;
                 const double xBarrierPosition = 1.4;
-                const double yBarrierSize = (width - dem_p.hongkongSlitSize) / 2.0;
+                const double yBarrierSize = (width - DEM_P.hongkongSlitSize) / 2.0;
                 const double barrierLeftWing = yBarrierSize;
-                const double barrierRightWing = yBarrierSize + dem_p.hongkongSlitSize;
+                const double barrierRightWing = yBarrierSize + DEM_P.hongkongSlitSize;
                 
                 this->p[index] = tVect(xBarrierPosition - edgeRadius * 0.95, 0.0, 0.0);
                 this->n[index] = tVect(-1.0, 0.0, 0.0);
@@ -246,9 +246,9 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             // 2 extra walls
             memoryAlloc<CPU>(basic_wall_count + 2);
 
-            const double outletCenter = dem_p.demSize[0] / 2.0;
+            const double outletCenter = DEM_P.demSize[0] / 2.0;
             
-            this->p[index] = tVect(0.0, 0.0, dem_p.hourglassOutletHeight);
+            this->p[index] = tVect(0.0, 0.0, DEM_P.hourglassOutletHeight);
             this->n[index] = tVect(0.0, 0.0, 1.0);
             this->index[index] = index;
             this->moving[index] = false;
@@ -260,10 +260,10 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             this->moving[index] = false;
             this->limited[index] = true;
             this->xMin[index] = -numeric_limits<double>::max();
-            this->xMax[index] = outletCenter - dem_p.hourglassOutletSize;
+            this->xMax[index] = outletCenter - DEM_P.hourglassOutletSize;
             ++index;
 
-            this->p[index] = tVect(0.0, 0.0, dem_p.hourglassOutletHeight);
+            this->p[index] = tVect(0.0, 0.0, DEM_P.hourglassOutletHeight);
             this->n[index] = tVect(0.0, 0.0, 1.0);
             this->index[index] = index - 1;
             this->moving[index] = false;
@@ -274,7 +274,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             this->slip[index] = false;
             this->moving[index] = false;
             this->limited[index] = true;
-            this->xMin[index] = outletCenter + dem_p.hourglassOutletSize;
+            this->xMin[index] = outletCenter + DEM_P.hourglassOutletSize;
             this->xMax[index] = numeric_limits<double>::max();
             ++index;
 
@@ -355,7 +355,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             // 14 extra walls
             memoryAlloc<CPU>(basic_wall_count + 14);
 
-            const double centerY = dem_p.demSize[1] / 2.0;
+            const double centerY = DEM_P.demSize[1] / 2.0;
             const double reservoirX = 0.8;
             const double wallSizeX = 0.025;
             const double outletSizeY = 0.3;
@@ -645,9 +645,9 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             // 1 extra walls
             memoryAlloc<CPU>(basic_wall_count + 1);
 
-            const double outletSize = dem_p.demSize[0] / 4.0;
+            const double outletSize = DEM_P.demSize[0] / 4.0;
             
-            this->p[index] = tVect(0.0, 0.0, dem_p.heapBaseLevel);
+            this->p[index] = tVect(0.0, 0.0, DEM_P.heapBaseLevel);
             this->n[index] = tVect(0.0, 0.0, 1.0);
             this->index[index] = index;
             this->moving[index] = false;
@@ -659,7 +659,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             this->moving[index] = false;
             this->limited[index] = true;
             this->xMin[index] = outletSize;
-            this->xMax[index] = dem_p.demSize[0] - outletSize;
+            this->xMax[index] = DEM_P.demSize[0] - outletSize;
             ++index;
 
             break;
@@ -669,7 +669,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             // 3 extra walls
             memoryAlloc<CPU>(basic_wall_count + 3);
             
-            this->p[index] = tVect(dem_p.triBeginX, 0.0, 0.0);
+            this->p[index] = tVect(DEM_P.triBeginX, 0.0, 0.0);
             this->n[index] = tVect(-1.0, 0.0, 0.0);
             this->index[index] = index;
             this->moving[index] = false;
@@ -682,7 +682,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             this->limited[index] = false;
             ++index;
 
-            this->p[index] = tVect(0.0, dem_p.triBeginY, 0.0);
+            this->p[index] = tVect(0.0, DEM_P.triBeginY, 0.0);
             this->n[index] = tVect(0.0, -1.0, 0.0);
             this->index[index] = index;
             this->moving[index] = false;
@@ -695,7 +695,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
             this->limited[index] = false;
             ++index;
 
-            this->p[index] = tVect(0.0, 0.0, dem_p.triBeginZ);
+            this->p[index] = tVect(0.0, 0.0, DEM_P.triBeginZ);
             this->n[index] = tVect(0.0, 0.0, -1.0);
             this->index[index] = index;
             this->moving[index] = false;
@@ -777,7 +777,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
                 this->moving[index] = true;
                 this->slip[index] = true;
                 this->rotCenter[index] = this->p[index];
-                this->omega[index] = tVect(0.0, dem_p.drumSpeed, 0.0);
+                this->omega[index] = tVect(0.0, DEM_P.drumSpeed, 0.0);
             } else if (externalBoundary[2] == STAT_WALL) {
                 this->moving[index] = false;
                 this->slip[index] = false;
@@ -787,7 +787,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
                 this->moving[index] = true;
                 this->slip[index] = false;
                 this->rotCenter[index] = this->p[index];
-                this->omega[index] = tVect(0.0, dem_p.drumSpeed, 0.0);
+                this->omega[index] = tVect(0.0, DEM_P.drumSpeed, 0.0);
             }
             ++index;
         }
@@ -816,7 +816,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
                 this->moving[index] = true;
                 this->slip[index] = true;
                 this->rotCenter[index] = this->p[index];
-                this->omega[index] = tVect(0.0, dem_p.drumSpeed, 0.0);
+                this->omega[index] = tVect(0.0, DEM_P.drumSpeed, 0.0);
             } else if (externalBoundary[3] == STAT_WALL) {
                 this->moving[index] = false;
                 this->slip[index] = false;
@@ -826,7 +826,7 @@ void Wall2::initialize(const DEMParams& dem_p, const std::array<types, 6> &exter
                 this->moving[index] = true;
                 this->slip[index] = false;
                 this->rotCenter[index] = this->p[index];
-                this->omega[index] = tVect(0.0, dem_p.drumSpeed, 0.0);
+                this->omega[index] = tVect(0.0, DEM_P.drumSpeed, 0.0);
             }
             ++index;
         }

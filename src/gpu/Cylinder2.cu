@@ -4,14 +4,14 @@
 
 extern ProblemName problemName;
 
-void Cylinder2::initialize(const DEMParams& dem_p) {
+void Cylinder2::initialize() {
     
     unsigned int index = 0;
 
     switch (problemName) {
         case HK_LARGE:
         {
-            if (dem_p.depositArea) {
+            if (DEM_P.depositArea) {
                 this->memoryAlloc<CPU>(1);
                 this->index[index] = index;
                 this->p1[index] = tVect(21.0858, 13.3466, 0.0);
@@ -28,7 +28,7 @@ void Cylinder2::initialize(const DEMParams& dem_p) {
                 this->yMin[index] = 0.0;
                 this->yMax[index] = 0.5008;
                 this->zMin[index] = -1.0;
-                this->zMax[index] = 2.0 * dem_p.demSize[2];
+                this->zMax[index] = 2.0 * DEM_P.demSize[2];
                 ++index;
             }
             break;
@@ -63,7 +63,7 @@ void Cylinder2::initialize(const DEMParams& dem_p) {
         case IERVOLINO:
         {
 
-            const double centerY = dem_p.demSize[1] / 2.0;
+            const double centerY = DEM_P.demSize[1] / 2.0;
             const double reservoirX = 0.8;
             const double wallSizeX = 0.025;
             const double outletSizeY = 0.3;
@@ -209,7 +209,7 @@ void Cylinder2::initialize(const DEMParams& dem_p) {
             this->yMin[index] = -10.0;
             this->yMax[index] = 0.04048;
             this->zMin[index] = -1.0;
-            this->zMax[index] = 2.0 * dem_p.demSize[2];
+            this->zMax[index] = 2.0 * DEM_P.demSize[2];
             ++index;
             break;
         }
@@ -220,7 +220,7 @@ void Cylinder2::initialize(const DEMParams& dem_p) {
             this->p1[index] = tVect(0.0 + 0.6 + 0.35, 0.0, 1.26);
             this->p2[index] = tVect(0.0 + 0.6 + 0.35, 1.0, 1.26);
             this->R[index] = 1.243;
-            this->omega[index] = tVect(0.0, dem_p.drumSpeed, 0.0);
+            this->omega[index] = tVect(0.0, DEM_P.drumSpeed, 0.0);
             this->initAxes(index);
             this->type[index] = EMPTY;
             this->moving[index] = true;

@@ -16,6 +16,8 @@ struct Wall2 {
     tVect *p = nullptr;
     // hydraulic force on wall
     tVect *FHydro = nullptr;
+    // collision force on wall
+    tVect *FParticle = nullptr;
     // center of rotation
     tVect *rotCenter = nullptr;
     // rotational speed
@@ -42,7 +44,7 @@ struct Wall2 {
      */
     template<int impl>
     void memoryAlloc(unsigned int num);
-    void initialize(const DEMParams& dem_p, const std::array<types, 6>& externalBoundary, const std::array<tVect, 6>& boundaryLocation);
+    void initialize(const std::array<types, 6>& externalBoundary, const std::array<tVect, 6>& boundaryLocation);
     // show wall characteristics
     void wallShow(unsigned int i) const;
 
@@ -72,6 +74,7 @@ inline void Wall2::memoryAlloc<CPU>(unsigned int num) {
     n = (tVect*)malloc(alloc * sizeof(tVect));
     p = (tVect*)malloc(alloc * sizeof(tVect));
     FHydro = (tVect*)malloc(alloc * sizeof(tVect));
+    FParticle = (tVect*)malloc(alloc * sizeof(tVect));
     rotCenter = (tVect*)malloc(alloc * sizeof(tVect));
     omega = (tVect*)malloc(alloc * sizeof(tVect));
     vel = (tVect*)malloc(alloc * sizeof(tVect));
@@ -91,7 +94,7 @@ inline void Wall2::memoryAlloc<CPU>(unsigned int num) {
     std::fill(n, n + alloc, tVect(1.0, 0.0, 0.0));
     memset(p, 0, alloc * sizeof(tVect));
     memset(FHydro, 0, alloc * sizeof(tVect));
-    //memset(FParticle, 0, alloc * sizeof(tVect));
+    memset(FParticle, 0, alloc * sizeof(tVect));
     //memset(maxFHydro, 0, alloc * sizeof(tVect));
     //memset(maxFParticle, 0, alloc * sizeof(tVect));
     memset(rotCenter, 0, alloc * sizeof(tVect));

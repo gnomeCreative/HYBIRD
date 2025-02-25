@@ -7,6 +7,11 @@
 #include "Object2.h"
 #include "Element2.h"
 
+#ifdef USE_CUDA
+__constant__ DEMParams d_DEM_P;
+#endif
+DEMParams h_DEM_P;
+
 void DEMParams::discreteElementGet(GetPot& configFile, GetPot& commandLine, Element2& elmts, Object2& objects) {
     // getting material properties
     PARSE_CLASS_MEMBER(configFile, sphereMat.density, "particleDensity", 0.0);
@@ -175,33 +180,13 @@ void DEMParams::discreteElementGet(GetPot& configFile, GetPot& commandLine, Elem
     PARSE_CLASS_MEMBER(configFile, criticalRatio, "criticalRatio", 0.1);
 }
 
-void DEMParams::compositeProperties() {
 
-    vecList prototype1, prototype2, prototype3, prototype4;
-
-
-    // prototypes for shapes
-    // every vector defines the position of a particle in the object reference frame
-    // unit is radius
-
-    prototypes.resize(5);
-    prototype1.resize(1);
-    prototype1[0].reset();
-    prototypes[1] = prototype1;
-    prototype2.resize(2);
-    prototype2[0] = tVect(0.5, 0.0, 0.0);
-    prototype2[1] = tVect(-0.5, 0.0, 0.0);
-    prototypes[2] = prototype2;
-    prototype3.resize(3);
-    prototype3[0] = tVect(0.0, 1.0, 0.0);
-    prototype3[1] = tVect(-sqrt(3) / 2, -1 / 2, 0.0);
-    prototype3[2] = tVect(sqrt(3) / 2, -1 / 2, 0.0);
-    prototypes[3] = prototype3;
-    prototype4.resize(4);
-    prototype4[0] = tVect(0.0, 0.0, 1.0);
-    prototype4[1] = tVect(0.0, 2.0 * sqrt(2) / 3.0, -1.0 / 3.0);
-    prototype4[2] = tVect(2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
-    prototype4[3] = tVect(-2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
-    prototypes[4] = prototype4;
-
+void DEMParams::init_prototypeC1C2() {
+    c1 = { deltat, deltat * deltat / 2.0, deltat * deltat * deltat / 6.0, deltat * deltat * deltat * deltat / 24.0, deltat * deltat * deltat * deltat * deltat / 120.0 };
+    c2 = { deltat, deltat * deltat / 2.0, deltat * deltat * deltat / 6.0, deltat * deltat * deltat * deltat / 24.0, deltat * deltat * deltat * deltat * deltat / 120.0 };
+    //    c[0] = deltat;
+    //    c[1] = c[0] * deltat / 2.0;
+    //    c[2] = c[1] * deltat / 3.0;
+    //    c[3] = c[2] * deltat / 4.0;
+    //    c[4] = c[3] * deltat / 5.0;
 }

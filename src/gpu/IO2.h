@@ -4,21 +4,22 @@
 #include "IO.h"
 
 class LB2;
+class DEM2;
 
 class IO2 : public IO {
     
  public:    
-    void outputStep(LB2& lb, DEM& dem);
+    void outputStep(LB2& lb, DEM2& dem);
 
  private:
     // function that groups file creations
-    void createFiles(LB2& lb, const DEM& dem);
+    void createFiles(LB2& lb, const DEM2& dem);
 
     // PARAVIEW /////////////////////////////////////////////////////////////////////////////////////////
     
     // particle paraview file
-    void exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile);
-    void exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile);
+    // void exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile);
+    void exportParaviewParticles_binaryv3(DEM2& dem, const string& particleFile);
 
     
     // Eulerian fluid paraview file

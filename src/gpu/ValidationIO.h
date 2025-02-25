@@ -256,9 +256,9 @@ public:
             fs << sum / static_cast<float>(active_count) << ",";
         }
         // lbf
-        fs << h_PARAMS.lbF.x << ",";
-        fs << h_PARAMS.lbF.y << ",";
-        fs << h_PARAMS.lbF.z << ",";
+        fs << h_LB_P.lbF.x << ",";
+        fs << h_LB_P.lbF.y << ",";
+        fs << h_LB_P.lbF.z << ",";
         // type==LIQUID
         sum = 0;
         for (int i = 0; i < nodes.activeCount; ++i)

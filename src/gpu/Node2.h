@@ -216,16 +216,16 @@ __host__ __device__ __forceinline__ tVect Node2::getPosition(const unsigned int 
 
 #ifdef __CUDA_ARCH__
     // div() does not exist in device code
-    z = index / (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
-    const int t = index % (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
-    y = t / PARAMS.lbSize[0];
-    x = t % PARAMS.lbSize[0];
+    z = index / (LB_P.lbSize[0] * LB_P.lbSize[1]);
+    const int t = index % (LB_P.lbSize[0] * LB_P.lbSize[1]);
+    y = t / LB_P.lbSize[0];
+    x = t % LB_P.lbSize[0];
 #else
     // see online documentation for class div_t (stdlib.h)
     div_t firstDiv, secondDiv;
 
-    firstDiv = div(int(index), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
-    secondDiv = div(firstDiv.rem, int(PARAMS.lbSize[0]));
+    firstDiv = div(int(index), int(LB_P.lbSize[0] * LB_P.lbSize[1]));
+    secondDiv = div(firstDiv.rem, int(LB_P.lbSize[0]));
 
     x = secondDiv.rem;
     y = secondDiv.quot;
@@ -248,16 +248,16 @@ __host__ __device__ __forceinline__ std::array<int, 3> Node2::getGridPosition(co
     // z = index DIV X*Y
 #ifdef __CUDA_ARCH__
     // div() does not exist in device code
-    z = index / (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
-    const int t = index % (PARAMS.lbSize[0] * PARAMS.lbSize[1]);
-    y = t / PARAMS.lbSize[0];
-    x = t % PARAMS.lbSize[0];
+    z = index / (LB_P.lbSize[0] * LB_P.lbSize[1]);
+    const int t = index % (LB_P.lbSize[0] * LB_P.lbSize[1]);
+    y = t / LB_P.lbSize[0];
+    x = t % LB_P.lbSize[0];
 #else
     // see online documentation for class div_t (stdlib.h)
     div_t firstDiv, secondDiv;
 
-    firstDiv = div(int(index), int(PARAMS.lbSize[0] * PARAMS.lbSize[1]));
-    secondDiv = div(firstDiv.rem, int(PARAMS.lbSize[0]));
+    firstDiv = div(int(index), int(LB_P.lbSize[0] * LB_P.lbSize[1]));
+    secondDiv = div(firstDiv.rem, int(LB_P.lbSize[0]));
 
     x = secondDiv.rem;
     y = secondDiv.quot;
@@ -355,15 +355,15 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
 
     // Bingham model
     double nuApp = 0.0;
-    switch (PARAMS.fluidMaterial.rheologyModel) {
+    switch (LB_P.fluidMaterial.rheologyModel) {
         case NEWTONIAN:
         {
-            nuApp = PARAMS.fluidMaterial.initDynVisc;
+            nuApp = LB_P.fluidMaterial.initDynVisc;
             break;
         }
         case BINGHAM:
         {
-            nuApp = PARAMS.fluidMaterial.plasticVisc + PARAMS.fluidMaterial.yieldStress / shearRate;
+            nuApp = LB_P.fluidMaterial.plasticVisc + LB_P.fluidMaterial.yieldStress / shearRate;
             break;
         }
         case FRICTIONAL:
@@ -371,11 +371,11 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
             const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
             if (this->basal[index]) {
-                this->friction[index] = PARAMS.fluidMaterial.basalFrictionCoefFluid;
+                this->friction[index] = LB_P.fluidMaterial.basalFrictionCoefFluid;
             } else {
-                this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid;
+                this->friction[index] = LB_P.fluidMaterial.frictionCoefFluid;
             }
-            nuApp = PARAMS.fluidMaterial.initDynVisc + this->friction[index] * pressure / shearRate;
+            nuApp = LB_P.fluidMaterial.initDynVisc + this->friction[index] * pressure / shearRate;
             break;
         }
         case VOELLMY:
@@ -383,41 +383,41 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
             const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
             if (this->basal[index]) {
-                this->friction[index] = PARAMS.fluidMaterial.basalFrictionCoefFluid;
+                this->friction[index] = LB_P.fluidMaterial.basalFrictionCoefFluid;
             } else {
-                this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid;
+                this->friction[index] = LB_P.fluidMaterial.frictionCoefFluid;
             }
-            nuApp = this->friction[index] * pressure / shearRate + PARAMS.fluidMaterial.rhod2 * shearRate;
+            nuApp = this->friction[index] * pressure / shearRate + LB_P.fluidMaterial.rhod2 * shearRate;
             break;
         }
         case BAGNOLD:
         {
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            nuApp = PARAMS.fluidMaterial.rhod2 * shearRate;
+            nuApp = LB_P.fluidMaterial.rhod2 * shearRate;
             break;
         }
         case MUI:
         {
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
             const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0)); //smoothedPressure
-            const double inertialNumber = PARAMS.fluidMaterial.particleDiameter * shearRate / sqrt(pressure / PARAMS.fluidMaterial.particleDensity);
+            const double inertialNumber = LB_P.fluidMaterial.particleDiameter * shearRate / sqrt(pressure / LB_P.fluidMaterial.particleDensity);
             const double regularizationFactor = 1.0;//-exp(-shearRate/0.00005);
             if (this->basal[index]) {
-                this->friction[index] = PARAMS.fluidMaterial.basalFrictionCoefFluid * regularizationFactor + PARAMS.fluidMaterial.deltaFriction / (PARAMS.fluidMaterial.baseInertial / inertialNumber + 1.0);
+                this->friction[index] = LB_P.fluidMaterial.basalFrictionCoefFluid * regularizationFactor + LB_P.fluidMaterial.deltaFriction / (LB_P.fluidMaterial.baseInertial / inertialNumber + 1.0);
             } else {
-                this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid * regularizationFactor + PARAMS.fluidMaterial.deltaFriction / (PARAMS.fluidMaterial.baseInertial / inertialNumber + 1.0);
+                this->friction[index] = LB_P.fluidMaterial.frictionCoefFluid * regularizationFactor + LB_P.fluidMaterial.deltaFriction / (LB_P.fluidMaterial.baseInertial / inertialNumber + 1.0);
             }
             nuApp = this->friction[index] * pressure / shearRate;
             if (this->type[index] == INTERFACE) { //(pressure<1.5*fluidMaterial.minimumPressure) {
-                nuApp = PARAMS.fluidMaterial.lbMinVisc;
+                nuApp = LB_P.fluidMaterial.lbMinVisc;
             }
             break;
         }
     }
 
     // Smagorinsky turbulence model
-    if (PARAMS.fluidMaterial.turbulenceOn) {
-        const double nuTurb = PARAMS.fluidMaterial.turbConst * shearRate;
+    if (LB_P.fluidMaterial.turbulenceOn) {
+        const double nuTurb = LB_P.fluidMaterial.turbConst * shearRate;
         nuApp += nuTurb;
     }
 
@@ -437,7 +437,7 @@ __host__ __device__ __forceinline__ void Node2::solveCollision(const unsigned in
 __host__ __device__ __forceinline__ void Node2::solveCollisionTRT(const unsigned int index, const std::array<double, lbmDirec> &feqp, const std::array<double, lbmDirec> &feqm) {
     // relaxation frequency
     const double omegap = 1.0 / (0.5 + 3.0 * this->visc[index]);
-    const double omegam = 6.0 * this->visc[index] / (2.0 * PARAMS.magicNumber + 3.0 * this->visc[index]);
+    const double omegam = 6.0 * this->visc[index] / (2.0 * LB_P.magicNumber + 3.0 * this->visc[index]);
 
     // symmetric probability density functions (one per lattice direction)
     std::array<double, lbmDirec> fp;
@@ -509,8 +509,8 @@ __host__ __device__ __forceinline__ void Node2::addForceTRT(const unsigned int i
     }
 }
 __host__ __device__ __forceinline__ tVect Node2::bounceBackForce(const unsigned int index, const unsigned int j, const std::array<double, lbmDirec>& staticPres, const double BBi) const {
-    if (visc[index] == PARAMS.fluidMaterial.lbMaxVisc) {
-        return (2.0 * (fs[index * lbmDirec + j] + coeff[j] * (n[index] - 1.0) * (PARAMS.fluidMaterial.earthPressureCoeff - 1.0) - staticPres[j]) - BBi) * v[j];
+    if (visc[index] == LB_P.fluidMaterial.lbMaxVisc) {
+        return (2.0 * (fs[index * lbmDirec + j] + coeff[j] * (n[index] - 1.0) * (LB_P.fluidMaterial.earthPressureCoeff - 1.0) - staticPres[j]) - BBi) * v[j];
     } else {
         return (2.0 * (fs[index * lbmDirec + j] - staticPres[j]) - BBi) * v[j];
     }
@@ -551,21 +551,21 @@ __host__ __device__ __forceinline__ void Node2::reconstruct(const unsigned int i
     this->u[index] /= this->n[index];
 }
 __host__ __device__ __forceinline__ void Node2::collision(const unsigned int index) {
-    if (!PARAMS.TRTsolver) {
+    if (!LB_P.TRTsolver) {
         // equilibrium distributions
         std::array<double, lbmDirec> feq;
         // force field
-        tVect force = PARAMS.lbF;
-        if (PARAMS.solveCentrifugal) {
+        tVect force = LB_P.lbF;
+        if (LB_P.solveCentrifugal) {
             force += this->centrifugalForce[index];
         }
-        if (PARAMS.solveCoriolis) {
-            force += computeCoriolis(this->u[index], PARAMS.rotationSpeed);
+        if (LB_P.solveCoriolis) {
+            force += computeCoriolis(this->u[index], LB_P.rotationSpeed);
         }
         // shift velocity field to F/2
         this->shiftVelocity(index, force);
         this->computeEquilibrium(index, feq);
-        if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+        if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
             // compute shear rate tensor, find invariant calculate viscosity (Bingham)
             this->computeApparentViscosity(index, feq);
         }
@@ -578,21 +578,21 @@ __host__ __device__ __forceinline__ void Node2::collision(const unsigned int ind
         std::array<double, lbmDirec> feqp;
         std::array<double, lbmDirec> feqm;
         // force field
-        tVect force = PARAMS.lbF;
-        if (PARAMS.solveCentrifugal) {
+        tVect force = LB_P.lbF;
+        if (LB_P.solveCentrifugal) {
             force += this->centrifugalForce[index];
         }
-        if (PARAMS.solveCoriolis) {
-            force += computeCoriolis(this->u[index], PARAMS.rotationSpeed);
+        if (LB_P.solveCoriolis) {
+            force += computeCoriolis(this->u[index], LB_P.rotationSpeed);
         }
         // shift velocity field to F/2
         this->shiftVelocity(index, force);
         this->computeEquilibriumTRT(index, feqp, feqm);
-        if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+        if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
             // compute shear rate tensor, find invariant calculate viscosity (Bingham)
             this->computeApparentViscosity(index, feqp);
         }
-        else this->visc[index] = PARAMS.fluidMaterial.initDynVisc;
+        else this->visc[index] = LB_P.fluidMaterial.initDynVisc;
         // compute new distributions
         this->solveCollisionTRT(index, feqp, feqm);
         // add force term to new distributions
@@ -666,7 +666,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
     // if not differently defined, type is 0 (fluid)
 
     for (int j = 1; j < lbmDirec; ++j) {
-        neighborCoord[j] = index + PARAMS.ne[j];
+        neighborCoord[j] = index + LB_P.ne[j];
     }
 
     // BOUNDARY CONDITIONS ///////////////////////////
@@ -680,7 +680,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
                 }
             }
         }
-        if (pos[0] == (int)PARAMS.lbSize[0] - 1) {
+        if (pos[0] == (int)LB_P.lbSize[0] - 1) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Xp) > 0.0) {
                     neighborCoord[j] = index;
@@ -694,7 +694,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
                 }
             }
         }
-        if (pos[1] == (int)PARAMS.lbSize[1] - 1) {
+        if (pos[1] == (int)LB_P.lbSize[1] - 1) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Yp) > 0.0) {
                     neighborCoord[j] = index;
@@ -708,7 +708,7 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
                 }
             }
         }
-        if (pos[2] == (int)PARAMS.lbSize[2] - 1) {
+        if (pos[2] == (int)LB_P.lbSize[2] - 1) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Zp) > 0.0) {
                     neighborCoord[j] = index;
@@ -726,42 +726,42 @@ __host__ __device__ __forceinline__ std::array<unsigned int, lbmDirec> Node2::fi
         if (this->type[neighborCoord[1]] == PERIODIC) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Xp) > 0.0) {
-                    pbc[j] -= PARAMS.domain[0];
+                    pbc[j] -= LB_P.domain[0];
                 }
             }
         }
         if (this->type[neighborCoord[2]] == PERIODIC) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Xp) < 0.0) {
-                    pbc[j] += PARAMS.domain[0];
+                    pbc[j] += LB_P.domain[0];
                 }
             }
         }
         if (this->type[neighborCoord[3]] == PERIODIC) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Yp) > 0.0) {
-                    pbc[j] -= PARAMS.domain[1];
+                    pbc[j] -= LB_P.domain[1];
                 }
             }
         }
         if (this->type[neighborCoord[4]] == PERIODIC) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Yp) < 0.0) {
-                    pbc[j] += PARAMS.domain[1];
+                    pbc[j] += LB_P.domain[1];
                 }
             }
         }
         if (this->type[neighborCoord[5]] == PERIODIC) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Zp) > 0.0) {
-                    pbc[j] -= PARAMS.domain[2];
+                    pbc[j] -= LB_P.domain[2];
                 }
             }
         }
         if (this->type[neighborCoord[6]] == PERIODIC) {
             for (unsigned int j = 1; j < lbmDirec; ++j) {
                 if (v[j].dot(Zp) < 0.0) {
-                    pbc[j] += PARAMS.domain[2];
+                    pbc[j] += LB_P.domain[2];
                 }
             }
         }
@@ -801,7 +801,7 @@ __host__ __device__ __forceinline__ void Node2::generateNode(unsigned int index,
     this->basal[index] = false;
 
     // set centrifugal acceleration
-    this->centrifugalForce[index] = computeCentrifugal(this->getPosition(index), PARAMS.rotationCenter, PARAMS.rotationSpeed);
+    this->centrifugalForce[index] = computeCentrifugal(this->getPosition(index), LB_P.rotationCenter, LB_P.rotationSpeed);
 
     // assign neighbor nodes
     for (unsigned int j = 1; j < lbmDirec; ++j) {

@@ -1,12 +1,13 @@
 
 #include "IO2.h"
 #include "gpu/LB2.h"
+#include "gpu/DEM2.h"
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-void IO2::outputStep(LB2& lb, DEM& dem) {
+void IO2::outputStep(LB2& lb, DEM2& dem) {
 
 
     //// PLOTTING PHASE  ////////////////////////////////////////////////////////////////
@@ -31,7 +32,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
     //        const double deltaLB = std::chrono::duration<double, std::micro>(lb.endLBStep - lb.startLBStep).count();
     //        cout << "t=" << deltaLB << " ";
-    //        if (PARAMS.freeSurface) {
+    //        if (LB_P.freeSurface) {
     //            const double deltaFreeSurface = std::chrono::duration<double, std::micro>(lb.endFreeSurfaceStep - lb.startFreeSurfaceStep).count();
     //            const double deltaUpdateMass = std::chrono::duration<double, std::micro>(lb.endUpdateMassStep - lb.startUpdateMassStep).count();
     //            const double deltaUpdateInterface = std::chrono::duration<double, std::micro>(lb.endUpdateInterfaceStep - lb.startUpdateInterfaceStep).count();
@@ -65,7 +66,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //        exportFluidFlowRate(lb);
     //        exportFluidMass(lb);
     //        exportFluidCenterOfMass(lb);
-    //        switch (PARAMS.fluidMaterial.rheologyModel) {
+    //        switch (LB_P.fluidMaterial.rheologyModel) {
     //            case BINGHAM:
     //            case FRICTIONAL:
     //            case VOELLMY:
@@ -100,7 +101,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //        lb.updateEnergy(totalKineticEnergy);
     //    }
     //    exportEnergy(dem, lb);
-    //    if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
+    //    if (totalKineticEnergy < energyStopThreshold && LB_P.time > minimumIterations) {
     //        energyExit = true;
     //    }
     //    if (dem.objects.size()) {
@@ -213,7 +214,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
 // paraview files
 
-void IO2::createFiles(LB2& lb, const DEM& dem) {
+void IO2::createFiles(LB2& lb, const DEM2& dem) {
     // write vtk at regular interval defined with the input file
 
     if (lbmSolver) {
@@ -264,11 +265,11 @@ void IO2::createFiles(LB2& lb, const DEM& dem) {
                 lastPartExp = partExpCounter;
                 char filePathBuffer [1024];
                 sprintf(filePathBuffer, partFileFormat.c_str(), currentTimeStep);
-                if (partExpFormat == ParaviewFormat::Ascii) {
-                    exportParaviewParticles(dem.elmts, dem.particles, filePathBuffer);
-                } else {
-                    exportParaviewParticles_binaryv3(dem.elmts, dem.particles, filePathBuffer);
-                }
+                // if (partExpFormat == ParaviewFormat::Ascii) {
+                //     exportParaviewParticles(dem, filePathBuffer);
+                // } else {
+                    exportParaviewParticles_binaryv3(dem, filePathBuffer);
+                // }
             }
 
             //const unsigned int partRecycleExpCounter = (partRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / partRecycleExpTime) + 1 : 0);
@@ -308,23 +309,23 @@ void IO2::createFiles(LB2& lb, const DEM& dem) {
 void IO2::initialize2DFile(const LB2& lb) {
 
     // initialize containers for 2D files
-    planarHeight.resize(PARAMS.lbSize[0]);
-    planarVel.resize(PARAMS.lbSize[0]);
-    planarPointVel.resize(PARAMS.lbSize[0]);
-    planarLevel.resize(PARAMS.lbSize[0]);
-    maxPlanarHeight.resize(PARAMS.lbSize[0]);
-    maxPlanarVel.resize(PARAMS.lbSize[0]);
-    maxPlanarPointVel.resize(PARAMS.lbSize[0]);
+    planarHeight.resize(LB_P.lbSize[0]);
+    planarVel.resize(LB_P.lbSize[0]);
+    planarPointVel.resize(LB_P.lbSize[0]);
+    planarLevel.resize(LB_P.lbSize[0]);
+    maxPlanarHeight.resize(LB_P.lbSize[0]);
+    maxPlanarVel.resize(LB_P.lbSize[0]);
+    maxPlanarPointVel.resize(LB_P.lbSize[0]);
 
-    for (int i = 0; i < PARAMS.lbSize[0]; ++i) {
-        planarHeight[i].resize(PARAMS.lbSize[1]);
-        planarVel[i].resize(PARAMS.lbSize[1]);
-        planarPointVel[i].resize(PARAMS.lbSize[1]);
-        planarLevel[i].resize(PARAMS.lbSize[1]);
-        maxPlanarHeight[i].resize(PARAMS.lbSize[1]);
-        maxPlanarVel[i].resize(PARAMS.lbSize[1]);
-        maxPlanarPointVel[i].resize(PARAMS.lbSize[1]);
-        for (int j = 0; j < PARAMS.lbSize[1]; ++j) {
+    for (int i = 0; i < LB_P.lbSize[0]; ++i) {
+        planarHeight[i].resize(LB_P.lbSize[1]);
+        planarVel[i].resize(LB_P.lbSize[1]);
+        planarPointVel[i].resize(LB_P.lbSize[1]);
+        planarLevel[i].resize(LB_P.lbSize[1]);
+        maxPlanarHeight[i].resize(LB_P.lbSize[1]);
+        maxPlanarVel[i].resize(LB_P.lbSize[1]);
+        maxPlanarPointVel[i].resize(LB_P.lbSize[1]);
+        for (int j = 0; j < LB_P.lbSize[1]; ++j) {
             planarLevel[i][j] = 0.0;
             maxPlanarHeight[i][j] = 0.0;
             maxPlanarVel[i][j] = 0.0;
@@ -349,8 +350,8 @@ void IO2::initialize2DFile(const LB2& lb) {
 void IO2::update2DFile(const LB2& lb) {
 
     // initialize containers for 2D files
-    for (int i = 0; i < PARAMS.lbSize[0]; ++i) {
-        for (int j = 0; j < PARAMS.lbSize[1]; ++j) {
+    for (int i = 0; i < LB_P.lbSize[0]; ++i) {
+        for (int j = 0; j < LB_P.lbSize[1]; ++j) {
             planarHeight[i][j] = 0.0;
             planarVel[i][j] = 0.0;
             planarPointVel[i][j] = 0.0;
@@ -371,8 +372,8 @@ void IO2::update2DFile(const LB2& lb) {
 
 
     // average velocity over height
-    for (int i = 0; i < PARAMS.lbSize[0]; ++i) {
-        for (int j = 0; j < PARAMS.lbSize[1]; ++j) {
+    for (int i = 0; i < LB_P.lbSize[0]; ++i) {
+        for (int j = 0; j < LB_P.lbSize[1]; ++j) {
             if (planarHeight[i][j] > 0.0) {
                 planarVel[i][j] = planarVel[i][j] / planarHeight[i][j];
             }
@@ -380,8 +381,8 @@ void IO2::update2DFile(const LB2& lb) {
     }
 
     // update global maxima
-    for (int i = 0; i < PARAMS.lbSize[0]; ++i) {
-        for (int j = 0; j < PARAMS.lbSize[1]; ++j) {
+    for (int i = 0; i < LB_P.lbSize[0]; ++i) {
+        for (int j = 0; j < LB_P.lbSize[1]; ++j) {
             if (maxPlanarHeight[i][j] < planarHeight[i][j]) {
                 maxPlanarHeight[i][j] = planarHeight[i][j];
             }
@@ -415,18 +416,18 @@ void IO2::create2DFile(const LB2& lb, const string& planarFile) {
     fluid2DFile.open(planarFile.c_str());
 
     fluid2DFile << "X, Y, Z, H, U, Hmax, Umax, ULocalMax, ULocalMaxMax" << endl;
-    for (int i = 0; i < PARAMS.lbSize[0]; ++i) {
-        const double xHere = double(i) * PARAMS.unit.Length + xScaling;
-        for (int j = 0; j < PARAMS.lbSize[1]; ++j) {
-            const double maxHeightHere = maxPlanarHeight[i][j] * PARAMS.unit.Length;
+    for (int i = 0; i < LB_P.lbSize[0]; ++i) {
+        const double xHere = double(i) * LB_P.unit.Length + xScaling;
+        for (int j = 0; j < LB_P.lbSize[1]; ++j) {
+            const double maxHeightHere = maxPlanarHeight[i][j] * LB_P.unit.Length;
             //if (maxHeightHere>0.0) {
-            const double yHere = double(j) * PARAMS.unit.Length + yScaling;
-            const double levelHere = planarLevel[i][j] * PARAMS.unit.Length + zScaling;
-            const double heightHere = planarHeight[i][j] * PARAMS.unit.Length;
-            const double velHere = planarVel[i][j] * PARAMS.unit.Speed;
-            const double maxVelHere = maxPlanarVel[i][j] * PARAMS.unit.Speed;
-            const double pointVelHere = planarPointVel[i][j] * PARAMS.unit.Speed;
-            const double maxPointVelHere = maxPlanarPointVel[i][j] * PARAMS.unit.Speed;
+            const double yHere = double(j) * LB_P.unit.Length + yScaling;
+            const double levelHere = planarLevel[i][j] * LB_P.unit.Length + zScaling;
+            const double heightHere = planarHeight[i][j] * LB_P.unit.Length;
+            const double velHere = planarVel[i][j] * LB_P.unit.Speed;
+            const double maxVelHere = maxPlanarVel[i][j] * LB_P.unit.Speed;
+            const double pointVelHere = planarPointVel[i][j] * LB_P.unit.Speed;
+            const double maxPointVelHere = maxPlanarPointVel[i][j] * LB_P.unit.Speed;
 
             fluid2DFile << std::setprecision(3) << std::fixed << xHere << ", "
                     << std::setprecision(3) << std::fixed << yHere << ", "
@@ -454,12 +455,12 @@ void IO2::exportFlowLevel(const LB2& lb) {
     if (lbmSolver) {
         for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
             const node* nodeHere = *it;
-            const double xCoordHere = lb.getPositionX(nodeHere->coord) * PARAMS.unit.Length;
+            const double xCoordHere = lb.getPositionX(nodeHere->coord) * LB_P.unit.Length;
             for (int i = 0; i < flowLevelBegin.size(); i++) {
                 const double beginHere = flowLevelBegin[i];
                 const double endHere = flowLevelEnd[i];
                 if (xCoordHere <= endHere && xCoordHere >= beginHere) {
-                    //cout<<lb.getPositionX(nodeHere->coord)*PARAMS.unit.Length<<endl;
+                    //cout<<lb.getPositionX(nodeHere->coord)*LB_P.unit.Length<<endl;
                     volumeCount[i] += nodeHere->mass;
                 }
             }
@@ -468,16 +469,16 @@ void IO2::exportFlowLevel(const LB2& lb) {
 
     for (int i = 0; i < flowLevelBegin.size(); i++) {
         // compute window length in lattice units (to round to exact window measurement in )
-        const unsigned int latticeBegin = ceil(flowLevelBegin[i] / PARAMS.unit.Length);
-        const unsigned int latticeEnd = floor(flowLevelEnd[i] / PARAMS.unit.Length);
+        const unsigned int latticeBegin = ceil(flowLevelBegin[i] / LB_P.unit.Length);
+        const unsigned int latticeEnd = floor(flowLevelEnd[i] / LB_P.unit.Length);
         const unsigned int latticewindowSpan = latticeEnd - latticeBegin + 1;
         ASSERT(latticewindowSpan >= 1);
 
-        const double windowSpan = double(latticewindowSpan) * PARAMS.unit.Length;
+        const double windowSpan = double(latticewindowSpan) * LB_P.unit.Length;
 
-        const double windowDepth = double(PARAMS.lbSize[2] - 2) * PARAMS.unit.Length;
+        const double windowDepth = double(LB_P.lbSize[2] - 2) * LB_P.unit.Length;
 
-        const double flowVolume = volumeCount[i] * PARAMS.unit.Volume;
+        const double flowVolume = volumeCount[i] * LB_P.unit.Volume;
 
         const double flowLevelHere = flowVolume / (windowDepth * windowSpan);
 
@@ -488,7 +489,6 @@ void IO2::exportFlowLevel(const LB2& lb) {
         flowLevelFile.close();
     }
 }
-*/
 void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile) {
 
     const int one = 1;
@@ -697,15 +697,11 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
     // header file closing
     paraviewParticleFile.close();
 }
+*/
 
-void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile) {
-    // Build a list of active particles for faster access
-    std::vector<unsigned int> active_particles;
-    for (unsigned int i = 0; i < particles.size(); ++i) {
-        if (particles[i].active) {
-            active_particles.push_back(i);
-        }
-    }
+void IO2::exportParaviewParticles_binaryv3(DEM2& dem, const string& particleFile) {
+    const Particle2 &particles = dem.getParticles();
+    const Element2 &elmts = dem.getElements();
 
     // file opening
     ofstream paraviewParticleFile;
@@ -716,199 +712,199 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     paraviewParticleFile << "<?xml version=\"1.0\"?>\n";
     paraviewParticleFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\" header_type=\"UInt32\">\n";
     paraviewParticleFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
-    paraviewParticleFile << "  <Piece NumberOfPoints=\"" << active_particles.size() << "\" NumberOfCells=\"" << active_particles.size() << "\">\n";
+    paraviewParticleFile << "  <Piece NumberOfPoints=\"" << particles.activeCount << "\" NumberOfCells=\"" << particles.activeCount << "\">\n";
     paraviewParticleFile << "   <PointData>\n";
     size_t offset = 0;
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radius\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"particleIndex\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"clusterIndex\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"coordinationNumber\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"w\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FParticle\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FGrav\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"solidIntensity\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MParticle\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FWall\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MWall\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     if (lbmSolver) {
         paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-        offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+        offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
         paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MHydro\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-        offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+        offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
         paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"fluidIntensity\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-        offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+        offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     }
     paraviewParticleFile << "   </PointData>\n";
     paraviewParticleFile << "   <CellData>\n";
     paraviewParticleFile << "   </CellData>\n";
     paraviewParticleFile << "   <Points>\n";
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += particles.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "   </Points>\n";
     paraviewParticleFile << "   <Cells>\n";
     paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"connectivity\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"UInt32\" Name=\"offsets\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(unsigned int) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(unsigned int) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"UInt8\" Name=\"types\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" />\n";
-    offset += active_particles.size() * sizeof(unsigned char) + sizeof(unsigned int);
+    offset += particles.activeCount * sizeof(unsigned char) + sizeof(unsigned int);
     paraviewParticleFile << "   </Cells>\n";
     paraviewParticleFile << "  </Piece>\n";
     paraviewParticleFile << " </UnstructuredGrid>\n";
     paraviewParticleFile << " <AppendedData encoding=\"raw\">\n  _";
     // Allocate a buffer equal to size of the largest data array
     // Allocate once rather than allocating and freeing per export
-    static char *const t_buffer = static_cast<char*>(malloc(active_particles.size() * 3 * sizeof(double)));
+    static char *const t_buffer = static_cast<char*>(malloc(particles.activeCount * 3 * sizeof(double)));
     static double *const d_buffer = reinterpret_cast<double*>(t_buffer);
     static tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
     static unsigned int *const u_buffer = reinterpret_cast<unsigned int*>(t_buffer);
     static unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
     // radius
-    offset = active_particles.size() * sizeof(double);
+    offset = particles.activeCount * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        d_buffer[i] = particles[active_particles[i]].r;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        d_buffer[i] = particles.r[particles.activeI[i]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // particleIndex
-    offset = active_particles.size() * sizeof(unsigned int);
+    offset = particles.activeCount * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        u_buffer[i] = particles[active_particles[i]].particleIndex;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        u_buffer[i] = particles.particleIndex[particles.activeI[i]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // clusterIndex
-    offset = active_particles.size() * sizeof(unsigned int);
+    offset = particles.activeCount * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        u_buffer[i] = particles[active_particles[i]].clusterIndex;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        u_buffer[i] = particles.clusterIndex[particles.activeI[i]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // coordinationNumber
-    offset = active_particles.size() * sizeof(unsigned int);
+    offset = particles.activeCount * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        u_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].coordination;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        u_buffer[i] = elmts.coordination[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // v
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = particles[active_particles[i]].x1;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = particles.x1[particles.activeI[i]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // w
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].wGlobal;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.wGlobal[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // FParticle
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FParticle;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.FParticle[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // FGrav
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FGrav;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.FGrav[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // solidIntensity
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].solidIntensity;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.solidIntensity[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // MParticle
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MParticle;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.MParticle[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // FWall
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FWall;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.FWall[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // MWall
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MWall;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = elmts.MWall[particles.clusterIndex[particles.activeI[i]]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     if (lbmSolver) {
         // FHydro
-        offset = active_particles.size() * 3 * sizeof(double);
+        offset = particles.activeCount * 3 * sizeof(double);
         paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (unsigned int i = 0; i < active_particles.size(); ++i) {
-            v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FHydro;
+        for (unsigned int i = 0; i < particles.activeCount; ++i) {
+            v_buffer[i] = elmts.FHydro[particles.clusterIndex[particles.activeI[i]]];
         }
         paraviewParticleFile.write(t_buffer, offset);
         // MHydro
-        offset = active_particles.size() * 3 * sizeof(double);
+        offset = particles.activeCount * 3 * sizeof(double);
         paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (unsigned int i = 0; i < active_particles.size(); ++i) {
-            v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MHydro;
+        for (unsigned int i = 0; i < particles.activeCount; ++i) {
+            v_buffer[i] = elmts.MHydro[particles.clusterIndex[particles.activeI[i]]];
         }
         paraviewParticleFile.write(t_buffer, offset);
         // fluidIntensity
-        offset = active_particles.size() * 3 * sizeof(double);
+        offset = particles.activeCount * 3 * sizeof(double);
         paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        for (unsigned int i = 0; i < active_particles.size(); ++i) {
-            v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FHydro;
+        for (unsigned int i = 0; i < particles.activeCount; ++i) {
+            v_buffer[i] = elmts.FHydro[particles.clusterIndex[particles.activeI[i]]].abs();
         }
         paraviewParticleFile.write(t_buffer, offset);
     }
 
     // Points
-    offset = active_particles.size() * 3 * sizeof(double);
+    offset = particles.activeCount * 3 * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        v_buffer[i] = particles[active_particles[i]].x0;
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
+        v_buffer[i] = particles.x0[particles.activeI[i]];
     }
     paraviewParticleFile.write(t_buffer, offset);
     // connectivity
-    offset = active_particles.size() * sizeof(unsigned int);
+    offset = particles.activeCount * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 0; i < active_particles.size(); ++i) {
+    for (unsigned int i = 0; i < particles.activeCount; ++i) {
         u_buffer[i] = i;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // offsets
-    offset = active_particles.size() * sizeof(unsigned int);
+    offset = particles.activeCount * sizeof(unsigned int);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    for (unsigned int i = 1; i < active_particles.size() + 1; ++i) {
+    for (unsigned int i = 1; i < particles.activeCount + 1; ++i) {
         u_buffer[i] = i;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // types
-    offset = active_particles.size() * sizeof(unsigned char);
+    offset = particles.activeCount * sizeof(unsigned char);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + active_particles.size(), (unsigned char)1);
+    std::fill(uc_buffer, uc_buffer + particles.activeCount, (unsigned char)1);
     paraviewParticleFile.write(t_buffer, offset);
     paraviewParticleFile << "</AppendedData>";
     paraviewParticleFile << "</VTKFile>";
@@ -923,7 +919,7 @@ void IO2::exportRecycleFluid(const LB2& lb, const string& fluidRecycleFile) {
     ofstream recycleFluidFile;
     recycleFluidFile.open(fluidRecycleFile.c_str());
 
-    recycleFluidFile << PARAMS.lbSize[0] << " " << PARAMS.lbSize[1] << " " << PARAMS.lbSize[2] << " " << lb.activeNodes.size() << "\n";
+    recycleFluidFile << LB_P.lbSize[0] << " " << LB_P.lbSize[1] << " " << LB_P.lbSize[2] << " " << lb.activeNodes.size() << "\n";
 
     //cout << endl;
     for (nodeMap::const_iterator imap = lb.nodes.begin(); imap != lb.nodes.end(); imap++) {
@@ -931,7 +927,7 @@ void IO2::exportRecycleFluid(const LB2& lb, const string& fluidRecycleFile) {
         const node* nodeHere = &imap->second;
         // to gain precision, scale density and mass by 1 (initDensity)
         if (nodeHere->isActive()) {
-            recycleFluidFile << it << " " << nodeHere->type << " " << nodeHere->n - PARAMS.fluidMaterial.initDensity << " " << nodeHere->u.dot(Xp) << " " << nodeHere->u.dot(Yp) << " " << nodeHere->u.dot(Zp) << " " << nodeHere->mass - PARAMS.fluidMaterial.initDensity << " " << nodeHere->visc << " ";
+            recycleFluidFile << it << " " << nodeHere->type << " " << nodeHere->n - LB_P.fluidMaterial.initDensity << " " << nodeHere->u.dot(Xp) << " " << nodeHere->u.dot(Yp) << " " << nodeHere->u.dot(Zp) << " " << nodeHere->mass - LB_P.fluidMaterial.initDensity << " " << nodeHere->visc << " ";
             for (int j = 0; j < lbmDirec; ++j) {
                 recycleFluidFile << nodeHere->f[j] << " ";
             }
@@ -943,7 +939,7 @@ void IO2::exportRecycleFluid(const LB2& lb, const string& fluidRecycleFile) {
 */
 void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
 
-    const Node2 nodes = lb.getNodes();
+    const Node2 &nodes = lb.getNodes();
     const int one = 1;
 
     // start printing all the crap required for Paraview
@@ -960,16 +956,16 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile << "   <PointData>\n";
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"ascii\"/>\n";
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        tVect uPhysic = nodes.u[nodes.activeI[i]] * PARAMS.unit.Speed;
+        tVect uPhysic = nodes.u[nodes.activeI[i]] * LB_P.unit.Speed;
         uPhysic.printLine(paraviewFluidFile);
     }
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        paraviewFluidFile << 0.3333333 * (nodes.n[nodes.activeI[i]] - PARAMS.fluidMaterial.initDensity) * PARAMS.unit.Pressure << "\n";
+        paraviewFluidFile << 0.3333333 * (nodes.n[nodes.activeI[i]] - LB_P.fluidMaterial.initDensity) * LB_P.unit.Pressure << "\n";
     }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"smoothedPressure\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     //    for (int i = 0; i < nodes.activeCount; ++i) {
-    //        paraviewFluidFile << nodes.smoothedPressure[nodes.activeI[i]] * PARAMS.unit.Pressure << "\n";
+    //        paraviewFluidFile << nodes.smoothedPressure[nodes.activeI[i]] * LB_P.unit.Pressure << "\n";
     //    }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"n\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     //    for (int i = 0; i < nodes.activeCount; ++i) {
@@ -977,7 +973,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //    }
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        paraviewFluidFile << nodes.visc[nodes.activeI[i]] * PARAMS.unit.DynVisc << "\n";
+        paraviewFluidFile << nodes.visc[nodes.activeI[i]] * LB_P.unit.DynVisc << "\n";
     }
     //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"applySlip\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     //    for (int i = 0; i < nodes.activeCount; ++i) {
@@ -985,9 +981,9 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //    }
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"viscosity\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
 //    for (int i = 0; i < nodes.activeCount; ++i) {
-//        paraviewFluidFile << nodes.visc[nodes.activeI[i]] * PARAMS.unit.KinVisc << "\n";
+//        paraviewFluidFile << nodes.visc[nodes.activeI[i]] * LB_P.unit.KinVisc << "\n";
 //    }
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
         for (unsigned int i = 0; i < nodes.activeCount; ++i) {
             paraviewFluidFile << nodes.friction[nodes.activeI[i]] << "\n";
@@ -999,7 +995,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //    }
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"mass\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        paraviewFluidFile << nodes.mass[nodes.activeI[i]] * PARAMS.unit.Density << "\n";
+        paraviewFluidFile << nodes.mass[nodes.activeI[i]] * LB_P.unit.Density << "\n";
     }
     paraviewFluidFile << "    <DataArray type=\"Int8\" Name=\"type\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
@@ -1009,7 +1005,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"delta" << j << "\" NumberOfComponents=\"3\" format=\"ascii\">\n";
     //        for (unsigned int i = 0; i < nodes.activeCount; ++i) {
     //            if (nodes.curved[nodes.activeI[i]] != std::numeric_limits<unsigned int>::max())) {
-    //                const tVect deltaVector = nodes.curves[nodes.curved[nodes.activeI[i]]].delta[j] * PARAMS.unit.Length * v[j];
+    //                const tVect deltaVector = nodes.curves[nodes.curved[nodes.activeI[i]]].delta[j] * LB_P.unit.Length * v[j];
     //                deltaVector.printLine(paraviewFluidFile);
     //            } else {
     //                Zero.printLine(paraviewFluidFile);    //
@@ -1045,7 +1041,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile << "   <Points>\n";
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\"/>\n";
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        const tVect positionHere = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
+        const tVect positionHere = nodes.getPosition(nodes.activeI[i]) * LB_P.unit.Length;
         positionHere.printLine(paraviewFluidFile);
     }
     paraviewFluidFile << "   </Points>\n";
@@ -1080,7 +1076,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
      * This function is a rewrite of exportLagrangianParaviewFluid() that writes to a binary vtkhdf5 format
      * It is intended to provide much faster fluid export performance
      **/
-    const Node2 nodes = lb.getNodes();
+    const Node2 &nodes = lb.getNodes();
 
     // start printing all the crap required for Paraview
     // header file opening
@@ -1105,7 +1101,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
         offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
     }
@@ -1154,28 +1150,28 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     offset = nodes.activeCount * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        v_buffer[i] = nodes.u[nodes.activeI[i]] * PARAMS.unit.Speed;
+        v_buffer[i] = nodes.u[nodes.activeI[i]] * LB_P.unit.Speed;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Pressure
     offset = nodes.activeCount * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
+    const double THIRD_PRESSURE = 0.3333333 * LB_P.unit.Pressure;
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        d_buffer[i] = (nodes.n[nodes.activeI[i]] - PARAMS.fluidMaterial.initDensity) * THIRD_PRESSURE;
+        d_buffer[i] = (nodes.n[nodes.activeI[i]] - LB_P.fluidMaterial.initDensity) * THIRD_PRESSURE;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Dynamic Viscosity
-    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
         offset = nodes.activeCount * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
         for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-            d_buffer[i] = nodes.visc[nodes.activeI[i]] * PARAMS.unit.DynVisc;
+            d_buffer[i] = nodes.visc[nodes.activeI[i]] * LB_P.unit.DynVisc;
         }
         paraviewFluidFile.write(t_buffer, offset);
     }
     // Friction
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
         offset = nodes.activeCount * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
         for (unsigned int i = 0; i < nodes.activeCount; ++i) {
@@ -1187,7 +1183,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     offset = nodes.activeCount * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        d_buffer[i] = nodes.mass[nodes.activeI[i]] * PARAMS.unit.Density;
+        d_buffer[i] = nodes.mass[nodes.activeI[i]] * LB_P.unit.Density;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Type
@@ -1212,7 +1208,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     offset = nodes.activeCount * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
-        v_buffer[i] = nodes.getPosition(nodes.activeI[i]) * PARAMS.unit.Length;
+        v_buffer[i] = nodes.getPosition(nodes.activeI[i]) * LB_P.unit.Length;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Connectivity
@@ -1253,14 +1249,14 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 ////    paraviewFluidFile << std::scientific << std::setprecision(4);
 //    // writing on header file
 //    paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\">\n";
-//    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\" "
-//            << "Origin=\"" << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << "\" "
-//            << "Spacing=\"" << PARAMS.unit.Length << " " << PARAMS.unit.Length << " " << PARAMS.unit.Length << "\">\n";
-//    paraviewFluidFile << "  <Piece Extent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\">\n";
+//    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\" "
+//            << "Origin=\"" << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << "\" "
+//            << "Spacing=\"" << LB_P.unit.Length << " " << LB_P.unit.Length << " " << LB_P.unit.Length << "\">\n";
+//    paraviewFluidFile << "  <Piece Extent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\">\n";
 //    paraviewFluidFile << "   <PointData>\n";
 //    paraviewFluidFile << "    <DataArray type=\"Int8\" Name=\"type\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"8\">\n";
 //    //    paraviewFluidFile << std::fixed << std::setprecision(0);
-//    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //        if (lb.nodes.count(i) != 0) {
 //            if (!lb.nodes.at(i).isInsideParticle()) {
 //                paraviewFluidFile << static_cast<unsigned>(lb.nodes.at(i).type) << " ";
@@ -1274,7 +1270,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    paraviewFluidFile << "    </DataArray>\n";
 //    paraviewFluidFile << std::scientific << std::setprecision(4);
 //    //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"n\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\">\n";
-//    //    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    //    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //    //        if (lb.nodes.count(i)!=0) {
 //    //            paraviewFluidFile << lb.nodes.at(i).n - 1.0 << " ";
 //    //        } else {
@@ -1283,9 +1279,9 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    //    }
 //    //    paraviewFluidFile << "    </DataArray>\n";
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-//    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //        if (lb.nodes.count(i) != 0) {
-//            const tVect uPhysic = lb.nodes.at(i).u * PARAMS.unit.Speed;
+//            const tVect uPhysic = lb.nodes.at(i).u * LB_P.unit.Speed;
 //            uPhysic.print(paraviewFluidFile);
 //        } else {
 //            Zero.print(paraviewFluidFile);
@@ -1294,10 +1290,10 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    paraviewFluidFile << "    </DataArray>\n";
 //    //    for (int j = 1; j < lbmDirec; ++j) {
 //    //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"delta" << j << "\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-//    //        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    //        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //    //            if (lb.nodes.count(i) != 0) {
 //    //                if (lb.nodes.at(i).curved!=0) {
-//    //                    const tVect deltaVector = lb.nodes.at(i).curved->delta[j] * PARAMS.unit.Length*vDirec[j];
+//    //                    const tVect deltaVector = lb.nodes.at(i).curved->delta[j] * LB_P.unit.Length*vDirec[j];
 //    //                    deltaVector.print(paraviewFluidFile);
 //    //                } else {
 //    //                    Zero.print(paraviewFluidFile);
@@ -1309,10 +1305,10 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    //        paraviewFluidFile << "    </DataArray>\n";
 //    //    }
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\">\n";
-//    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //        if (lb.nodes.count(i) != 0) {
 //            if (lb.nodes.at(i).n != 0.0) {
-//                paraviewFluidFile << 0.3333333 * (lb.nodes.at(i).n - 1.0) * PARAMS.unit.Pressure << " ";
+//                paraviewFluidFile << 0.3333333 * (lb.nodes.at(i).n - 1.0) * LB_P.unit.Pressure << " ";
 //            } else {
 //                paraviewFluidFile << lb.nodes.at(i).n << " ";
 //            }
@@ -1321,20 +1317,20 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //        }
 //    }
 //    paraviewFluidFile << "    </DataArray>\n";
-//    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+//    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\">\n";
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            if (lb.nodes.count(i) != 0) {
-//                paraviewFluidFile << lb.nodes.at(i).visc * PARAMS.unit.DynVisc << " ";
+//                paraviewFluidFile << lb.nodes.at(i).visc * LB_P.unit.DynVisc << " ";
 //            } else {
 //                paraviewFluidFile << zero << " ";
 //            }
 //        }
 //        paraviewFluidFile << "    </DataArray>\n";
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+//    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\">\n";
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            if (lb.nodes.count(i) != 0) {
 //                paraviewFluidFile << lb.nodes.at(i).friction << " ";
 //            } else {
@@ -1345,9 +1341,9 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    }
 //    if (lb.freeSurface) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\">\n";
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            if (lb.nodes.count(i) != 0) {
-//                paraviewFluidFile << lb.nodes.at(i).mass * PARAMS.unit.Density << " ";
+//                paraviewFluidFile << lb.nodes.at(i).mass * LB_P.unit.Density << " ";
 //            } else {
 //                paraviewFluidFile << zero << " ";
 //            }
@@ -1356,7 +1352,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    }
 //    if (lb.lbTopography) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"2\">\n";
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            if (lb.nodes.count(i) != 0) {
 //                if (lb.nodes.at(i).isTopography()) {
 //                    paraviewFluidFile << 1.0 << " ";
@@ -1372,7 +1368,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    //    if (demSolver) {
 //    //        paraviewFluidFile << "    <DataArray type=\"Int16\" Name=\"solidIndex\" format=\"ascii\" RangeMin=\"0\" RangeMax=\"8\">\n";
 //    //        paraviewFluidFile << std::fixed << std::setprecision(0);
-//    //        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    //        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //    //            if (lb.nodes.count(i) != 0) {
 //    //                paraviewFluidFile << lb.nodes.at(i).getSolidIndex() << " ";
 //    //            } else {
@@ -1411,33 +1407,33 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    static const uint16_t m_endianCheck(0x00ff);
 //    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
 //    paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
-//    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\" "
-//            << "Origin=\"" << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << "\" "
-//            << "Spacing=\"" << PARAMS.unit.Length << " " << PARAMS.unit.Length << " " << PARAMS.unit.Length << "\">\n";
-//    paraviewFluidFile << "  <Piece Extent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\">\n";
+//    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\" "
+//            << "Origin=\"" << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << "\" "
+//            << "Spacing=\"" << LB_P.unit.Length << " " << LB_P.unit.Length << " " << LB_P.unit.Length << "\">\n";
+//    paraviewFluidFile << "  <Piece Extent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\">\n";
 //    paraviewFluidFile << "   <PointData>\n";
 //    unsigned int offset = 0;
 //    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
-//    offset += PARAMS.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
+//    offset += LB_P.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
-//    offset += PARAMS.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
+//    offset += LB_P.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//    offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
-//    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+//    offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+//    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
 //    if (lb.freeSurface) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
 //    if (lb.lbTopography) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
 //    paraviewFluidFile << "   </PointData>\n";
 //    paraviewFluidFile << "   <CellData>\n";
@@ -1457,9 +1453,9 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    static const tVect tVect_zero = {0,0,0};
 //    // May be faster to iterate the (sorted) map and catch missing items
 //    // Might be possible to do inline compression, this would slow export but unclear by how much
-//    offset = PARAMS.totPossibleNodes * sizeof(unsigned char);
+//    offset = LB_P.totPossibleNodes * sizeof(unsigned char);
 //    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //        const auto &node = lb.nodes.find(i);
 //        if (node != lb.nodes.end()) {
 //            if (node->second.isInsideParticle()) {
@@ -1473,45 +1469,45 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(unsigned char));
 //        }
 //    }
-//    offset = PARAMS.totPossibleNodes * 3 * sizeof(double);
+//    offset = LB_P.totPossibleNodes * 3 * sizeof(double);
 //    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //        const auto &node = lb.nodes.find(i);
 //        if (node != lb.nodes.end()) {
-//            static const tVect uPhysic = lb.nodes.at(i).u * PARAMS.unit.Speed;
+//            static const tVect uPhysic = lb.nodes.at(i).u * LB_P.unit.Speed;
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&uPhysic), sizeof(tVect));
 //        } else {
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&tVect_zero), sizeof(tVect));
 //        }
 //    }
-//    offset = PARAMS.totPossibleNodes * sizeof(double);
+//    offset = LB_P.totPossibleNodes * sizeof(double);
 //    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//    for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//    for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //        const auto &node = lb.nodes.find(i);
 //        if (node != lb.nodes.end()) {
-//            const double t = 0.3333333 * (node->second.n - 1.0) * PARAMS.unit.Pressure;
+//            const double t = 0.3333333 * (node->second.n - 1.0) * LB_P.unit.Pressure;
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
 //        } else {
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
 //        }
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            const auto &node = lb.nodes.find(i);
 //            if (node != lb.nodes.end()) {
-//                const double t = node->second.visc * PARAMS.unit.DynVisc;
+//                const double t = node->second.visc * LB_P.unit.DynVisc;
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
 //            } else {
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
 //            }
 //        }
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            const auto &node = lb.nodes.find(i);
 //            if (node != lb.nodes.end()) {
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&node->second.friction), sizeof(double));
@@ -1521,12 +1517,12 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //        }
 //    }
 //    if (lb.freeSurface) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            const auto &node = lb.nodes.find(i);
 //            if (node != lb.nodes.end()) {
-//                const double t = node->second.mass * PARAMS.unit.Density;
+//                const double t = node->second.mass * LB_P.unit.Density;
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
 //            } else {
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
@@ -1534,9 +1530,9 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //        }
 //    }
 //    if (lb.lbTopography) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-//        for (int i = 0; i < PARAMS.totPossibleNodes; ++i) {
+//        for (int i = 0; i < LB_P.totPossibleNodes; ++i) {
 //            const auto &node = lb.nodes.find(i);
 //            if (node != lb.nodes.end()) {
 //                if (node->second.isTopography()) {
@@ -1575,33 +1571,33 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    static const uint16_t m_endianCheck(0x00ff);
 //    const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
 //    paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
-//    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\" "
-//            << "Origin=\"" << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << "\" "
-//            << "Spacing=\"" << PARAMS.unit.Length << " " << PARAMS.unit.Length << " " << PARAMS.unit.Length << "\">\n";
-//    paraviewFluidFile << "  <Piece Extent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\">\n";
+//    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\" "
+//            << "Origin=\"" << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << "\" "
+//            << "Spacing=\"" << LB_P.unit.Length << " " << LB_P.unit.Length << " " << LB_P.unit.Length << "\">\n";
+//    paraviewFluidFile << "  <Piece Extent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\">\n";
 //    paraviewFluidFile << "   <PointData>\n";
 //    unsigned int offset = 0;
 //    paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
-//    offset += PARAMS.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
+//    offset += LB_P.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
-//    offset += PARAMS.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
+//    offset += LB_P.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
 //    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//    offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
-//    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+//    offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+//    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
 //    if (lb.freeSurface) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
 //    if (lb.lbTopography) {
 //        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-//        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+//        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
 //    }
 //    paraviewFluidFile << "   </PointData>\n";
 //    paraviewFluidFile << "   <CellData>\n";
@@ -1621,7 +1617,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    static const tVect tVect_zero = {0,0,0};
 //    // May be faster to iterate the (sorted) map and catch missing items
 //    // Might be possible to do inline compression, this would slow export but unclear by how much
-//    offset = PARAMS.totPossibleNodes * sizeof(unsigned char);
+//    offset = LB_P.totPossibleNodes * sizeof(unsigned char);
 //    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //    int i = 0;
 //    for (const auto &[key, node] : lb.nodes) {
@@ -1637,43 +1633,43 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //        }
 //        ++i;
 //    }
-//    offset = PARAMS.totPossibleNodes * 3 * sizeof(double);
+//    offset = LB_P.totPossibleNodes * 3 * sizeof(double);
 //    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //    i = 0;
 //    for (const auto &[key, node] : lb.nodes) {
 //        for (;i<key;++i) {
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&tVect_zero), sizeof(tVect));
 //        }
-//        const tVect uPhysic = lb.nodes.at(i).u * PARAMS.unit.Speed;
+//        const tVect uPhysic = lb.nodes.at(i).u * LB_P.unit.Speed;
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&uPhysic), sizeof(tVect));
 //        ++i;
 //    }
-//    offset = PARAMS.totPossibleNodes * sizeof(double);
+//    offset = LB_P.totPossibleNodes * sizeof(double);
 //    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //    i = 0;
 //    for (const auto &[key, node] : lb.nodes) {
 //        for (;i<key;++i) {
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
 //        }
-//        const double t = 0.3333333 * (node.n - 1.0) * PARAMS.unit.Pressure;
+//        const double t = 0.3333333 * (node.n - 1.0) * LB_P.unit.Pressure;
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
 //        ++i;
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //        i = 0;
 //        for (const auto &[key, node] : lb.nodes) {
 //            for (;i<key;++i) {
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
 //            }
-//            const double t = node.visc * PARAMS.unit.DynVisc;
+//            const double t = node.visc * LB_P.unit.DynVisc;
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
 //            ++i;
 //        }
 //    }
-//    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //        i = 0;
 //        for (const auto &[key, node] : lb.nodes) {
@@ -1685,20 +1681,20 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //        }
 //    }
 //    if (lb.freeSurface) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //        i = 0;
 //        for (const auto &[key, node] : lb.nodes) {
 //            for (;i<key;++i) {
 //                paraviewFluidFile.write(reinterpret_cast<const char*>(&zero), sizeof(double));
 //            }
-//            const double t = node.mass * PARAMS.unit.Density;
+//            const double t = node.mass * LB_P.unit.Density;
 //            paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(double));
 //            ++i;
 //        }
 //    }
 //    if (lb.lbTopography) {
-//        offset = PARAMS.totPossibleNodes * sizeof(double);
+//        offset = LB_P.totPossibleNodes * sizeof(double);
 //        paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
 //        i = 0;
 //        for (const auto &[key, node] : lb.nodes) {
@@ -1725,7 +1721,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
      * This function is a rewrite of exportEulerianParaviewFluid() that writes to a binary vtkhdf5 format
      * It is intended to provide much faster fluid export performance
      **/
-    const Node2 nodes = lb.getNodes();
+    const Node2 &nodes = lb.getNodes();
 
     // start printing all the crap required for Paraview
     // header file opening
@@ -1740,33 +1736,33 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     static const uint16_t m_endianCheck(0x00ff);
     const bool is_big_endian ( *((const uint8_t*)&m_endianCheck) == 0x0);
     paraviewFluidFile << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"" << (is_big_endian ? "BigEndian" : "LittleEndian") << "\"  header_type=\"UInt32\">\n";
-    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\" "
-            << "Origin=\"" << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << " " << -0.5 * PARAMS.unit.Length << "\" "
-            << "Spacing=\"" << PARAMS.unit.Length << " " << PARAMS.unit.Length << " " << PARAMS.unit.Length << "\">\n";
-    paraviewFluidFile << "  <Piece Extent=\"0 " << PARAMS.lbSize[0] - 1 << " 0 " << PARAMS.lbSize[1] - 1 << " 0 " << PARAMS.lbSize[2] - 1 << "\">\n";
+    paraviewFluidFile << " <ImageData WholeExtent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\" "
+            << "Origin=\"" << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << " " << -0.5 * LB_P.unit.Length << "\" "
+            << "Spacing=\"" << LB_P.unit.Length << " " << LB_P.unit.Length << " " << LB_P.unit.Length << "\">\n";
+    paraviewFluidFile << "  <Piece Extent=\"0 " << LB_P.lbSize[0] - 1 << " 0 " << LB_P.lbSize[1] - 1 << " 0 " << LB_P.lbSize[2] - 1 << "\">\n";
     paraviewFluidFile << "   <PointData>\n";
     unsigned int offset = 0;
     paraviewFluidFile << "    <DataArray type=\"UInt8\" Name=\"type\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"8\"/>\n";
-    offset += PARAMS.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
+    offset += LB_P.totPossibleNodes * sizeof(unsigned char) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
-    offset += PARAMS.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
+    offset += LB_P.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
-    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+    offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
     }
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
+    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
     }
-    if (PARAMS.freeSurface) {
+    if (LB_P.freeSurface) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"amass\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
     }
-    if (PARAMS.lbTopography) {
+    if (LB_P.lbTopography) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"topSurface\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-        offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+        offset += LB_P.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
     }
     paraviewFluidFile << "   </PointData>\n";
     paraviewFluidFile << "   <CellData>\n";
@@ -1784,70 +1780,70 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
      */
     // Allocate a buffer equal to size of the largest data array
     // Allocate once rather than allocating and freeing per export
-    static char *const t_buffer = static_cast<char*>(malloc(PARAMS.totPossibleNodes * 3 * sizeof(double)));
+    static char *const t_buffer = static_cast<char*>(malloc(LB_P.totPossibleNodes * 3 * sizeof(double)));
     static unsigned char *const uc_buffer = reinterpret_cast<unsigned char*>(t_buffer);
     static double *const d_buffer = reinterpret_cast<double*>(t_buffer);
     static tVect *const v_buffer = reinterpret_cast<tVect*>(t_buffer);
     // Type
-    offset = PARAMS.totPossibleNodes * sizeof(unsigned char);
+    offset = LB_P.totPossibleNodes * sizeof(unsigned char);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    std::fill(uc_buffer, uc_buffer + PARAMS.totPossibleNodes, (unsigned char)2);
+    std::fill(uc_buffer, uc_buffer + LB_P.totPossibleNodes, (unsigned char)2);
     for (unsigned int i = 0; i < nodes.count; ++i) {
         uc_buffer[i] = nodes.isInsideParticle(i) ? nodes.type[i] : 1;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Velocity
-    offset = PARAMS.totPossibleNodes * 3 * sizeof(double);
+    offset = LB_P.totPossibleNodes * 3 * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    memset(v_buffer, 0, sizeof(tVect) * PARAMS.totPossibleNodes);
+    memset(v_buffer, 0, sizeof(tVect) * LB_P.totPossibleNodes);
     for (unsigned int i = 0; i < nodes.count; ++i) {
-        v_buffer[i] = nodes.u[i] * PARAMS.unit.Speed;
+        v_buffer[i] = nodes.u[i] * LB_P.unit.Speed;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Pressure
-    offset = PARAMS.totPossibleNodes * sizeof(double);
+    offset = LB_P.totPossibleNodes * sizeof(double);
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-    memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
-    const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
+    memset(d_buffer, 0, sizeof(double) * LB_P.totPossibleNodes);
+    const double THIRD_PRESSURE = 0.3333333 * LB_P.unit.Pressure;
     for (unsigned int i = 0; i < nodes.count; ++i) {
         d_buffer[i] = (nodes.n[i] - 1.0) * THIRD_PRESSURE;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Dynamic Viscosity
-    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
-        offset = PARAMS.totPossibleNodes * sizeof(double);
+    if (LB_P.fluidMaterial.rheologyModel != NEWTONIAN || LB_P.fluidMaterial.turbulenceOn) {
+        offset = LB_P.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
+        memset(d_buffer, 0, sizeof(double) * LB_P.totPossibleNodes);
         for (unsigned int i = 0; i < nodes.count; ++i) {
-            d_buffer[i] = nodes.visc[i] * PARAMS.unit.DynVisc;
+            d_buffer[i] = nodes.visc[i] * LB_P.unit.DynVisc;
         }
         paraviewFluidFile.write(t_buffer, offset);
     }
     // Friction
-    if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
-        offset = PARAMS.totPossibleNodes * sizeof(double);
+    if (LB_P.fluidMaterial.rheologyModel == MUI || LB_P.fluidMaterial.rheologyModel == FRICTIONAL || LB_P.fluidMaterial.rheologyModel == VOELLMY) {
+        offset = LB_P.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
+        memset(d_buffer, 0, sizeof(double) * LB_P.totPossibleNodes);
         for (unsigned int i = 0; i < nodes.count; ++i) {
             d_buffer[i] = nodes.friction[i];
         }
         paraviewFluidFile.write(t_buffer, offset);
     }
     // AMass
-    if (PARAMS.freeSurface) {
-        offset = PARAMS.totPossibleNodes * sizeof(double);
+    if (LB_P.freeSurface) {
+        offset = LB_P.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
+        memset(d_buffer, 0, sizeof(double) * LB_P.totPossibleNodes);
         for (unsigned int i = 0; i < nodes.count; ++i) {
-            d_buffer[i] = nodes.mass[i] * PARAMS.unit.Density;
+            d_buffer[i] = nodes.mass[i] * LB_P.unit.Density;
         }
         paraviewFluidFile.write(t_buffer, offset);
     }
     // Top Surface
-    if (PARAMS.lbTopography) {
-        offset = PARAMS.totPossibleNodes * sizeof(double);
+    if (LB_P.lbTopography) {
+        offset = LB_P.totPossibleNodes * sizeof(double);
         paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
-        memset(d_buffer, 0, sizeof(double) * PARAMS.totPossibleNodes);
+        memset(d_buffer, 0, sizeof(double) * LB_P.totPossibleNodes);
         for (unsigned int i = 0; i < nodes.count; ++i) {
             if (nodes.type[i] == TOPO) {
                 d_buffer[i] = 1.0;
@@ -1873,12 +1869,12 @@ void IO2::exportMaxSpeedFluid(const LB2& lb) {
         maxFluidSpeed = std::max(maxFluidSpeed, nodeHere->u.norm2());
     }
     maxFluidSpeed = sqrt(maxFluidSpeed);
-    cout << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
-    exportFile << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
+    cout << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * LB_P.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
+    exportFile << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * LB_P.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
 
     // printing max speed
     maxFluidSpeedFile.open(maxFluidSpeedFileName.c_str(), ios::app);
-    maxFluidSpeedFile << realTime << " " << maxFluidSpeed * PARAMS.unit.Speed << "\n";
+    maxFluidSpeedFile << realTime << " " << maxFluidSpeed * LB_P.unit.Speed << "\n";
     maxFluidSpeedFile.close();
 }
 
@@ -1951,12 +1947,12 @@ void IO2::exportFreeSurfaceExtent(const LB2& lb) {
 
     // printing max speed
     freeSurfaceExtentFile.open(freeSurfaceExtentFileName.c_str(), ios::app);
-    freeSurfaceExtentFile << realTime << " " << maxX * PARAMS.unit.Length << " " << maxX_Y * PARAMS.unit.Length << " " << maxX_Z * PARAMS.unit.Length
-                                      << " " << minX * PARAMS.unit.Length << " " << minX_Y * PARAMS.unit.Length << " " << minX_Z * PARAMS.unit.Length
-                                      << " " << maxY * PARAMS.unit.Length << " " << maxY_Z * PARAMS.unit.Length << " " << maxY_X * PARAMS.unit.Length
-                                      << " " << minY * PARAMS.unit.Length << " " << minY_Z * PARAMS.unit.Length << " " << minY_X * PARAMS.unit.Length
-                                      << " " << maxZ * PARAMS.unit.Length << " " << maxZ_X * PARAMS.unit.Length << " " << maxZ_Y * PARAMS.unit.Length
-                                      << " " << minZ * PARAMS.unit.Length << " " << minZ_X * PARAMS.unit.Length << " " << minZ_Y * PARAMS.unit.Length<< "\n";
+    freeSurfaceExtentFile << realTime << " " << maxX * LB_P.unit.Length << " " << maxX_Y * LB_P.unit.Length << " " << maxX_Z * LB_P.unit.Length
+                                      << " " << minX * LB_P.unit.Length << " " << minX_Y * LB_P.unit.Length << " " << minX_Z * LB_P.unit.Length
+                                      << " " << maxY * LB_P.unit.Length << " " << maxY_Z * LB_P.unit.Length << " " << maxY_X * LB_P.unit.Length
+                                      << " " << minY * LB_P.unit.Length << " " << minY_Z * LB_P.unit.Length << " " << minY_X * LB_P.unit.Length
+                                      << " " << maxZ * LB_P.unit.Length << " " << maxZ_X * LB_P.unit.Length << " " << maxZ_Y * LB_P.unit.Length
+                                      << " " << minZ * LB_P.unit.Length << " " << minZ_X * LB_P.unit.Length << " " << minZ_Y * LB_P.unit.Length<< "\n";
     freeSurfaceExtentFile.close();
 }
 
@@ -1970,20 +1966,20 @@ void IO2::exportFluidFlowRate(const LB2& lb) {
         }
     }
 
-    const double flowRateX = flowRate.dot(Xp) / double(PARAMS.lbSize[0] - 2);
-    const double flowRateY = flowRate.dot(Yp) / double(PARAMS.lbSize[1] - 2);
-    const double flowRateZ = flowRate.dot(Zp) / double(PARAMS.lbSize[2] - 2);
+    const double flowRateX = flowRate.dot(Xp) / double(LB_P.lbSize[0] - 2);
+    const double flowRateY = flowRate.dot(Yp) / double(LB_P.lbSize[1] - 2);
+    const double flowRateZ = flowRate.dot(Zp) / double(LB_P.lbSize[2] - 2);
 
     // printing rate
     fluidFlowRateFile.open(fluidFlowRateFileName.c_str(), ios::app);
-    fluidFlowRateFile << realTime << " " << flowRateX * PARAMS.unit.FlowRate << " " << flowRateY * PARAMS.unit.FlowRate << " " << flowRateZ * PARAMS.unit.FlowRate << "\n";
+    fluidFlowRateFile << realTime << " " << flowRateX * LB_P.unit.FlowRate << " " << flowRateY * LB_P.unit.FlowRate << " " << flowRateZ * LB_P.unit.FlowRate << "\n";
     fluidFlowRateFile.close();
 }
 
 void IO2::exportFluidCenterOfMass(const LB2& lb) {
 
     // particle center of mass
-    const tVect fluidCenter = fluidCenterOfMass(lb) * PARAMS.unit.Length;
+    const tVect fluidCenter = fluidCenterOfMass(lb) * LB_P.unit.Length;
 
     // printing particle center of mass
     fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
@@ -1995,12 +1991,12 @@ void IO2::exportFluidCenterOfMass(const LB2& lb) {
 void IO2::exportFluidMass(const LB2& lb) {
     // total fluid mass
     double massTot = totFluidMass(lb);
-    cout << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
-    exportFile << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
+    cout << "Volume=" << std::scientific << std::setprecision(2) << massTot * LB_P.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * LB_P.unit.Mass << " ";
+    exportFile << "Volume=" << std::scientific << std::setprecision(2) << massTot * LB_P.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * LB_P.unit.Mass << " ";
 
     // printing fluid mass
     fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
-    fluidMassFile << realTime << " " << massTot * PARAMS.unit.Mass << "\n";
+    fluidMassFile << realTime << " " << massTot * LB_P.unit.Mass << "\n";
     fluidMassFile.close();
 }
 
@@ -2019,8 +2015,8 @@ void IO2::exportPlasticity(const LB2& lb) {
 void IO2::exportMeanViscosity(const LB2& lb) {
     // fluid plasticity state
     const double meanVisc = meanViscosity(lb);
-    cout << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
-    exportFile << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
+    cout << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * LB_P.unit.DynVisc << " ";
+    exportFile << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * LB_P.unit.DynVisc << " ";
 }
 
 void IO2::exportShearCell(const LB2& lb, const DEM& dem) {
@@ -2064,8 +2060,8 @@ void IO2::exportEnergy(const DEM& dem, const LB2& lb) {
     // Set energyFile header
     energyFile << std::scientific << std::setprecision(6) << realTime << " ";
     energyFile << std::scientific << std::setprecision(10) << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
-    energyFile << std::scientific << std::setprecision(10) << lb.fluidEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidEnergy.grav * PARAMS.unit.Energy << " ";
-    energyFile << std::scientific << std::setprecision(10) << lb.fluidImmersedEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidImmersedEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidImmersedEnergy.grav * PARAMS.unit.Energy << endl;
+    energyFile << std::scientific << std::setprecision(10) << lb.fluidEnergy.mass * LB_P.unit.Mass << " " << lb.fluidEnergy.trKin * LB_P.unit.Energy << " " << lb.fluidEnergy.grav * LB_P.unit.Energy << " ";
+    energyFile << std::scientific << std::setprecision(10) << lb.fluidImmersedEnergy.mass * LB_P.unit.Mass << " " << lb.fluidImmersedEnergy.trKin * LB_P.unit.Energy << " " << lb.fluidImmersedEnergy.grav * LB_P.unit.Energy << endl;
     energyFile.close();
 
 }
@@ -2080,7 +2076,7 @@ double IO2::totPlastic(const LB2& lb) const {
     for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
         const node* nodeHere = *it;
         ++totActive;
-        if (nodeHere->visc > 0.95 * PARAMS.fluidMaterial.lbMaxVisc) {
+        if (nodeHere->visc > 0.95 * LB_P.fluidMaterial.lbMaxVisc) {
             ++totPlastic;
         }
     }
@@ -2128,11 +2124,11 @@ void IO2::apparentViscosity(const LB2& lb, const wallList& walls, double& extern
     appVisc = 0.0;
     tVect xDirec = tVect(1.0, 0.0, 0.0);
 
-    double cellSize = double(PARAMS.lbSize[2] - 2) * PARAMS.unit.Length;
+    double cellSize = double(LB_P.lbSize[2] - 2) * LB_P.unit.Length;
 
     externalShear = 0.5 * (walls[1].vel.dot(xDirec) - walls[0].vel.dot(xDirec)) / cellSize;
 
-    double plateSize = double(PARAMS.lbSize[0] - 2) * double(PARAMS.lbSize[1] - 2) * PARAMS.unit.Length * PARAMS.unit.Length;
+    double plateSize = double(LB_P.lbSize[0] - 2) * double(LB_P.lbSize[1] - 2) * LB_P.unit.Length * LB_P.unit.Length;
 
     wallStress = -0.5 * (walls[1].FHydro.dot(xDirec) + walls[1].FParticle.dot(xDirec) - walls[0].FHydro.dot(xDirec) - walls[0].FParticle.dot(xDirec)) / plateSize;
 

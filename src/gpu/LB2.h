@@ -29,13 +29,13 @@ class LB2 {
     // @todo how do we init params from config?
     LB2() = default;
 
-    void init(cylinderList &cylinders, wallList &walls, particleList &particles, objectList &objects, bool externalSolveCoriolis, bool externalSolveCentrifugal);
+    void init(DEM2 &dem, bool externalSolveCoriolis, bool externalSolveCentrifugal);
     void allocateHostNodes(unsigned int count);
     void initializeLatticeBoundaries();
-    void initializeTypes(const wallList &walls, const cylinderList &cylinders, const objectList &objects);
-    void initializeWallBoundaries(const wallList &walls);
-    void initializeObjectBoundaries(const objectList &objects);
-    void initializeCylinderBoundaries(const cylinderList &cylinders);
+    void initializeTypes(const Wall2 &h_walls, const Cylinder2 &h_cylinders, const Object2 &h_objects);
+    void initializeWallBoundaries(const Wall2 &h_walls);
+    void initializeObjectBoundaries(const Object2 &h_objects);
+    void initializeCylinderBoundaries(const Cylinder2 &h_cylinders);
     void initializeTopography();
     void initializeInterface();
     void initializeVariables();
@@ -62,7 +62,7 @@ class LB2 {
      * @param io_demSolver The result of io.demSolver in the calling method
      * @note io_demSolver may be redundant, surely dem can be probed to detect if DEM is active
      */
-    void step(DEM &dem, bool io_demSolver);
+    void step(DEM2 &dem, bool io_demSolver);
     /**
      * @brief Sync DEM data to structure of arrays format (and device memory)
      * @param elmts Objects, such as walls within the DEM
@@ -158,12 +158,12 @@ class LB2 {
     /**
      * Set the LBM params
      * This copies them to GPU storage if required
-     * @params params The LBParams structure to overwrite PARAMS with
+     * @params params The LBParams structure to overwrite LB_P with
      *
      * @param skip_sync If true, will not be copied to device
      */
     void setParams(const LBParams& params, const LBInitParams& initParams, bool skip_sync = false);
-    void syncParams();
+    void syncParamsToDevice();
 
     //
     // latticeBoltzmannCouplingStep() subroutines

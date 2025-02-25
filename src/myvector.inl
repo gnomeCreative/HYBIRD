@@ -1,6 +1,7 @@
 
 
 #include "myvector.h"
+#include "gpu/DEMParams.h"
 
 using namespace std;
 
@@ -9,6 +10,40 @@ using namespace std;
 /////////////////////////////////////////////////////////////////////////////////////////*/
 
 // basic functions
+__host__ __device__  double& tVect::operator[](const unsigned int i) {
+#ifdef DEBUG
+    if (i >= 3) {
+        printf("%u out of bounds in tVector::operator[]\n", i);
+    }
+#endif
+    switch (i)
+    {
+    default:
+    case 0:
+        return x;
+    case 1:
+        return y;
+    case 2:
+        return z;
+    }
+}
+__host__ __device__  constexpr double tVect::operator[](const unsigned int i) const {
+#ifdef DEBUG
+    if (i >= 3) {
+        printf("%u out of bounds in tVector::operator[]\n", i);
+    }
+#endif
+    switch (i)
+    {
+    default:
+    case 0:
+        return x;
+    case 1:
+        return y;
+    case 2:
+        return z;
+    }
+}
 
 inline void tVect::show() const {
     cout<<"("<<x<<", "<<y<<", "<<z<<")";
@@ -156,11 +191,11 @@ inline __host__ __device__ double tVect::norm2() const {
     return x*x+y*y+z*z;
 }
 
-inline int tVect::linearizePosition(double cellWidth[], unsigned int nCells[]) const  {
-    const int xc = static_cast<int>(floor(x/cellWidth[0])+1);
-    const int yc = static_cast<int>(floor(y/cellWidth[1])+1);
-    const int zc = static_cast<int>(floor(z/cellWidth[2])+1);
-    const int index = static_cast<int>(xc+nCells[0]*(yc+ nCells[1]*zc));
+inline __host__ __device__ int tVect::linearizePosition() const  {
+    const int xc = static_cast<int>(floor(x/DEM_P.cellWidth[0])+1);
+    const int yc = static_cast<int>(floor(y/ DEM_P.cellWidth[1])+1);
+    const int zc = static_cast<int>(floor(z/ DEM_P.cellWidth[2])+1);
+    const int index = static_cast<int>(xc+ DEM_P.nCells[0]*(yc+ DEM_P.nCells[1]*zc));
     return index;
 }
 

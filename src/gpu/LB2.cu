@@ -4,7 +4,7 @@
 
 #include "cuda_helper.h"
 
-#include "DEM.h"
+#include "DEM2.h"
 
 /**
  * Storage for static members must be defined
@@ -558,9 +558,9 @@ __host__ __device__ __forceinline__ double common_initializeParticleBoundaries(c
     const unsigned int an_i = nodes->activeI[i];
     const tVect node_position = nodes->getPosition(an_i);
     for (unsigned int p_i = 0; p_i < particles->count; ++p_i) {
-        const tVect convertedPosition = particles->x0[p_i] / PARAMS.unit.Length;
-        // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-        const double convertedRadius = particles->r[p_i] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+        const tVect convertedPosition = particles->x0[p_i] / LB_P.unit.Length;
+        // @todo pre-compute LB_P.hydrodynamicRadius / LB_P.unit.Length ?
+        const double convertedRadius = particles->r[p_i] * LB_P.hydrodynamicRadius / LB_P.unit.Length;
         if (node_position.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
             nodes->setInsideParticle(an_i, true);
             nodes->solidIndex[an_i] = p_i;
@@ -645,9 +645,9 @@ __host__ __device__ __forceinline__ void common_findNewActive(const unsigned int
             // checking if it has been uncovered in component j of the cluster
             // radius need to be increased by half a lattice unit
             // this is because solid boundaries are located halfway between solid and fluid nodes
-            const tVect convertedPosition = particles->x0[componentIndex] / PARAMS.unit.Length;
-            // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-            const double convertedRadius = particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+            const tVect convertedPosition = particles->x0[componentIndex] / LB_P.unit.Length;
+            // @todo pre-compute LB_P.hydrodynamicRadius / LB_P.unit.Length ?
+            const double convertedRadius = particles->r[componentIndex] * LB_P.hydrodynamicRadius / LB_P.unit.Length;
             if (nodePosition.insideSphere(convertedPosition, convertedRadius)) { //-0.5?
                 // if the node is still inside the element, the hypothesis of new active is not true anymore
                 // and we can get out of the cycle
@@ -717,8 +717,8 @@ __host__ __device__ __forceinline__ void common_findNewSolid(const unsigned int 
                         // check if it getting inside
                         // radius need to be increased by half a lattice unit
                         // this is because solid boundaries are located halfway between solid and fluid nodes
-                        // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-                        if (linkPosition.insideSphere(particles->x0[componentIndex] / PARAMS.unit.Length, particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length)) { //-0.5?
+                        // @todo pre-compute LB_P.hydrodynamicRadius / LB_P.unit.Length ?
+                        if (linkPosition.insideSphere(particles->x0[componentIndex] / LB_P.unit.Length, particles->r[componentIndex] * LB_P.hydrodynamicRadius / LB_P.unit.Length)) { //-0.5?
                             // if so, then the false hypothesis does not hold true anymore
                             nodes->solidIndex[l_i] = componentIndex;
                             // By setting particle to inside, it won't be checked again, newSolidNodes hence becomes redundant
@@ -774,9 +774,9 @@ __host__ __device__ __forceinline__ void common_checkNewInterfaceParticles(const
         const unsigned int last_component = elements->componentsIndex[e_i + 1];
         for (unsigned int n = first_component; n < last_component; ++n) {
             const unsigned int componentIndex = elements->componentsData[n];
-            const tVect convertedPosition = particles->x0[componentIndex] / PARAMS.unit.Length;
-            // @todo pre-compute PARAMS.hydrodynamicRadius / PARAMS.unit.Length ?
-            const double convertedRadius = particles->r[componentIndex] * PARAMS.hydrodynamicRadius / PARAMS.unit.Length;
+            const tVect convertedPosition = particles->x0[componentIndex] / LB_P.unit.Length;
+            // @todo pre-compute LB_P.hydrodynamicRadius / LB_P.unit.Length ?
+            const double convertedRadius = particles->r[componentIndex] * LB_P.hydrodynamicRadius / LB_P.unit.Length;
             for (unsigned int i_i = 0; i_i < nodes->interfaceCount; ++i_i) {
                 const unsigned int nodeHere = nodes->interfaceI[i_i];
                 if (!nodes->isInsideParticle(nodeHere)) {
@@ -837,9 +837,9 @@ __host__ __device__ __forceinline__ void common_computeHydroForces(const unsigne
         const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // calculating velocity of the solid boundary at the node (due to rotation of particles)
         // vectorized radius (real units)
-        const tVect radius = nodes->getPosition(index) - particles->x0[particleIndex] / PARAMS.unit.Length + particles->radiusVec[particleIndex] / PARAMS.unit.Length;
+        const tVect radius = nodes->getPosition(index) - particles->x0[particleIndex] / LB_P.unit.Length + particles->radiusVec[particleIndex] / LB_P.unit.Length;
         // update velocity of the particle node (u=v_center+omega x radius) (real units)
-        const tVect localVel = elements->x1[clusterIndex] / PARAMS.unit.Speed + (elements->wGlobal[clusterIndex].cross(radius)) / PARAMS.unit.AngVel;
+        const tVect localVel = elements->x1[clusterIndex] / LB_P.unit.Speed + (elements->wGlobal[clusterIndex].cross(radius)) / LB_P.unit.AngVel;
 
         // calculate differential velocity
         const tVect diffVel = nodes->age[an_i] * nodes->age[an_i] * nodes->liquidFraction(an_i) * (nodes->u[an_i] - localVel);
@@ -937,12 +937,12 @@ __host__ __device__ __forceinline__ void common_streaming(const unsigned int i, 
     constexpr double C2x2 = 9.0;
     constexpr double C3x2 = 3.0;
     // coefficient for slip conditions
-    const double S1 = PARAMS.slipCoefficient;
-    const double S2 = (1.0 - PARAMS.slipCoefficient);
+    const double S1 = LB_P.slipCoefficient;
+    const double S2 = (1.0 - LB_P.slipCoefficient);
     // creating list for collision function @todo can this be precomputed, rather than once per node?
     std::array<double, lbmDirec> staticPres;
     for (int j = 0; j < lbmDirec; j++) {
-        staticPres[j] = PARAMS.fluidMaterial.initDensity * coeff[j];
+        staticPres[j] = LB_P.fluidMaterial.initDensity * coeff[j];
     }
 
     // coefficient for bounce-back
@@ -960,7 +960,7 @@ __host__ __device__ __forceinline__ void common_streaming(const unsigned int i, 
             const double usq = nodes->u[an_i].norm2();
             const double vuj = nodes->u[an_i].dot(v[j]);
             // streaming with constant pressure interface
-            nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq);
+            nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j] + coeff[j] * LB_P.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq);
         } else {
             const unsigned int L_OFFSET = ln_i * lbmDirec;
             // @todo this could be improved by stacking matching cases to reduce divergence
@@ -977,7 +977,7 @@ __host__ __device__ __forceinline__ void common_streaming(const unsigned int i, 
                 const double usq = nodes->u[an_i].norm2();
                 const double vuj = nodes->u[an_i].dot(v[j]);
                 nodes->f[A_OFFSET + opp[j]] = nodes->age[ln_i] * nodes->fs[L_OFFSET + opp[j]] +
-                    (1.0 - nodes->age[ln_i]) * (-nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq));
+                    (1.0 - nodes->age[ln_i]) * (-nodes->fs[A_OFFSET + j] + coeff[j] * LB_P.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq));
 #else
 
                 nodes->f[A_OFFSET + opp[j]] = nodes->fs[L_OFFSET + opp[j]];
@@ -994,7 +994,7 @@ __host__ __device__ __forceinline__ void common_streaming(const unsigned int i, 
                     const double usq = nodes->u[an_i].norm2();
                     const double vuj = nodes->u[an_i].dot(v[j]);
                     //streaming with constant pressure interface
-                    nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq);
+                    nodes->f[A_OFFSET + opp[j]] = -nodes->fs[A_OFFSET + j] + coeff[j] * LB_P.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq);
                     break;
                 }
 #endif      
@@ -1241,15 +1241,15 @@ void LB2::streaming<CUDA>() {
 template<>
 void LB2::shiftToPhysical<CPU>() {
     for (unsigned int i = 0; i < d_elements->count; ++i) {
-        d_elements->FHydro[i] *= PARAMS.unit.Force;
-        d_elements->MHydro[i] *= PARAMS.unit.Torque;
-        d_elements->fluidVolume[i] *= PARAMS.unit.Volume;
+        d_elements->FHydro[i] *= LB_P.unit.Force;
+        d_elements->MHydro[i] *= LB_P.unit.Torque;
+        d_elements->fluidVolume[i] *= LB_P.unit.Volume;
     }
     for (unsigned int i = 0; i < d_walls->count; ++i) {
-        d_walls->FHydro[i] *= PARAMS.unit.Force;
+        d_walls->FHydro[i] *= LB_P.unit.Force;
     }
     for (unsigned int i = 0; i < d_objects->count; ++i) {
-        d_objects->FHydro[i] *= PARAMS.unit.Force;
+        d_objects->FHydro[i] *= LB_P.unit.Force;
     }
 }
 #ifdef USE_CUDA
@@ -1258,15 +1258,15 @@ __global__ void d_shiftToPhysical(Element2* d_elements, Wall2* d_walls, Object2*
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i < d_elements->count) {
-        d_elements->FHydro[i] *= PARAMS.unit.Force;
-        d_elements->MHydro[i] *= PARAMS.unit.Torque;
-        d_elements->fluidVolume[i] *= PARAMS.unit.Volume;
+        d_elements->FHydro[i] *= LB_P.unit.Force;
+        d_elements->MHydro[i] *= LB_P.unit.Torque;
+        d_elements->fluidVolume[i] *= LB_P.unit.Volume;
     }
     if (i < d_walls->count) {
-        d_walls->FHydro[i] *= PARAMS.unit.Force;
+        d_walls->FHydro[i] *= LB_P.unit.Force;
     }
     if (i < d_objects->count) {
-        d_objects->FHydro[i] *= PARAMS.unit.Force;
+        d_objects->FHydro[i] *= LB_P.unit.Force;
     }
 }
 template<>
@@ -1345,7 +1345,7 @@ void LB2::enforceMassConservation<CPU>() {
     }
 
     // mass deficit
-    const double massDeficit = (thisMass - PARAMS.totalMass);
+    const double massDeficit = (thisMass - LB_P.totalMass);
 
     // fix it
     redistributeMass<CPU>(-0.01 * massDeficit);
@@ -1377,7 +1377,7 @@ void LB2::enforceMassConservation<CUDA>() {
         thrust::plus<double>());
 
     // mass deficit
-    const double massDeficit = (thisMass - PARAMS.totalMass);
+    const double massDeficit = (thisMass - LB_P.totalMass);
 
     // fix it
     redistributeMass<CUDA>(-0.01 * massDeficit);
@@ -1435,10 +1435,10 @@ __host__ __device__ __forceinline__ void common_updateMassInterface(const unsign
                 double averageMass = 0.0;
                 if (active1 && !active2) {
                     // adding the extra mass to the surplus
-                    averageMass += 1.0 * (1.0 - PARAMS.slipCoefficient) * nodes->mass[in_i];
+                    averageMass += 1.0 * (1.0 - LB_P.slipCoefficient) * nodes->mass[in_i];
                 } else if (!active1 && active2) {
                     // adding the extra mass to the surplus
-                    averageMass += 1.0 * (1.0 - PARAMS.slipCoefficient) * nodes->mass[in_i];
+                    averageMass += 1.0 * (1.0 - LB_P.slipCoefficient) * nodes->mass[in_i];
                 } else {
                     // adding the extra mass to the surplus
                     averageMass += 1.0 * nodes->mass[in_i];
@@ -1557,7 +1557,7 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
         // create new interface node
         nodes->generateNode(in_i, INTERFACE);
         // node is becoming active and needs to be initialized
-        double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
+        double massSurplusHere = -marginalMass * LB_P.fluidMaterial.initDensity;
         // same density and velocity; 1% of the mass
         nodes->copy(in_i, nodes->d[in_i]); // d[0] contains src node
         nodes->mass[in_i] = -massSurplusHere;
@@ -2002,7 +2002,7 @@ void LB2::latticeBoltzmannCouplingStep(bool& newNeighbourList) {
     // ACTIVE TO SOLID CHECK
     this->findNewSolid<IMPL>();
 
-    if (PARAMS.freeSurface) {
+    if (LB_P.freeSurface) {
         this->checkNewInterfaceParticles<IMPL>();
     }
 }
@@ -2014,9 +2014,9 @@ void LB2::latticeBoltzmannStep() {
     hd_elements.initElements<IMPL>();
 
     // Initialise lattice boltzmann force vector
-    if (!h_PARAMS.forceField) {
-        h_PARAMS.lbF.reset();
-        syncParams();
+    if (!h_LB_P.forceField) {
+        h_LB_P.lbF.reset();
+        syncParamsToDevice();
     }
 
     // reconstruct(), computeHydroForces(), collision()
@@ -2034,11 +2034,11 @@ void LB2::latticeBoltzmannStep() {
 extern ProblemName problemName;
 void LB2::latticeBoltzmannFreeSurfaceStep() {
     // in case mass needs to be kept constant, call enforcing function here
-    if (PARAMS.imposeFluidVolume) {
+    if (LB_P.imposeFluidVolume) {
         this->enforceMassConservation<IMPL>();
-    } else if (PARAMS.increaseVolume) {
-        if (PARAMS.time < PARAMS.deltaTime) {
-            this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
+    } else if (LB_P.increaseVolume) {
+        if (LB_P.time < LB_P.deltaTime) {
+            this->redistributeMass<IMPL>(LB_P.deltaVolume / LB_P.deltaTime);
         }
     } else {
         if (problemName == DRUM ||
@@ -2205,35 +2205,29 @@ void LB2::initDeviceNodes() {
 #endif    
 }
 
-void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
-    // Convert from AoS format to SoA and copy to device
-    syncCylindersIn<IMPL>(cylinders);
-    syncWallsIn<IMPL>(walls);
-    syncParticlesIn<IMPL>(particles);
-    syncObjectsIn<IMPL>(objects);
-
+void LB2::init(DEM2 &dem, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
     //  Lattice Boltzmann initialization steps
 
     // switchers for apparent accelerations
-    h_PARAMS.solveCoriolis = externalSolveCoriolis;
-    h_PARAMS.solveCentrifugal = externalSolveCentrifugal;
+    h_LB_P.solveCoriolis = externalSolveCoriolis;
+    h_LB_P.solveCentrifugal = externalSolveCentrifugal;
 
     // first comes the initialization of the data structures
     cout << "Initializing nodes containers and types" << endl;
     // total number of nodes
-    h_PARAMS.totPossibleNodes = h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1] * h_PARAMS.lbSize[2];
+    h_LB_P.totPossibleNodes = h_LB_P.lbSize[0] * h_LB_P.lbSize[1] * h_LB_P.lbSize[2];
 
     // Allocate nodes (dense matrix, even gas nodes are represented)
     // This initialises them all as GAS
-    allocateHostNodes(h_PARAMS.totPossibleNodes);
+    allocateHostNodes(h_LB_P.totPossibleNodes);
 
     // application of lattice boundaries
     initializeLatticeBoundaries();
     // then the initial node type must be identified for every node (if not specified, it is already Fluid)
-    initializeTypes(walls, cylinders, objects);
+    initializeTypes(dem.h_walls, dem.h_cylinders, dem.h_objects);
 
     ifstream fluidFileID;
-    if (h_PARAMS.lbRestart) {
+    if (h_LB_P.lbRestart) {
         // open fluid restart file
         fluidFileID.open(init_params.lbRestartFile.c_str(), ios::in);
         ASSERT(fluidFileID.is_open());
@@ -2243,9 +2237,9 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
         fluidFileID >> restartY;
         fluidFileID >> restartZ;
         fluidFileID >> restartNodes;
-        ASSERT(restartX == h_PARAMS.lbSize[0]);
-        ASSERT(restartY == h_PARAMS.lbSize[1]);
-        ASSERT(restartZ == h_PARAMS.lbSize[2]);
+        ASSERT(restartX == h_LB_P.lbSize[0]);
+        ASSERT(restartY == h_LB_P.lbSize[1]);
+        ASSERT(restartZ == h_LB_P.lbSize[2]);
         // read active nodes from file and generate
         // @todo
         fprintf(stderr, "lbRestart is not yet supported.\n");
@@ -2271,24 +2265,24 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
     const double inside_mass = initializeParticleBoundaries<IMPL>();
 
     // in case mass needs to be kept constant, compute it here
-    if (h_PARAMS.imposeFluidVolume) {
+    if (h_LB_P.imposeFluidVolume) {
         // volume and mass is the same in lattice units
-        h_PARAMS.totalMass = h_PARAMS.imposedFluidVolume / h_PARAMS.unit.Volume;
+        h_LB_P.totalMass = h_LB_P.imposedFluidVolume / h_LB_P.unit.Volume;
     } else {
         if (problemName == DRUM) {
-            h_PARAMS.totalMass = h_PARAMS.fluidMass / h_PARAMS.unit.Mass;
+            h_LB_P.totalMass = h_LB_P.fluidMass / h_LB_P.unit.Mass;
         } else if(problemName == STAVA) {
-            h_PARAMS.totalMass = 200000.0 / h_PARAMS.unit.Volume;
+            h_LB_P.totalMass = 200000.0 / h_LB_P.unit.Volume;
         } else {
-            h_PARAMS.totalMass = inside_mass;
+            h_LB_P.totalMass = inside_mass;
         }
     }
-    if (h_PARAMS.increaseVolume) {
-        h_PARAMS.deltaVolume /= h_PARAMS.unit.Volume;
-        h_PARAMS.deltaTime /= h_PARAMS.unit.Time;
+    if (h_LB_P.increaseVolume) {
+        h_LB_P.deltaVolume /= h_LB_P.unit.Volume;
+        h_LB_P.deltaTime /= h_LB_P.unit.Time;
     }
 
-    syncParams();
+    syncParamsToDevice();
 
     cout << "Done with initialization" << endl;
 }
@@ -2344,87 +2338,87 @@ void LB2::initializeLatticeBoundaries() {
 
     unsigned int indexHere = 0;
     // XY
-    for (unsigned int x = 0; x < h_PARAMS.lbSize[0]; ++x) {
-        for (unsigned int y = 0; y < h_PARAMS.lbSize[1]; ++y) {
+    for (unsigned int x = 0; x < h_LB_P.lbSize[0]; ++x) {
+        for (unsigned int y = 0; y < h_LB_P.lbSize[1]; ++y) {
             // bottom
-            indexHere = h_PARAMS.getIndex(x, y, 0);
+            indexHere = h_LB_P.getIndex(x, y, 0);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[4]);
+                generateNode(indexHere, h_LB_P.boundary[4]);
             }
             // top
-            indexHere = h_PARAMS.getIndex(x, y, h_PARAMS.lbSize[2] - 1);
+            indexHere = h_LB_P.getIndex(x, y, h_LB_P.lbSize[2] - 1);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[5]);
+                generateNode(indexHere, h_LB_P.boundary[5]);
             }
         }
     }
 
     // YZ
-    for (unsigned int y = 0; y < h_PARAMS.lbSize[1]; ++y) {
-        for (unsigned int z = 0; z < h_PARAMS.lbSize[2]; ++z) {
+    for (unsigned int y = 0; y < h_LB_P.lbSize[1]; ++y) {
+        for (unsigned int z = 0; z < h_LB_P.lbSize[2]; ++z) {
             // bottom
-            indexHere = h_PARAMS.getIndex(0, y, z);
+            indexHere = h_LB_P.getIndex(0, y, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[0]);
+                generateNode(indexHere, h_LB_P.boundary[0]);
             }
             // top
-            indexHere = h_PARAMS.getIndex(h_PARAMS.lbSize[0] - 1, y, z);
+            indexHere = h_LB_P.getIndex(h_LB_P.lbSize[0] - 1, y, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[1]);
+                generateNode(indexHere, h_LB_P.boundary[1]);
             }
         }
     }
 
     // ZX
-    for (unsigned int z = 0; z < h_PARAMS.lbSize[2]; ++z) {
-        for (unsigned int x = 0; x < h_PARAMS.lbSize[0]; ++x) {
+    for (unsigned int z = 0; z < h_LB_P.lbSize[2]; ++z) {
+        for (unsigned int x = 0; x < h_LB_P.lbSize[0]; ++x) {
             // bottom
-            indexHere = h_PARAMS.getIndex(x, 0, z);
+            indexHere = h_LB_P.getIndex(x, 0, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[2]);
+                generateNode(indexHere, h_LB_P.boundary[2]);
             }
             // top
-            indexHere = h_PARAMS.getIndex(x, h_PARAMS.lbSize[1] - 1, z);
+            indexHere = h_LB_P.getIndex(x, h_LB_P.lbSize[1] - 1, z);
             if (h_nodes.type[indexHere] == GAS) {
-                generateNode(indexHere, h_PARAMS.boundary[3]);
+                generateNode(indexHere, h_LB_P.boundary[3]);
             }
         }
     }
 }
-void LB2::initializeTypes(const wallList& walls, const cylinderList& cylinders, const objectList& objects) {
-    initializeWallBoundaries(walls);
+void LB2::initializeTypes(const Wall2 &h_walls, const Cylinder2 &h_cylinders, const Object2 &h_objects) {
+    initializeWallBoundaries(h_walls);
     // application of solid cylinders
-    initializeCylinderBoundaries(cylinders);
+    initializeCylinderBoundaries(h_cylinders);
     // application of objects
-    initializeObjectBoundaries(objects);
+    initializeObjectBoundaries(h_objects);
     // initializing topography if one is present
     initializeTopography();
 }
-void LB2::initializeWallBoundaries(const wallList& walls) {
-    // const double wallThickness = 2.0 * h_PARAMS.unit.Length;
+void LB2::initializeWallBoundaries(const Wall2 &h_walls) {
+    // const double wallThickness = 2.0 * h_LB_P.unit.Length;
     // SOLID WALLS ////////////////////////
-    for (unsigned int iw = 0; iw < walls.size(); ++iw) {
-        const tVect convertedWallp = walls[iw].p / h_PARAMS.unit.Length;
-        const tVect normHere = walls[iw].n;
-        const unsigned int indexHere = walls[iw].index;
-        const bool slipHere = walls[iw].slip;
-        const bool movingHere = walls[iw].moving;
+    for (unsigned int iw = 0; iw < h_walls.count; ++iw) {
+        const tVect convertedWallp = h_walls.p[iw] / h_LB_P.unit.Length;
+        const tVect normHere = h_walls.n[iw];
+        const unsigned int indexHere = h_walls.index[iw];
+        const bool slipHere = h_walls.slip[iw];
+        const bool movingHere = h_walls.moving[iw];
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
-        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+        for (unsigned int it = 0; it < h_LB_P.totPossibleNodes; ++it) {
             // check if the node is solid
             // all walls have max thickness 2 nodes
-            const tVect pos = h_PARAMS.getPosition(it);
+            const tVect pos = h_LB_P.getPosition(it);
             const double wallDistance = pos.distance2Plane(convertedWallp, normHere);
             if (wallDistance > -2.0 && wallDistance < 0.0) {
                 //check for borders in limted walls
-                if (walls[iw].limited) {
-                    const double xHere = pos.x * h_PARAMS.unit.Length;
-                    const double yHere = pos.y * h_PARAMS.unit.Length;
-                    const double zHere = pos.z * h_PARAMS.unit.Length;
+                if (h_walls.limited[iw]) {
+                    const double xHere = pos.x * h_LB_P.unit.Length;
+                    const double yHere = pos.y * h_LB_P.unit.Length;
+                    const double zHere = pos.z * h_LB_P.unit.Length;
                     // check if beyond limits
-                    if (xHere < walls[iw].xMin || xHere > walls[iw].xMax ||
-                        yHere < walls[iw].yMin || yHere > walls[iw].yMax ||
-                        zHere < walls[iw].zMin || zHere > walls[iw].zMax) {
+                    if (xHere < h_walls.xMin[iw] || xHere > h_walls.xMax[iw] ||
+                        yHere < h_walls.yMin[iw] || yHere > h_walls.yMax[iw] ||
+                        zHere < h_walls.zMin[iw] || zHere > h_walls.zMax[iw]) {
                         continue;
                     }
                 }
@@ -2454,15 +2448,15 @@ void LB2::initializeWallBoundaries(const wallList& walls) {
     }
 
 }
-void LB2::initializeObjectBoundaries(const objectList& objects) {
+void LB2::initializeObjectBoundaries(const Object2 &h_objects) {
     // SOLID WALLS ////////////////////////
-    for (int io = 0; io < objects.size(); ++io) {
-        const tVect convertedPosition = objects[io].x0 / h_PARAMS.unit.Length;
-        const double convertedRadius = objects[io].r / h_PARAMS.unit.Length;
-        const unsigned int indexHere = objects[io].index;
+    for (unsigned int io = 0; io < h_objects.count; ++io) {
+        const tVect convertedPosition = h_objects.x0[io] / h_LB_P.unit.Length;
+        const double convertedRadius = h_objects.r[io] / h_LB_P.unit.Length;
+        const unsigned int indexHere = h_objects.index[io];
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
-        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-            const tVect nodePosition = h_PARAMS.getPosition(it);
+        for (unsigned int it = 0; it < h_LB_P.totPossibleNodes; ++it) {
+            const tVect nodePosition = h_LB_P.getPosition(it);
             if (nodePosition.insideSphere(convertedPosition, convertedRadius)) {
                 generateNode(it, OBJ);
                 h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use io?
@@ -2470,29 +2464,29 @@ void LB2::initializeObjectBoundaries(const objectList& objects) {
         }
     }
 }
-void LB2::initializeCylinderBoundaries(const cylinderList& cylinders) {
+void LB2::initializeCylinderBoundaries(const Cylinder2 &h_cylinders) {
     // SOLID CYLINDERS ////////////////////////
-    for (int ic = 0; ic < cylinders.size(); ++ic) {
-        const tVect convertedCylinderp1 = cylinders[ic].p1 / h_PARAMS.unit.Length;
-        const tVect naxesHere = cylinders[ic].naxes;
-        const double convertedRadius = cylinders[ic].R / h_PARAMS.unit.Length;
-        const unsigned int indexHere = cylinders[ic].index;
-        const bool slipHere = cylinders[ic].slip;
-        const bool movingHere = cylinders[ic].moving;
+    for (unsigned int ic = 0; ic < h_cylinders.count; ++ic) {
+        const tVect convertedCylinderp1 = h_cylinders.p1[ic] / h_LB_P.unit.Length;
+        const tVect naxesHere = h_cylinders.naxes[ic];
+        const double convertedRadius = h_cylinders.R[ic] / h_LB_P.unit.Length;
+        const unsigned int indexHere = h_cylinders.index[ic];
+        const bool slipHere = h_cylinders.slip[ic];
+        const bool movingHere = h_cylinders.moving[ic];
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
-        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+        for (unsigned int it = 0; it < h_LB_P.totPossibleNodes; ++it) {
             // creating solid cells
-            const bool isOutside = h_PARAMS.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, convertedRadius, convertedRadius + 3.0);
-            const bool isInside = h_PARAMS.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, max(convertedRadius - 3.0, 0.0), convertedRadius);
-            if ((cylinders[ic].type == FULL && isInside) ||
-                (cylinders[ic].type == EMPTY && isOutside)) {
+            const bool isOutside = h_LB_P.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, convertedRadius, convertedRadius + 3.0);
+            const bool isInside = h_LB_P.getPosition(it).insideCylinder(convertedCylinderp1, naxesHere, max(convertedRadius - 3.0, 0.0), convertedRadius);
+            if ((h_cylinders.type[ic] == FULL && isInside) ||
+                (h_cylinders.type[ic] == EMPTY && isOutside)) {
                 //check for borders in limted walls
-                if (cylinders[ic].limited) {
-                    const tVect here = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
+                if (h_cylinders.limited[ic]) {
+                    const tVect here = h_LB_P.getPosition(it) * h_LB_P.unit.Length;
                     // check if beyond limits
-                    if (here.x < cylinders[ic].xMin || here.x > cylinders[ic].xMax ||
-                        here.y < cylinders[ic].yMin || here.y > cylinders[ic].yMax ||
-                        here.z < cylinders[ic].zMin || here.z > cylinders[ic].zMax) {
+                    if (here.x < h_cylinders.xMin[ic] || here.x > h_cylinders.xMax[ic] ||
+                        here.y < h_cylinders.yMin[ic] || here.y > h_cylinders.yMax[ic] ||
+                        here.z < h_cylinders.zMin[ic] || here.z > h_cylinders.zMax[ic]) {
                         continue;
                     }
                 }
@@ -2524,32 +2518,32 @@ void LB2::initializeCylinderBoundaries(const cylinderList& cylinders) {
 void LB2::initializeTopography() {
     // Based on initializeTopography()
     
-    const double surfaceThickness = 1.75 * h_PARAMS.unit.Length;
+    const double surfaceThickness = 1.75 * h_LB_P.unit.Length;
 
     // TOPOGRAPHY ////////////////////////
-    if (h_PARAMS.lbTopography) {
-        lbTop.readFromFile(init_params.lbTopographyFile, h_PARAMS.translateTopographyX, h_PARAMS.translateTopographyY, h_PARAMS.translateTopographyZ);
+    if (h_LB_P.lbTopography) {
+        lbTop.readFromFile(init_params.lbTopographyFile, h_LB_P.translateTopographyX, h_LB_P.translateTopographyY, h_LB_P.translateTopographyZ);
         lbTop.show();
         // check if topography grid contains the fluid domain
-        ASSERT(lbTop.coordX[0] < h_PARAMS.unit.Length);
-        ASSERT(lbTop.coordY[0] < h_PARAMS.unit.Length);
+        ASSERT(lbTop.coordX[0] < h_LB_P.unit.Length);
+        ASSERT(lbTop.coordY[0] < h_LB_P.unit.Length);
 
         cout << "lbTop.coordX[lbTop.sizeX - 1]=" << lbTop.coordX[lbTop.sizeX - 1] << endl;
-        cout << "lbSize[0]) * unit.Length=" << h_PARAMS.lbSize[0] * h_PARAMS.unit.Length << endl;
-        ASSERT(lbTop.coordX[lbTop.sizeX - 1] > h_PARAMS.lbSize[0] * h_PARAMS.unit.Length);
+        cout << "lbSize[0]) * unit.Length=" << h_LB_P.lbSize[0] * h_LB_P.unit.Length << endl;
+        ASSERT(lbTop.coordX[lbTop.sizeX - 1] > h_LB_P.lbSize[0] * h_LB_P.unit.Length);
         cout << "lbTop.coordY[lbTop.sizeY - 1]=" << lbTop.coordY[lbTop.sizeY - 1] << endl;
-        cout << "lbSize[1]) * unit.Length=" << h_PARAMS.lbSize[1] * h_PARAMS.unit.Length << endl;
-        ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_PARAMS.lbSize[1] * h_PARAMS.unit.Length);
+        cout << "lbSize[1]) * unit.Length=" << h_LB_P.lbSize[1] * h_LB_P.unit.Length << endl;
+        ASSERT(lbTop.coordY[lbTop.sizeY - 1] > h_LB_P.lbSize[1] * h_LB_P.unit.Length);
 
         // @todo This was previously OpenMP parallel, critical section around generateNode()
-        for (unsigned int ix = 1; ix < h_PARAMS.lbSize[0] - 1; ++ix) {
-            for (unsigned int iy = 1; iy < h_PARAMS.lbSize[1] - 1; ++iy) {
-                for (unsigned int iz = 1; iz < h_PARAMS.lbSize[2] - 1; ++iz) {
-                    const tVect nodePosition = tVect(ix, iy, iz) * h_PARAMS.unit.Length;
+        for (unsigned int ix = 1; ix < h_LB_P.lbSize[0] - 1; ++ix) {
+            for (unsigned int iy = 1; iy < h_LB_P.lbSize[1] - 1; ++iy) {
+                for (unsigned int iz = 1; iz < h_LB_P.lbSize[2] - 1; ++iz) {
+                    const tVect nodePosition = tVect(ix, iy, iz) * h_LB_P.unit.Length;
                     const double distanceFromTopography = lbTop.distance(nodePosition);
 
                     if (distanceFromTopography < 0.0 && distanceFromTopography>-1.0 * surfaceThickness) {
-                        const unsigned int it = ix + iy * h_PARAMS.lbSize[0] + iz * h_PARAMS.lbSize[0] * h_PARAMS.lbSize[1];
+                        const unsigned int it = ix + iy * h_LB_P.lbSize[0] + iz * h_LB_P.lbSize[0] * h_LB_P.lbSize[1];
                         generateNode(it, STAT_WALL);
                         h_nodes.type[it] = TOPO;
                     }
@@ -2561,13 +2555,13 @@ void LB2::initializeTopography() {
 void LB2::initializeInterface() {
     // TODO Currently only default case is supported
     // creates an interface electing interface cells from active cells
-    if (h_PARAMS.lbTopographySurface) {
+    if (h_LB_P.lbTopographySurface) {
         // Formerly setTopographySurface()
         // @todo This was previously OpenMP parallel, critical section around generateNode()
-        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+        for (unsigned int it = 0; it < h_LB_P.totPossibleNodes; ++it) {
             if (h_nodes.type[it] == GAS) {
                 // control is done in real coordinates
-                const tVect nodePosition = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
+                const tVect nodePosition = h_LB_P.getPosition(it) * h_LB_P.unit.Length;
                 const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
                 if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
                     generateNode(it, LIQUID);
@@ -2615,19 +2609,19 @@ void LB2::initializeInterface() {
         default:
             {
                 cout << "Initializing interface using box defined in config file:" << endl;
-                cout << "X=(" << double(h_PARAMS.freeSurfaceBorders[0]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[1]) * h_PARAMS.unit.Length << ")" << endl;
-                cout << "Y=(" << double(h_PARAMS.freeSurfaceBorders[2]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[3]) * h_PARAMS.unit.Length << ")" << endl;
-                cout << "Z=(" << double(h_PARAMS.freeSurfaceBorders[4]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[5]) * h_PARAMS.unit.Length << ")" << endl;
-                for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+                cout << "X=(" << double(h_LB_P.freeSurfaceBorders[0]) * h_LB_P.unit.Length << ", " << double(h_LB_P.freeSurfaceBorders[1]) * h_LB_P.unit.Length << ")" << endl;
+                cout << "Y=(" << double(h_LB_P.freeSurfaceBorders[2]) * h_LB_P.unit.Length << ", " << double(h_LB_P.freeSurfaceBorders[3]) * h_LB_P.unit.Length << ")" << endl;
+                cout << "Z=(" << double(h_LB_P.freeSurfaceBorders[4]) * h_LB_P.unit.Length << ", " << double(h_LB_P.freeSurfaceBorders[5]) * h_LB_P.unit.Length << ")" << endl;
+                for (unsigned int it = 0; it < h_LB_P.totPossibleNodes; ++it) {
                     if (h_nodes.type[it] == GAS) {
                         // creating fluid cells
-                        const tVect pos = h_PARAMS.getPosition(it);
-                        if ((pos.x > h_PARAMS.freeSurfaceBorders[0]) &&
-                            (pos.x < h_PARAMS.freeSurfaceBorders[1]) &&
-                            (pos.y > h_PARAMS.freeSurfaceBorders[2]) &&
-                            (pos.y < h_PARAMS.freeSurfaceBorders[3]) &&
-                            (pos.z > h_PARAMS.freeSurfaceBorders[4]) &&
-                            (pos.z < h_PARAMS.freeSurfaceBorders[5])) {
+                        const tVect pos = h_LB_P.getPosition(it);
+                        if ((pos.x > h_LB_P.freeSurfaceBorders[0]) &&
+                            (pos.x < h_LB_P.freeSurfaceBorders[1]) &&
+                            (pos.y > h_LB_P.freeSurfaceBorders[2]) &&
+                            (pos.y < h_LB_P.freeSurfaceBorders[3]) &&
+                            (pos.z > h_LB_P.freeSurfaceBorders[4]) &&
+                            (pos.z < h_LB_P.freeSurfaceBorders[5])) {
                             generateNode(it, LIQUID);
                         }
                     }
@@ -2652,7 +2646,7 @@ void LB2::generateNode(unsigned int coord, types typeHere) {
     h_nodes.basal[coord] = false;
 
     // set centrifugal acceleration
-    h_nodes.centrifugalForce[coord] = computeCentrifugal(h_nodes.getPosition(coord), PARAMS.rotationCenter, PARAMS.rotationSpeed);
+    h_nodes.centrifugalForce[coord] = computeCentrifugal(h_nodes.getPosition(coord), LB_P.rotationCenter, LB_P.rotationSpeed);
 
     // assign neighbor nodes
     for (unsigned int j = 1; j < lbmDirec; ++j) {
@@ -2683,12 +2677,12 @@ void LB2::initializeVariables() {
     double minProjection = std::numeric_limits<double>::max();
     double maxProjection = -std::numeric_limits<double>::max();
         
-    if (!PARAMS.solveCentrifugal) {
+    if (!LB_P.solveCentrifugal) {
         // TODO openmp reduction?
         for (unsigned int i = 0; i < h_nodes.count; ++i) {
             if (h_nodes.isActive(i)) {
                 const tVect position = h_nodes.getPosition(i);
-                const double projection = position.dot(PARAMS.lbF);
+                const double projection = position.dot(LB_P.lbF);
                 minProjection = std::min(minProjection, projection);
                 maxProjection = std::max(maxProjection, projection);
             }
@@ -2730,22 +2724,22 @@ void LB2::initializeVariables() {
             // setting macroscopic variables
             // density is calculated using hydrostatic profile
             const tVect position = h_nodes.getPosition(i);
-            if (!PARAMS.solveCentrifugal) {
-                const double projection = position.dot(PARAMS.lbF);
-                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity + 3.0 * PARAMS.fluidMaterial.initDensity * (projection-minProjection), PARAMS.initVelocity, PARAMS.fluidMaterial.initDensity, PARAMS.fluidMaterial.initDynVisc, PARAMS.lbF, 1.0, Zero);
+            if (!LB_P.solveCentrifugal) {
+                const double projection = position.dot(LB_P.lbF);
+                h_nodes.initialize(i, LB_P.fluidMaterial.initDensity + 3.0 * LB_P.fluidMaterial.initDensity * (projection-minProjection), LB_P.initVelocity, LB_P.fluidMaterial.initDensity, LB_P.fluidMaterial.initDynVisc, LB_P.lbF, 1.0, Zero);
             } else {
                 const double projection = position.dot(h_nodes.centrifugalForce[i]);
-                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity + 3.0 * PARAMS.fluidMaterial.initDensity * (projection-minProjection), PARAMS.initVelocity, PARAMS.fluidMaterial.initDensity, PARAMS.fluidMaterial.initDynVisc, PARAMS.lbF, 1.0, PARAMS.rotationSpeed);
+                h_nodes.initialize(i, LB_P.fluidMaterial.initDensity + 3.0 * LB_P.fluidMaterial.initDensity * (projection-minProjection), LB_P.initVelocity, LB_P.fluidMaterial.initDensity, LB_P.fluidMaterial.initDynVisc, LB_P.lbF, 1.0, LB_P.rotationSpeed);
             }
         }// INTERFACE NODES ////
         else if (h_nodes.type[i] == INTERFACE) {
             massInterface += 0.5;
             // setting macroscopic variables
-            h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity, PARAMS.initVelocity, 0.5 * PARAMS.fluidMaterial.initDensity, PARAMS.fluidMaterial.initDynVisc, PARAMS.lbF, 1.0, PARAMS.rotationSpeed);
+            h_nodes.initialize(i, LB_P.fluidMaterial.initDensity, LB_P.initVelocity, 0.5 * LB_P.fluidMaterial.initDensity, LB_P.fluidMaterial.initDynVisc, LB_P.lbF, 1.0, LB_P.rotationSpeed);
         }
 
     }
-    cout << "Approximate volume = " << massFluid * PARAMS.unit.Volume << " (fluid body), " << massInterface * PARAMS.unit.Volume << " (interface), " << (massFluid + massInterface) * PARAMS.unit.Volume << " (tot), " << endl;
+    cout << "Approximate volume = " << massFluid * LB_P.unit.Volume << " (fluid body), " << massInterface * LB_P.unit.Volume << " (interface), " << (massFluid + massInterface) * LB_P.unit.Volume << " (tot), " << endl;
 }
 void LB2::initializeWalls() {
     cout << "Initializing wall nodes" << endl;
@@ -2766,7 +2760,7 @@ void LB2::initializeWalls() {
                 h_nodes.type[i] == TOPO) {
                 // reset velocity and mass (useful for plotting)
                 // density=0.0; velocity=(0.0,0.0,0.0), mass=0.0; viscosity=0.0; force=(0.0,0.0,0.0)
-                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity, Zero, zero, zero, Zero, 1.0, Zero);
+                h_nodes.initialize(i, LB_P.fluidMaterial.initDensity, Zero, zero, zero, Zero, 1.0, Zero);
             }// DYNAMIC WALL NODES ////
             else if (h_nodes.type[i] == DYN_WALL || 
                      h_nodes.type[i] == SLIP_DYN_WALL || 
@@ -2776,18 +2770,18 @@ void LB2::initializeWalls() {
                 const tVect nodePosition = h_nodes.getPosition(i);
                 unsigned int solidIndex = h_nodes.solidIndex[i];
                 // wall
-                if (solidIndex < h_walls.count && nodePosition.insidePlane(h_walls.p[solidIndex] / PARAMS.unit.Length, h_walls.n[solidIndex])) {
-                    solidVelocity = h_walls.getSpeed(solidIndex, nodePosition * PARAMS.unit.Length) / PARAMS.unit.Speed;
+                if (solidIndex < h_walls.count && nodePosition.insidePlane(h_walls.p[solidIndex] / LB_P.unit.Length, h_walls.n[solidIndex])) {
+                    solidVelocity = h_walls.getSpeed(solidIndex, nodePosition * LB_P.unit.Length) / LB_P.unit.Speed;
                 }// cylinder
-                else if (solidIndex < h_cylinders.count && !nodePosition.insideCylinder(h_cylinders.p1[solidIndex] / PARAMS.unit.Length, h_cylinders.naxes[solidIndex], 0.0, h_cylinders.R[solidIndex] / PARAMS.unit.Length)) {
-                    solidVelocity = h_cylinders.getSpeed(solidIndex, nodePosition * PARAMS.unit.Length) / PARAMS.unit.Speed;
+                else if (solidIndex < h_cylinders.count && !nodePosition.insideCylinder(h_cylinders.p1[solidIndex] / LB_P.unit.Length, h_cylinders.naxes[solidIndex], 0.0, h_cylinders.R[solidIndex] / LB_P.unit.Length)) {
+                    solidVelocity = h_cylinders.getSpeed(solidIndex, nodePosition * LB_P.unit.Length) / LB_P.unit.Speed;
                 }// objects
-                else if (solidIndex < h_objects.count && nodePosition.insideSphere(h_objects.x0[solidIndex] / PARAMS.unit.Length, h_objects.r[solidIndex] / PARAMS.unit.Length)) {
-                    solidVelocity = h_objects.x1[solidIndex] / PARAMS.unit.Speed;
+                else if (solidIndex < h_objects.count && nodePosition.insideSphere(h_objects.x0[solidIndex] / LB_P.unit.Length, h_objects.r[solidIndex] / LB_P.unit.Length)) {
+                    solidVelocity = h_objects.x1[solidIndex] / LB_P.unit.Speed;
                 }
                 // reset velocity and mass (useful for plotting)
                 // density=0.0; velocity=solidVelocity, mass=0.0; viscosity=0.0; force=(0.0,0.0,0.0)
-                h_nodes.initialize(i, PARAMS.fluidMaterial.initDensity, solidVelocity, zero, zero, Zero, 1.0, PARAMS.rotationSpeed);
+                h_nodes.initialize(i, LB_P.fluidMaterial.initDensity, solidVelocity, zero, zero, Zero, 1.0, LB_P.rotationSpeed);
             }
             // add node to list
             wallNodes.push_back(i);
@@ -2840,7 +2834,7 @@ void LB2::initializeLists() {
     
     cout << " done" << endl;
 }
-void LB2::step(DEM &dem, bool io_demSolver) {
+void LB2::step(DEM2 &dem, bool io_demSolver) {
     if (io_demSolver) {
         this->syncDEMIn(dem.elmts, dem.particles, dem.walls, dem.objects);
         this->latticeBoltzmannCouplingStep(dem.newNeighborList);
@@ -2850,7 +2844,7 @@ void LB2::step(DEM &dem, bool io_demSolver) {
         this->latticeBoltzmannStep();
 
         // Lattice Boltzmann core steps
-        if (PARAMS.freeSurface) {
+        if (LB_P.freeSurface) {
             this->latticeBoltzmannFreeSurfaceStep();
         }
     }
@@ -2876,14 +2870,14 @@ void LB2::syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, 
 }
 void LB2::setParams(const LBParams& params, const LBInitParams& initParams, bool skip_sync) {
     // CPU
-    h_PARAMS = params;
+    h_LB_P = params;
     init_params = initParams;
     // CUDA
     if (!skip_sync)
-        syncParams();
+        syncParamsToDevice();
 }
-void LB2::syncParams() {
+void LB2::syncParamsToDevice() {
 #ifdef USE_CUDA
-    CUDA_CALL(cudaMemcpyToSymbol(d_PARAMS, &h_PARAMS, sizeof(LBParams)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_LB_P, &h_LB_P, sizeof(LBParams)));
 #endif
 }

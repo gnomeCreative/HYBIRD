@@ -4,9 +4,9 @@
 #include "macros.h"
 
 #ifdef USE_CUDA
-__constant__ LBParams d_PARAMS;
+__constant__ LBParams d_LB_P;
 #endif
-LBParams h_PARAMS;
+LBParams h_LB_P;
 
 void LBParams::latticeDefinition() {
     // LATTICE PARAMETERS  ////////////////
