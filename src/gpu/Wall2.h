@@ -52,7 +52,7 @@ struct Wall2 {
     void initForces();
 
     // computes the speed of a point of the wall
-    __host__ __device__ tVect getSpeed(const unsigned int i, const tVect pt) const {
+    __host__ __device__ __forceinline__ tVect getSpeed(const unsigned int i, const tVect &pt) const {
         if (moving[i]) {
             // distance rotation center
             const tVect distFromCenter = pt - rotCenter[i];
@@ -63,6 +63,10 @@ struct Wall2 {
         } else {
             return tVect(0.0, 0.0, 0.0);
         }
+    }
+    __host__ __device__ __forceinline__ double dist(const unsigned int i, const tVect &pt) const { // ACHTUNG!! This assume vector n is unitary
+        const tVect d = pt - p[i];
+        return n[i].dot(d);
     }
 
 };

@@ -123,6 +123,10 @@ public:
      * Atomically add vec to this (equivalent to operator +=, but safe in parallel)
      */
     __host__ __device__ void atomicAdd(const tVect& vec);
+    /**
+     * Atomically add vec to this (equivalent to operator -=, but safe in parallel)
+     */
+    __host__ __device__ void atomicSub(const tVect& vec);
     // mathematical operations
     tVect transport() const;
     tVect abs() const;

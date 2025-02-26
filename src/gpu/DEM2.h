@@ -60,7 +60,9 @@ class DEM2 {
     template<int impl>
     void objectParticleContacts();
     template<int impl>
-    void cylinderParticelContacts();
+    void cylinderParticleContacts();
+    template<int impl>
+    void newtonEquationsSolution();
 
     Particle2 &getParticles();
     Element2 &getElements();

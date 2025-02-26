@@ -49,7 +49,7 @@ struct Cylinder2 {
     void cylinderShow(unsigned int i) const;
 
     // get tangential speed of a point rotating with the cylinder
-    __host__ __device__ tVect getSpeed(unsigned int i, tVect pt) const {
+    __host__ __device__ __forceinline__ tVect getSpeed(unsigned int i, const tVect &pt) const {
         if (moving[i]) {
             // distance to point one
             const tVect pt1 = pt - p1[i];
@@ -61,6 +61,38 @@ struct Cylinder2 {
             return omega[i].cross(distFromAxes);
         }
         return tVect(0.0, 0.0, 0.0);
+    }
+    __host__ __device__ __forceinline__ double dist(unsigned int i, const tVect &pt) const {
+        // calculates the distance between a given point and the inner surface of the cylinder
+
+        // distance to point 1 of axis
+        const tVect p1dist = pt - p1[i];
+        // same but projected on the axis
+        const tVect p1distax = (p1dist.dot(naxes[i])) * naxes[i];
+        // distance of point from cylinder axis
+        const tVect p1distcylinder = p1distax - p1dist;
+        // norm of the distance
+        if (type[i] == EMPTY) return (R[i] - p1distcylinder.norm());
+        else if (type[i] == FULL) return (p1distcylinder.norm() - R[i]);
+        else {
+            cout << "Problem with cylinder type" << endl;
+            assert(false);
+        }
+    }
+
+    __host__ __device__ __forceinline__ tVect vecDist(unsigned int i, const tVect &pt) const {
+        // calculates the distance between a given point and the surface of the cylinder
+
+        // distance to point one
+        const tVect pt1 = pt - p1[i];
+        // projected point on the cylinder axes
+        const tVect projectedPoint = p1[i] + (naxes[i].dot(pt1)) * naxes[i];
+        // distance of point from axes
+        const tVect distFromAxes = pt - projectedPoint;
+        // vectorized distance of point from the cylinder surface
+        const tVect d = pt - (projectedPoint + distFromAxes / distFromAxes.norm() * R[i]);
+        return d;
+
     }
     double segmentIntercept(const unsigned int i, const tVect& start, const tVect& dir) const {
         /// Line segment VS cylinder

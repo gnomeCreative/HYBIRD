@@ -753,10 +753,12 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
             d_elements->FSpringP[e_i].atomicAdd(tangForce);
             d_elements->FParticle[e_i].atomicAdd(tangForce);
             d_elements->solidIntensity[e_i].atomicAdd(tangForce.abs());
+            /* @todo springs
             if (DEM_P.staticFrictionSolve) {
                 // @todo, why is this equals? couldn't there be multiple that take this path on same element?
                 d_elements->slippingCase[e_i] = elongation_new->slippingCase;
             }
+            */
 
         }
         if (!d_particles->isGhost[p_j]) {
@@ -764,10 +766,12 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
             d_elements->FSpringP[e_j].atomicSub(tangForce);
             d_elements->FParticle[e_j].atomicSub(tangForce);
             d_elements->solidIntensity[e_j].atomicAdd(tangForce.abs());
+            /* @todo springs
             if (DEM_P.staticFrictionSolve) {
                 // @todo, why is this equals? couldn't there be multiple that take this path on same element?
                 d_elements->slippingCase[e_j] = elongation_new->slippingCase;
             }
+            */
         }
 
     }
@@ -902,17 +906,583 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
 }
 template<>
 void DEM2::particleParticleContacts<CUDA>() {
-    { // Reset forces (this implementation feels grim)
-        // Launch cuda kernel to update
-        int blockSize = 0;  // The launch configurator returned block size
-        int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
-        int gridSize = 0;  // The actual grid size needed, based on input size
-        cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_particleParticleContacts, 0, hd_particles.activeCount);
-        // Round up to accommodate required threads
-        gridSize = (hd_particles.activeCount + blockSize - 1) / blockSize;
-        d_particleParticleContacts << <gridSize, blockSize >> > (d_particles, d_elements);
-        CUDA_CHECK();
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_particleParticleContacts, 0, hd_particles.activeCount);
+    // Round up to accommodate required threads
+    gridSize = (hd_particles.activeCount + blockSize - 1) / blockSize;
+    d_particleParticleContacts<<<gridSize, blockSize>>>(d_particles, d_elements);
+    CUDA_CHECK();
+}
+
+__device__ __forceinline__ void d_wallParticleCollision(Particle2 *d_particles, Wall2 *d_walls, Element2* d_elements, const unsigned int p_i, const unsigned int w_i, const double overlap, Elongation* elongation_new) {
+
+    // pointers to element
+    const unsigned int e_i = d_particles->clusterIndex[p_i];
+
+    // NORMAL FORCE ///////////////////////////////////////////////////////////////////
+
+    // geometry ///////////////
+    // particle radius
+    const double radJ = d_particles->r[p_i];
+    // first local unit vector (normal)
+    const tVect en = d_walls->n[e_i];
+    // speed of the wall at contact point
+    const tVect contactPointVelocity = d_walls->getSpeed(e_i, d_particles->x0[p_i]); // fix this, contact point not defined
+    // relative velocity
+    const tVect relVel = d_particles->x1[p_i] - contactPointVelocity;
+    // relative normal velocity (modulus)
+    const double normRelVel = relVel.dot(en);
+    // relative normal velocity
+    const tVect normalRelVel = en*normRelVel;
+
+    // force computation /////////////////////////////////
+    double normNormalForce = normalContact(overlap, normRelVel, radJ, d_elements->m[e_i]); // removed 2.0 *
+
+    //    switch (problemName) {
+    //        case TRIAXIAL:
+    //        {
+    //            if (wallI->index > 5) {
+    //                normNormalForce /= 10;
+    //            }
+    //        }
+    //    }
+
+
+    // Overlap elastic potential energy
+    //                    energy.elastic+=fn*xj/2.5;
+
+    // force application ///////////////////////////////////
+    // vectorial normal force
+    const tVect normalForce = en*normNormalForce;
+
+    // cluster geometry
+    // vectorized radius
+    const tVect vecRadJ = -radJ*en;
+    // vectorized distance contactPoint-center of cluster
+    tVect centerDistJ = vecRadJ;
+    if (d_elements->size[e_i] > 1) {
+        // vectorized distance contactPoint-center of cluster
+        centerDistJ += (d_particles->x0[p_i] - d_elements->xp0[e_i]);
     }
+
+    // force updating
+    d_elements->FWall[e_i].atomicAdd(normalForce);
+    d_walls->FParticle[w_i].atomicSub(normalForce);
+    d_elements->solidIntensity[e_i].atomicAdd(normalForce.abs());
+    // torque updating
+    if (d_elements->size[e_i] > 1) {
+        d_elements->MWall[e_i].atomicAdd(centerDistJ.cross(normalForce));
+    }
+
+    // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
+
+    // angular velocities (global reference frame)
+    const tVect wJ = d_elements->wpGlobal[e_i]; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
+    // relative velocity at contact point
+    const tVect relVelContact = relVel + wJ.cross(vecRadJ);
+    // tangential component of relative velocity
+    const tVect tangRelVelContact = relVelContact - normalRelVel;
+    // norm of tangential velocity
+    const double normTangRelVelContact = tangRelVelContact.norm();
+
+
+    // checking if there is any tangential motion
+    if (normTangRelVelContact != 0.0) {
+
+        // update spring
+        /** @todo springs
+        if (DEM_P.staticFrictionSolve) {
+            const double elong_old_norm = elongation_new->e.norm();
+
+            double normElong = elongation_new->e.dot(en);
+            const tVect normalElong = en*normElong;
+
+            elongation_new->e = elongation_new->e - normalElong;
+
+            if (elongation_new->e.norm() != 0) {
+                const double scaling = elong_old_norm / elongation_new->e.norm();
+                elongation_new->e = elongation_new->e*scaling;
+            } else {
+                const double scaling = 0.0;
+                elongation_new->e = elongation_new->e*scaling;
+            }
+        }
+        */
+
+        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, d_elements->m[e_i], elongation_new, DEM_P.sphereMat.frictionCoefWall,
+            DEM_P.sphereMat.linearStiff, DEM_P.sphereMat.viscTang);
+
+        // torque updating
+        d_elements->MWall[e_i].atomicSub(centerDistJ.cross(tangForce));
+        // force updating
+        d_elements->FSpringW[e_i].atomicSub(tangForce);
+        d_elements->FWall[e_i].atomicSub(tangForce);
+        d_elements->solidIntensity[e_i].atomicAdd(tangForce.abs());
+        d_walls->FParticle[w_i].atomicAdd(tangForce);
+
+        /** @todo springs
+        if (DEM_P.staticFrictionSolve) {
+            // @todo, this is suspicious, race condition?
+            elmtJ->slippingCase = elongation_new->slippingCase;
+        }
+        */
+
+    }
+    //ROLLING
+
+    const tVect rollingMoment = rollingContact(Zero, wJ, radJ, normNormalForce,
+            2.0 * DEM_P.sphereMat.rollingCoefPart);
+
+    // @todo Particles are never currently ghost, this if is always true, remove?
+    if (!d_particles->isGhost[p_i]) {
+        d_elements->MRolling[e_i].atomicAdd(rollingMoment);
+    }
+
+    // save overlap
+    atomicMax(&d_elements->maxOverlap[e_i], overlap);
+
+    // updating connectivity
+    atomicInc(&d_elements->coordination[e_i], std::numeric_limits<unsigned int>::max());
+}
+__global__ void d_wallParticleContacts(Particle2* d_particles, Wall2* d_walls, Element2 *d_elements) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (tid >= d_particles->activeCount)
+        return;
+
+    const unsigned int p_i = d_particles->activeI[tid];
+    const tVect p_x0 = d_particles->x0[p_i];
+    const tVect p_x0_Xp = p_x0.dot(Xp);
+    const tVect p_x0_Yp = p_x0.dot(Yp);
+    const tVect p_x0_Zp = p_x0.dot(Zp);
+
+    // Check each particle against every wall
+    // We don't (currently) have a nearWallTable
+    for (unsigned int w_i = 0; w_i < d_walls->count; ++w_i) {
+        
+
+        // distance from wall (norm)
+        const double distance = d_walls->dist(w_i, p_x0);
+
+        if (d_walls->limited[w_i]) {
+            if (p_x0_Xp < d_walls->xMin[w_i] ||
+                p_x0_Xp > d_walls->xMax[w_i] ||
+                p_x0_Yp < d_walls->yMin[w_i] ||
+                p_x0_Yp > d_walls->yMax[w_i] ||
+                p_x0_Zp < d_walls->zMin[w_i] ||
+                p_x0_Zp > d_walls->zMax[w_i] ||
+                // check if we are above the plane
+                distance < 0.0
+                ) {
+                continue;
+            }
+        }
+        
+        // radius
+        const double rj = d_particles->r[p_i];
+
+        // distance before contact
+        const double overlap = rj - distance;
+
+        if (overlap > 0.0) {
+            // pointer to elongation, initially pointing to an empty spring
+            Elongation* elongation_here_new;
+            /** @todo springs
+            if (DEM_P.staticFrictionSolve) {
+                const unsigned int indexI = d_walls->index[w_i];
+                elongation_here_new = findSpring(1, indexI, p_i);
+            }
+            */
+            d_wallParticleCollision(d_particles, d_walls, d_elements, w_i, p_i, overlap, elongation_here_new);
+        }
+    }
+}
+template<>
+void DEM2::wallParticleContacts<CUDA>() {
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_particleParticleContacts, 0, hd_particles.activeCount);
+    // Round up to accommodate required threads
+    gridSize = (hd_particles.activeCount + blockSize - 1) / blockSize;
+    d_wallParticleContacts<<<gridSize, blockSize>>>(d_particles, d_walls, d_elements);
+    CUDA_CHECK();
+}
+__device__ __forceinline__ void d_objectParticleCollision(Particle2 *d_particles, Object2 *d_objects, Element2* d_elements, const unsigned int o_i, const unsigned int p_i, const tVect& vectorDistance, Elongation* elongation_new) {
+    // pointers to element
+    const unsigned int e_i = d_particles->clusterIndex[p_i];
+
+    
+    // NORMAL FORCE ///////////////////////////////////////////////////////////////////
+
+    // geometry ///////////////
+    // particle radius
+    const double radJ = d_particles->r[p_i];
+    // distance from object (norm)
+    const double distance = vectorDistance.norm();
+    // distance before contact
+    double overlap = radJ + d_objects->r[o_i] - distance;
+    // first local unit vector (normal)
+    const tVect en = (1.0 / distance) * vectorDistance;
+    // speed of the wall at contact point
+    const tVect contactPointVelocity = d_objects->x1[o_i]; // fix this, contact point not defined
+    // relative velocity
+    const tVect relVel = d_particles->x1[p_i] - contactPointVelocity;
+    // relative normal velocity (modulus)
+    const double normRelVel = relVel.dot(en);
+    // relative normal velocity
+    const tVect normalRelVel = en*normRelVel;
+
+    // force computation /////////////////////////////////
+    const double normNormalForce = normalContact(overlap, normRelVel, radJ, d_elements->m[e_i]); // was 2.0 * overlap
+
+    // Overlap elastic potential energy
+    //                    energy.elastic+=fn*xj/2.5;
+
+    // force application ///////////////////////////////////
+    // vectorial normal force
+    const tVect normalForce = en*normNormalForce;
+
+    // cluster geometry
+    // vectorized radius
+    const tVect vecRadJ = -radJ*en;
+    // vectorized distance contactPoint-center of cluster
+    const tVect centerDistJ = vecRadJ + (d_particles->x0[p_i] - d_elements->xp0[e_i]);
+
+    // force updating
+    d_elements->FWall[e_i].atomicAdd(normalForce);
+    d_objects->FParticle[o_i].atomicSub(normalForce);
+    d_elements->solidIntensity[e_i].atomicAdd(normalForce.abs());
+
+    // torque updating
+    if (d_elements->size[e_i] > 1) {
+        d_elements->MWall[e_i].atomicAdd(centerDistJ.cross(normalForce));
+    }
+
+    // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
+
+    // angular velocities (global reference frame)
+    const tVect wJ = d_elements->wpGlobal[e_i]; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
+    // relative velocity at contact point
+    const tVect relVelContact = relVel + wJ.cross(vecRadJ);
+    // tangential component of relative velocity
+    const tVect tangRelVelContact = relVelContact - normalRelVel;
+    // norm of tangential velocity
+    const double normTangRelVelContact = tangRelVelContact.norm();
+    // checking if there is any tangential motion
+    if (normTangRelVelContact != 0.0) {
+        // update spring
+        if (DEM_P.staticFrictionSolve) {
+
+            const double elong_old_norm = elongation_new->e.norm();
+
+            double normElong = elongation_new->e.dot(en);
+            const tVect normalElong = en*normElong;
+
+            elongation_new->e = elongation_new->e - normalElong;
+
+            if (elongation_new->e.norm() != 0) {
+                const double scaling = elong_old_norm / elongation_new->e.norm();
+                elongation_new->e = elongation_new->e*scaling;
+            } else {
+                const double scaling = 0.0;
+                elongation_new->e = elongation_new->e*scaling;
+            }
+        }
+
+        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, d_elements->m[e_i], elongation_new, DEM_P.sphereMat.frictionCoefObj,
+                DEM_P.sphereMat.linearStiff, DEM_P.sphereMat.viscTang);
+
+        // torque updating
+        d_elements->MWall[e_i].atomicSub(centerDistJ.cross(tangForce));
+        // force updating
+        d_elements->FSpringW[e_i].atomicSub(tangForce);
+        d_elements->FWall[e_i].atomicSub(tangForce);
+        d_elements->solidIntensity->atomicAdd(tangForce.abs());
+        d_objects->FParticle[o_i].atomicAdd(tangForce);
+
+    }
+    //ROLLING
+
+    tVect rollingMoment = rollingContact(Zero, wJ, radJ, normNormalForce,
+            2.0 * DEM_P.sphereMat.rollingCoefPart);
+
+    // @todo Remove redundant if(true)? there are no longer any ghosts
+    if (!d_particles->isGhost[p_i]) {
+        d_elements->MRolling[e_i].atomicAdd(rollingMoment);
+    }
+
+    // save overlap
+    atomicMax(&d_elements->maxOverlap[e_i], overlap);
+
+    // updating connectivity
+    atomicInc(&d_elements->coordination[e_i], std::numeric_limits<unsigned int>::max());
+}
+__global__ void d_objectParticleContacts(Particle2* d_particles, Object2* d_objects, Element2* d_elements) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (tid >= d_particles->activeCount)
+        return;
+
+    const unsigned int p_i = d_particles->activeI[tid];
+
+    // Check each particle against every object
+    // We don't (currently) have a nearObjectTable
+    for (unsigned int o_i = 0; o_i < d_objects->count; ++o_i) {
+        // radius
+        const double rj = d_particles->r[p_i];
+        // distance from object (vector)
+        const tVect vectorDistance = d_particles->x0[p_i] - d_objects->x0[o_i];
+        // distance from object (norm)
+        const double distance = vectorDistance.norm();
+        // distance before contact
+        const double overlap = rj + d_objects->r[o_i] - distance;
+
+        if (overlap > 0.0) {
+            // pointer to elongation, initially pointing to an empty spring
+            Elongation* elongation_here_new;
+            /** @todo springs
+            if (staticFrictionSolve) {
+                const unsigned int indexI = d_objects->index[o_i];
+                elongation_here_new = findSpring(3, indexI, p_i);
+            }
+            */
+            d_objectParticleCollision(d_particles, d_objects, d_elements, o_i, p_i, vectorDistance, elongation_here_new);
+        }
+    }
+}
+template<>
+void DEM2::objectParticleContacts<CUDA>() {
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_objectParticleContacts, 0, hd_particles.activeCount);
+    // Round up to accommodate required threads
+    gridSize = (hd_particles.activeCount + blockSize - 1) / blockSize;
+    d_objectParticleContacts<<<gridSize, blockSize>>>(d_particles, d_objects, d_elements);
+    CUDA_CHECK();
+}
+
+__device__ __forceinline__ void d_cylinderParticleCollision(Particle2* d_particles, Cylinder2* d_cylinders, Element2* d_elements, const unsigned int c_i, const unsigned int p_i, const double overlap, Elongation* elongation_new) {
+    // pointers to element
+    const unsigned int e_i = d_particles->clusterIndex[p_i];
+
+    // NORMAL FORCE ///////////////////////////////////////////////////////////////////
+
+    // geometry ///////////////
+    // particle radius
+    const double radJ = d_particles->r[p_i];
+    // vectorial distance
+    const tVect vecDistance = d_cylinders->vecDist(c_i, d_particles->x0[p_i]);
+    // contact point
+    const tVect contactPoint = d_particles->x0[p_i] - vecDistance;
+    // first local unit vector (normal)
+    const tVect en = vecDistance / (radJ - overlap);
+    // speed of the cylinder at contact point
+    const tVect contactPointVelocity = d_cylinders->getSpeed(c_i, contactPoint);
+    // relative velocity
+    const tVect relVel = d_particles->x1[p_i] - contactPointVelocity;
+    // relative normal velocity (modulus)
+    const double normRelVel = relVel.dot(en);
+    // relative normal velocity
+    const tVect normalRelVel = en*normRelVel;
+
+    // force computation /////////////////////////////////
+    const double normNormalForce = normalContact(overlap, normRelVel, radJ, d_elements->m[e_i]); // was 2.0 * overlap
+
+    // Overlap elastic potential energy
+    //                    energy.elastic+=fn*xj/2.5;
+
+    // force application ///////////////////////////////////
+    // vectorial normal force
+    const tVect normalForce = en*normNormalForce;
+
+    // cluster geometry
+    // vectorized radius
+    const tVect vecRadJ = -radJ*en;
+    // vectorized distance contactPoint-center of cluster
+    const tVect centerDistJ = vecRadJ + (d_particles->x0[p_i] - d_elements->xp0[e_i]);
+
+    // force updating
+    d_elements->FWall[e_i].atomicAdd(normalForce);
+    d_elements->solidIntensity[e_i] += normalForce.abs();
+    // wallI->FParticle=wallI->FParticle-fnv;
+    // torque updating
+    if (d_elements->size[e_i] > 1) {
+        d_elements->MWall[e_i].atomicAdd(centerDistJ.cross(normalForce));
+    }
+
+    // TANGENTIAL FORCE ///////////////////////////////////////////////////////////////////
+
+    // angular velocities (global reference frame)
+    const tVect wJ = d_elements->wpGlobal[e_i]; //2.0*quat2vec( elmtJ->qp1.multiply( elmtJ->qp0.adjoint() ) );
+    // relative velocity at contact point
+    const tVect relVelContact = relVel + wJ.cross(vecRadJ); // couldn't we just use elmtJ.w?
+    // tangential component of relative velocity
+    const tVect tangRelVelContact = relVelContact - normalRelVel;
+    // norm of tangential velocity
+    const double normTangRelVelContact = tangRelVelContact.norm();
+    // checking if there is any tangential motion
+    if (normTangRelVelContact != 0.0) {
+
+        /** @todo springs
+        // update spring
+        if (DEM_P.staticFrictionSolve) {
+            const double elong_old_norm = elongation_new->e.norm();
+
+            double normElong = elongation_new->e.dot(en);
+            const tVect normalElong = en*normElong;
+
+            elongation_new->e = elongation_new->e - normalElong;
+
+            if (elongation_new->e.norm() != 0) {
+                const double scaling = elong_old_norm / elongation_new->e.norm();
+                elongation_new->e = elongation_new->e*scaling;
+            } else {
+                const double scaling = 0.0;
+                elongation_new->e = elongation_new->e*scaling;
+            }
+        }
+        */
+
+        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, d_elements->m[e_i], elongation_new, DEM_P.sphereMat.frictionCoefWall,
+            DEM_P.sphereMat.linearStiff, DEM_P.sphereMat.viscTang);
+
+        // torque updating
+        d_elements->MWall[e_i].atomicSub(centerDistJ.cross(tangForce));
+        // force updating
+        d_elements->FWall[e_i].atomicSub(tangForce);
+        d_elements->solidIntensity[e_i] += tangForce.abs();
+        //wallI->FParticle = wallI->FParticle+ftv;
+    }
+    //ROLLING
+
+    const tVect rollingMoment = rollingContact(Zero, wJ, radJ, normNormalForce,
+            2.0 * DEM_P.sphereMat.rollingCoefPart);
+
+
+    // @todo There are not curerntly any ghosts, remove redundant if(true)?
+    if (!d_particles->isGhost[p_i]) {
+        d_elements->MRolling->atomicAdd(rollingMoment);
+    }
+
+    // save overlap
+    atomicMax(&d_elements->maxOverlap[e_i], overlap);
+
+    // updating connectivity
+    atomicInc(&d_elements->coordination[e_i], std::numeric_limits<unsigned int>::max());
+}
+__global__ void d_cylinderParticleContacts(Particle2* d_particles, Cylinder2* d_cylinders, Element2* d_elements) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (tid >= d_particles->activeCount)
+        return;
+
+    const unsigned int p_i = d_particles->activeI[tid];
+
+    // Check each particle against every object
+    // We don't (currently) have a nearCylinderTable
+    for (unsigned int c_i = 0; c_i < d_cylinders->count; ++c_i) {
+        // radius
+        const double rj = d_particles->r[p_i];
+        // distance from wall (norm)
+        const double distance = d_cylinders->dist(c_i, d_particles->x0[p_i]);
+        // distance before contact
+        const double overlap = rj - distance;
+
+        /* @todo unused?
+        // distance to point 1 of axis
+        const tVect p1dist = d_particles->x0[p_i] - d_cylinders->p1[c_i];
+        // same but projected on the axis
+        const tVect p1distax = (p1dist.dot(d_cylinders->naxes[c_i])) * d_cylinders->naxes[c_i];
+        // distance of point from cylinder axis
+        const tVect p1distcylinder = p1distax - p1dist;
+        */
+
+        // check for contact
+        if (overlap > 0.0) {
+            // pointer to elongation, initially pointing to an empty spring
+            Elongation* elongation_here_new;
+            /** @todo springs
+            if (DEM_P.staticFrictionSolve) {
+                const unsigned int indexI = d_cylinders->index[c_i];
+                elongation_here_new = findSpring(2, indexI, partJ);
+            }
+            */
+            d_cylinderParticleCollision(d_particles, d_cylinders, d_elements, p_i, overlap, elongation_here_new);
+        }
+    }
+}
+template<>
+void DEM2::cylinderParticleContacts<CUDA>() {
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_cylinderParticleContacts, 0, hd_particles.activeCount);
+    // Round up to accommodate required threads
+    gridSize = (hd_particles.activeCount + blockSize - 1) / blockSize;
+    d_cylinderParticleContacts<<<gridSize, blockSize>>>(d_particles, d_cylinders, d_elements);
+    CUDA_CHECK();
+}
+__global__ void d_newtonEquationsSolution(Element2* d_elements) {
+    // Get unique CUDA thread index, which corresponds to active node 
+    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    // Kill excess threads early
+    if (tid >= d_elements->activeCount)
+        return;
+
+    const unsigned int e_i = d_elements->activeI[tid];
+
+    // numerical viscosity for stability
+    // see "Viscous torque on a sphere under arbitrary rotation" by Lei,  Yang, and Wu, Applied Physics Letters 89, 181908 (2006)
+    const tVect FVisc = -6.0 * M_PI * DEM_P.numVisc * d_elements->radius[e_i] * d_elements->xp1[e_i];
+    const tVect MVisc = -8.0 * M_PI * DEM_P.numVisc * d_elements->radius[e_i] * d_elements->radius[e_i] * d_elements->radius[e_i] * d_elements->wpGlobal[e_i];
+
+    // translational motion
+    // acceleration (sum of forces / mass + sum of accelerations)
+    d_elements->x2[e_i] = (FVisc + d_elements->FHydro[e_i] + d_elements->FParticle[e_i] + d_elements->FWall[e_i]) / d_elements->m[e_i] + DEM_P.demF + d_elements->ACoriolis[e_i] + d_elements->ACentrifugal[e_i];
+
+    // rotational motion
+    // adjoint of orientation quaternion
+    //const tQuat q0adj=d_elements->qp0.adjoint();
+    // rotational velocity (body-fixed reference frame)
+    //const tVect wBf=2.0*quat2vec( q0adj.multiply( d_elements->qp1 ) );
+    // moment in global reference frame
+    const tVect moment = MVisc + d_elements->MHydro[e_i] + d_elements->MParticle[e_i] + d_elements->MWall[e_i] + d_elements->MRolling[e_i];
+
+    // moment in body-fixed reference frame
+    //if (d_elements->size
+    const tVect momentBf = project(moment, d_elements->qp0[e_i].adjoint());
+    // rotational acceleration (body-fixed reference frame) (Newton equation for principal system)
+    const tVect waBf = newtonAcc(momentBf, d_elements->I[e_i], d_elements->wpLocal[e_i]);
+    // rotational acceleration (vector)
+    d_elements->w1[e_i] = project(waBf, d_elements->qp0[e_i]);
+    // rotational acceleration (quaternion)
+    if (d_elements->size[e_i] > 1) {
+        const tQuat waQuat = quatAcc(waBf, d_elements->qp1);
+        d_elements->q2[e_i] = 0.5 * d_elements->qp0[e_i].multiply(waQuat);
+    }
+}
+template<>
+void DEM2::newtonEquationsSolution<CUDA>() {
+    // Launch cuda kernel to update
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_newtonEquationsSolution, 0, hd_elements.activeCount);
+    // Round up to accommodate required threads
+    gridSize = (hd_elements.activeCount + blockSize - 1) / blockSize;
+    d_newtonEquationsSolution<<<gridSize, blockSize>>>(d_elements);
+    CUDA_CHECK();
 }
 
 template<>
@@ -930,6 +1500,7 @@ void DEM2::evaluateForces<CUDA>() {
         d_resetForces<<<gridSize, blockSize>>>(d_particles, d_elements, d_walls, d_objects);
         CUDA_CHECK();
     }
+    //@todo should these contacts kernels be fused? Or ran in separate streams?
     // forces due to particle overlap and lubrication
     particleParticleContacts<CUDA>();
 
@@ -940,7 +1511,40 @@ void DEM2::evaluateForces<CUDA>() {
     objectParticleContacts<CUDA>();
 
     // forces due to contact with cylinders
-    cylinderParticelContacts<CUDA>();
+    cylinderParticleContacts<CUDA>();
+
+
+    /** @todo springs
+    totSprings = 0;
+    if (staticFrictionSolve) {
+        // erase springs that are still inactive
+        for (int a = 0; a < activeParticles.size(); ++a) {
+            unsigned int p = activeParticles[a];
+            for (int t = 0; t < 4; ++t) {
+                for (int s = 0; s < particles[p].springs[t].size(); ++s) {
+                    if (particles[p].springs[t][s].active == false) {
+                        particles[p].springs[t].erase(particles[p].springs[t].begin() + s);
+                        --s;
+                    } else {
+                        ++totSprings;
+                    }
+                }
+            }
+        }
+    }
+    */
+
+    // compute apparent accelerations
+    if (DEM_P.solveCentrifugal || DEM_P.solveCoriolis) {
+        computeApparentForces();
+    }
+
+    // save info on maximum local force on the particles
+    saveObjectForces();
+
+
+    //  Newton equations solution
+    newtonEquationsSolution<CUDA>();
 }
 
 extern ProblemName problemName;
