@@ -140,11 +140,44 @@ __host__ __device__ inline tVect& tVect::operator/=(const double& scalar) {
     return *this;
 }
 
-__host__ __device__ inline tVect operator *(const double& scalar, const tVect& vec) {
+__host__ __device__ inline tVect operator*(const double& scalar, const tVect& vec) {
     return tVect(
         vec.x*scalar,
         vec.y*scalar,
         vec.z*scalar);
+}
+
+__host__ __device__ inline void tVect::atomicAdd(const tVect& vec) {
+#ifdef __CUDA_ARCH__
+    // CUDA atomics
+    atomicAdd(&this->x, vec.x);
+    atomicAdd(&this->y, vec.y);
+    atomicAdd(&this->z, vec.z);
+#else
+    // CPU atomics
+#pragma omp atomic update
+    this->x += vec.x;
+#pragma omp atomic update
+    this->y += vec.y;
+#pragma omp atomic update
+    this->z += vec.z;
+#endif
+}
+__host__ __device__ inline void tVect::atomicSub(const tVect& vec) {
+#ifdef __CUDA_ARCH__
+    // CUDA atomics
+    atomicSub(&this->x, vec.x);
+    atomicSub(&this->y, vec.y);
+    atomicSub(&this->z, vec.z);
+#else
+    // CPU atomics
+#pragma omp atomic update
+    this->x -= vec.x;
+#pragma omp atomic update
+    this->y -= vec.y;
+#pragma omp atomic update
+    this->z -= vec.z;
+#endif
 }
 
 // mathematical functions

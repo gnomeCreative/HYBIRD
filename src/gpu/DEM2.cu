@@ -636,7 +636,11 @@ __device__ __forceinline__ tVect rollingContact(const tVect& wI, const tVect& wJ
 }
 
 __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particles, Element2* d_elements, const unsigned int p_i, const unsigned int p_j, const tVect& vectorDistance, Elongation* elongation_new) {
-
+    /**
+     * @todo This could potentially be improved by calculating the delta for many of the vectors (MParticle, FParticle, SolidIntensity)
+     * @todo and then updating them globally once rather than with each force calc.
+     * @todo This would increase register pressure for reduced atomic contention, which feels like a win
+     */
     // pointers to elements
     const unsigned int e_i = d_particles->clusterIndex[p_i];
     const unsigned int e_j = d_particles->clusterIndex[p_j];
@@ -689,19 +693,19 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
 
     // @todo Particles are never marked as ghost, does this matter? (e.g. can these if's be removed as always true)
     if (!d_particles->isGhost[p_i]) {
-        d_elements->FParticle[e_i] = d_elements->FParticle[e_i] - normalForce;
-        d_elements->solidIntensity[e_i] += normalForce.abs();
+        d_elements->FParticle[e_i].atomicSub(normalForce);
+        d_elements->solidIntensity[e_i].atomicAdd(normalForce.abs());
         //  moment generated in non-spherical particles
         if (d_elements->size[e_i] > 1) {
-            d_elements->MParticle[e_i] = d_elements->MParticle[e_i] - centerDistI.cross(normalForce);
+            d_elements->MParticle[e_i].atomicSub(centerDistI.cross(normalForce));
         }
     }
     if (!d_particles->isGhost[p_j]) {
-        d_elements->FParticle[e_j] = d_elements->FParticle[e_j] + normalForce;
-        d_elements->solidIntensity[e_j] += normalForce.abs();
+        d_elements->FParticle[e_j].atomicAdd(normalForce);
+        d_elements->solidIntensity[e_j].atomicAdd(normalForce.abs());
         //  moment generated in non-spherical particles
         if (d_elements->size[e_j] > 1) {
-            d_elements->MParticle[e_j] = d_elements->MParticle[e_j] + centerDistJ.cross(normalForce);
+            d_elements->MParticle[e_j].atomicAdd(centerDistJ.cross(normalForce));
         }
     }
 
@@ -739,27 +743,29 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
         }
 
         //elongation.e.show();
-        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, effRad, effMass, elongation_new, DEM_P.sphereMat.frictionCoefPart,
+        const tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, effRad, effMass, elongation_new, DEM_P.sphereMat.frictionCoefPart,
                 DEM_P.sphereMat.linearStiff, DEM_P.sphereMat.viscTang);
 
         // torque updating
         // @todo Particles are never marked as ghost, does this matter? (e.g. can these if's be removed as always true)
         if (!d_particles->isGhost[p_i]) {
-            d_elements->MParticle[e_i] = d_elements->MParticle[e_i] + centerDistI.cross(tangForce);
-            d_elements->FSpringP[e_i] = d_elements->FSpringP[e_i] + tangForce;
-            d_elements->FParticle[e_i] = d_elements->FParticle[e_i] + tangForce;
-            d_elements->solidIntensity[e_i] += tangForce.abs();
+            d_elements->MParticle[e_i].atomicAdd(centerDistI.cross(tangForce));
+            d_elements->FSpringP[e_i].atomicAdd(tangForce);
+            d_elements->FParticle[e_i].atomicAdd(tangForce);
+            d_elements->solidIntensity[e_i].atomicAdd(tangForce.abs());
             if (DEM_P.staticFrictionSolve) {
+                // @todo, why is this equals? couldn't there be multiple that take this path on same element?
                 d_elements->slippingCase[e_i] = elongation_new->slippingCase;
             }
 
         }
         if (!d_particles->isGhost[p_j]) {
-            d_elements->MParticle[e_j] = d_elements->MParticle[e_j] - centerDistJ.cross(tangForce);
-            d_elements->FSpringP[e_j] = d_elements->FSpringP[e_j] - tangForce;
-            d_elements->FParticle[e_j] = d_elements->FParticle[e_j] - tangForce;
-            d_elements->solidIntensity[e_j] += tangForce.abs();
+            d_elements->MParticle[e_j].atomicSub(centerDistJ.cross(tangForce));
+            d_elements->FSpringP[e_j].atomicSub(tangForce);
+            d_elements->FParticle[e_j].atomicSub(tangForce);
+            d_elements->solidIntensity[e_j].atomicAdd(tangForce.abs());
             if (DEM_P.staticFrictionSolve) {
+                // @todo, why is this equals? couldn't there be multiple that take this path on same element?
                 d_elements->slippingCase[e_j] = elongation_new->slippingCase;
             }
         }
@@ -768,30 +774,24 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
 
 
     //ROLLING
-
-    tVect rollingMoment = rollingContact(wI, wJ, effRad, normNormalForce,
+    const tVect rollingMoment = rollingContact(wI, wJ, effRad, normNormalForce,
         DEM_P.sphereMat.rollingCoefPart);
 
     // @todo Particles are never marked as ghost, does this matter? (e.g. can these if's be removed as always true)
     if (!d_particles->isGhost[p_i]) {
-        d_elements->MRolling[e_i] = d_elements->MRolling[e_i] - rollingMoment;
-
+        d_elements->MRolling[e_i].atomicSub(rollingMoment);
     }
     if (!d_particles->isGhost[p_j]) {
-        d_elements->MRolling[e_j] = d_elements->MRolling[e_j] + rollingMoment;
+        d_elements->MRolling[e_j].atomicAdd(rollingMoment);
     }
 
     // save overlap
-    if (overlap > d_elements->maxOverlap[e_i]) {
-        d_elements->maxOverlap[e_i] = overlap;
-    }
-    if (overlap > d_elements->maxOverlap[e_j]) {
-        d_elements->maxOverlap[e_j] = overlap;
-    }
+    atomicMax(&d_elements->maxOverlap[e_i], overlap);
+    atomicMax(&d_elements->maxOverlap[e_j], overlap);
 
     // updating connectivity
-    d_elements->coordination[e_i] += 1;
-    d_elements->coordination[e_j] += 1;
+    atomicInc(&d_elements->coordination[e_i], std::numeric_limits<unsigned int>::max());
+    atomicInc(&d_elements->coordination[e_j], std::numeric_limits<unsigned int>::max());
 }
 __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_elements) {
     // Get unique CUDA thread index, which corresponds to active node 

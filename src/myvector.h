@@ -118,6 +118,11 @@ public:
     __host__ __device__ constexpr tVect operator/(const double& scalar) const;
     __host__ __device__ tVect& operator/=(const double& scalar);
     //friend __host__ __device__ tVect operator*(const double& scalar, const tVect& vec);
+    // Atomic arithmetic
+    /**
+     * Atomically add vec to this (equivalent to operator +=, but safe in parallel)
+     */
+    __host__ __device__ void atomicAdd(const tVect& vec);
     // mathematical operations
     tVect transport() const;
     tVect abs() const;
