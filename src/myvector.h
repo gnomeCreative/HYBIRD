@@ -122,20 +122,20 @@ public:
     /**
      * Atomically add vec to this (equivalent to operator +=, but safe in parallel)
      */
-    __host__ __device__ void atomicAdd(const tVect& vec);
+    __host__ __device__ void _atomicAdd(const tVect& vec);
     /**
      * Atomically add vec to this (equivalent to operator -=, but safe in parallel)
      */
-    __host__ __device__ void atomicSub(const tVect& vec);
+    __host__ __device__ void _atomicSub(const tVect& vec);
     // mathematical operations
     tVect transport() const;
-    tVect abs() const;
+    __host__ __device__ tVect abs() const;
     __host__ __device__ double dot(const tVect& vec) const;
     double dot2(const tVect& vec) const;
     __host__ __device__ tVect cross(const tVect& vec) const;
     tVect compProd(const tVect& vec) const;
     constexpr tMat outer(const tVect& vec) const;
-    double norm() const;
+    __host__ __device__ double norm() const;
     __host__ __device__ double norm2() const;
     /**
      * Convert a particle location to the index of a bin within the neighbour grid
@@ -146,8 +146,8 @@ public:
     //friend tVect project(tVect& vec, tQuat quat);
     // geometric position functions
     __host__ __device__ bool insideSphere(const tVect& center, const double& radius) const;
-    bool insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const;
-    bool insidePlane(const tVect& p, const tVect& n) const;
+    __host__ __device__ bool insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const;
+    __host__ __device__ bool insidePlane(const tVect& p, const tVect& n) const;
     double distance2Plane(const tVect& p, const tVect& n) const;
     bool close2Plane(const tVect& p, const tVect& n, const double& distance) const;
     double isoparameterSphere(const tVect& center, const double& radius) const;
@@ -182,22 +182,22 @@ public:
     void printLine(std::ofstream& outputFile) const;
     void print(std::ofstream& outputFile) const;
     // overloaded operators
-    tQuat operator+(const tQuat& quat) const;
-    tQuat operator-(const tQuat& quat) const;
-    tQuat operator*(const double& scalar) const;
-    tQuat operator/(const double& scalar) const;
+    __host__ __device__ tQuat operator+(const tQuat& quat) const;
+    __host__ __device__ tQuat operator-(const tQuat& quat) const;
+    __host__ __device__ tQuat operator*(const double& scalar) const;
+    __host__ __device__ tQuat operator/(const double& scalar) const;
     friend __host__ __device__ tQuat operator*(const double& scalar, const tQuat& quat);
     // mathematical operations
-    void normalize();
+    __host__ __device__ void normalize();
     void forceStability(tQuat& q0);
     void resetHard();
     void resetSoft();
-    tQuat adjoint() const;
-    double norm() const;
-    double norm2() const;
-    tQuat inverse() const;
-    tQuat multiply(tQuat r) const;
-    double dot(tQuat r) const;
+    __host__ __device__ tQuat adjoint() const;
+    __host__ __device__ double norm() const;
+    __host__ __device__ double norm2() const;
+    __host__ __device__ tQuat inverse() const;
+    __host__ __device__ tQuat multiply(tQuat r) const;
+    __host__ __device__ double dot(tQuat r) const;
     //friend tVect quat2vec(tQuat quat);
     //friend tVect project(tVect vec, tQuat quat);
     //friend tQuat quatAcc(tVect waBf, tQuat Q1);
@@ -242,11 +242,11 @@ __host__ __device__ tVect operator*(const double& scalar, const tVect& vec);
 __host__ __device__ tQuat operator*(const double& scalar, const tQuat& quat);
 __host__ __device__ tMat operator*(const double& scalar, const tMat& mat);
 // mathematical operations
-tVect quat2vec(tQuat quat);
-tQuat vec2quat(tVect vec);
-tVect project(tVect vec, tQuat quat);
-tVect newtonAcc(tVect moment, tVect I, tVect wBf);
-tQuat quatAcc(tVect waBf, tQuat Q1);
+__host__ __device__ tVect quat2vec(tQuat quat);
+__host__ __device__ tQuat vec2quat(tVect vec);
+__host__ __device__ tVect project(tVect vec, tQuat quat);
+__host__ __device__ tVect newtonAcc(tVect moment, tVect I, tVect wBf);
+__host__ __device__ tQuat quatAcc(tVect waBf, tQuat Q1);
 
 __host__ __device__ tVect computeCentrifugal(const tVect& position, const tVect& rotationCenter, const tVect& rotationSpeed);
 __host__ __device__ tVect computeCoriolis(const tVect& velocity, const tVect& rotationSpeed);

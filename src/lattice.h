@@ -16,9 +16,6 @@ constexpr unsigned int lbmDim = 3;
 constexpr unsigned int lbmDirec = 19;
 constexpr unsigned int lbmDirec2D = 9;
 constexpr unsigned int lbmMainDirec = 7;
-// sqrt() is not constexpr until C++26
-// Result of sqrt(2.0)
-constexpr double sqrt_2 = 1.4142135623730950488;
 
 // LATTICE PARAMETERS  ////////////////
 // definition of parameters for the lattice

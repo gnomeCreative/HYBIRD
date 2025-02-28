@@ -30,6 +30,8 @@ struct Object2 {
     // translation vector
     tVect *trans = nullptr;
 
+    __host__ __device__ __forceinline__ void updateMax(unsigned int i, const tVect& direction, double time);
+
     /**
      * @todo zero init all allocated buffers
      */
@@ -38,6 +40,25 @@ struct Object2 {
     template<int impl>
     void initForces();
 };
+
+__host__ __device__ __forceinline__ void Object2::updateMax(const unsigned int i, const tVect& direction, const double time) {
+    if (maxFParticle[i].dot(direction) < FParticle[i].dot(direction)) {
+        maxFParticle[i] = FParticle[i];
+        timeMaxFParticle[i] = time;
+    }
+}
+template <>
+inline void Object2::initForces<CPU>() {
+    // initializing object forces
+    memset(FHydro, 0, sizeof(tVect) * count);
+}
+#ifdef USE_CUDA
+template <>
+inline void Object2::initForces<CUDA>() {
+    // initializing object forces
+    CUDA_CALL(cudaMemset(FHydro, 0, sizeof(tVect) * count));
+}
+#endif
 
 template<int impl>
 void Object2::allocObjects(unsigned int num) {
@@ -57,17 +78,4 @@ void Object2::allocObjects(unsigned int num) {
     translating = (bool*)malloc(alloc * sizeof(bool));
     trans = (tVect*)malloc(alloc * sizeof(tVect));
 }
-template <>
-inline void Object2::initForces<CPU>() {
-    // initializing object forces
-    memset(FHydro, 0, sizeof(tVect) * count);
-}
-#ifdef USE_CUDA
-template <>
-inline void Object2::initForces<CUDA>() {
-    // initializing object forces
-    CUDA_CALL(cudaMemset(FHydro, 0, sizeof(tVect) * count));
-}
-#endif
-
 #endif  // OBJECT2_H

@@ -525,7 +525,7 @@ int main(int argc, char** argv) {
     dem_p.demTimeStep = 0;
 
     // Allocate the LB runner
-    LB2 lb;
+    LB2 lb(dem);
     lb.setParams(lb_p, lb_ip);
 
     if (io.lbmSolver) {
@@ -563,7 +563,7 @@ int main(int argc, char** argv) {
 
             if (io.lbmSolver) {
                 // core of the code, performs time steps
-                lb.step(dem, io.demSolver);
+                lb.step(io.demSolver);
             }
             vio.output(lb);
             io.outputStep(lb, dem);

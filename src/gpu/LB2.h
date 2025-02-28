@@ -26,8 +26,7 @@ class LB2 {
     };
     public:
 
-    // @todo how do we init params from config?
-    LB2() = default;
+    LB2(DEM2& _dem) : dem(_dem) { };
 
     void init(DEM2 &dem, bool externalSolveCoriolis, bool externalSolveCentrifugal);
     void allocateHostNodes(unsigned int count);
@@ -62,31 +61,12 @@ class LB2 {
      * @param io_demSolver The result of io.demSolver in the calling method
      * @note io_demSolver may be redundant, surely dem can be probed to detect if DEM is active
      */
-    void step(DEM2 &dem, bool io_demSolver);
-    /**
-     * @brief Sync DEM data to structure of arrays format (and device memory)
-     * @param elmts Objects, such as walls within the DEM
-     * @param particles Spherical particles, which represent a decomposition of the elmts
-     * @param walls Wall elmts??
-     * @param objects Objects that are not walls, e.g. cylinders??
-     * @note Most of this will be removed once DEM is also moved to CUDA
-     */
-    void syncDEMIn(const elmtList &elmts, const particleList &particles, const wallList &walls, const objectList &objects);
-    /**
-     * @brief Sync DEM data to structure from arrays format (and device memory)
-     * @param elmts Objects, such as walls within the DEM
-     * @param particles Spherical particles, which represent a decomposition of the elmts
-     * @param walls Wall elmts??
-     * @param objects Objects that are not walls, e.g. cylinders??
-     * @note Most of this will be removed once DEM is also moved to CUDA
-     * @note Much of this synchronisation is redundant, as the LBM coupling does not impact most DEM properties
-     */
-    void syncDEMOut(elmtList &elmts, particleList &particles, wallList &walls, objectList &objects);
+    void step(bool io_demSolver);
     /**
      * @brief Following the DEM model being stepped, this updates impacted LBM nodes
      * @param newNeighbourList If a new neighbour table has been defined, the indexing will be reinitialised
      */
-    void latticeBoltzmannCouplingStep(bool &newNeighbourList);
+    void latticeBoltzmannCouplingStep(bool newNeighbourList);
     /**
      * @brief The main LBM step
      */
@@ -248,11 +228,13 @@ class LB2 {
      * In CUDA builds, <name> will point to device memory, and h_<name> may not have current data at all times
      */
     private:
+    // Reference to DEM, for accessing particles, elements, walls etc
+    DEM2& dem;
     // The actual node storage
     // Host copy of node buffers, may not always be current whilst in CUDA mode
-    Node2 h_nodes;
+    Node2 h_nodes = {};
     // Host copy of device node buffer pointers
-    Node2 hd_nodes;
+    Node2 hd_nodes = {};
     // Pointer to device copy of device node buffer pointers
     // In CPU, this is a pointer to h_nodes
     Node2 *d_nodes = nullptr;

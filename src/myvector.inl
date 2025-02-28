@@ -10,7 +10,7 @@ using namespace std;
 /////////////////////////////////////////////////////////////////////////////////////////*/
 
 // basic functions
-__host__ __device__  double& tVect::operator[](const unsigned int i) {
+__host__ __device__  inline double& tVect::operator[](const unsigned int i) {
 #ifdef DEBUG
     if (i >= 3) {
         printf("%u out of bounds in tVector::operator[]\n", i);
@@ -27,7 +27,7 @@ __host__ __device__  double& tVect::operator[](const unsigned int i) {
         return z;
     }
 }
-__host__ __device__  constexpr double tVect::operator[](const unsigned int i) const {
+__host__ __device__  inline constexpr double tVect::operator[](const unsigned int i) const {
 #ifdef DEBUG
     if (i >= 3) {
         printf("%u out of bounds in tVector::operator[]\n", i);
@@ -46,7 +46,7 @@ __host__ __device__  constexpr double tVect::operator[](const unsigned int i) co
 }
 
 inline void tVect::show() const {
-    cout<<"("<<x<<", "<<y<<", "<<z<<")";
+    printf("(%f, %f, %f)", x, y, z);
 }
 
 inline void tVect::printLine(std::ofstream& outputFile) const {
@@ -147,7 +147,7 @@ __host__ __device__ inline tVect operator*(const double& scalar, const tVect& ve
         vec.z*scalar);
 }
 
-__host__ __device__ inline void tVect::atomicAdd(const tVect& vec) {
+__host__ __device__ inline void tVect::_atomicAdd(const tVect& vec) {
 #ifdef __CUDA_ARCH__
     // CUDA atomics
     atomicAdd(&this->x, vec.x);
@@ -163,12 +163,12 @@ __host__ __device__ inline void tVect::atomicAdd(const tVect& vec) {
     this->z += vec.z;
 #endif
 }
-__host__ __device__ inline void tVect::atomicSub(const tVect& vec) {
+__host__ __device__ inline void tVect::_atomicSub(const tVect& vec) {
 #ifdef __CUDA_ARCH__
-    // CUDA atomics
-    atomicSub(&this->x, vec.x);
-    atomicSub(&this->y, vec.y);
-    atomicSub(&this->z, vec.z);
+    // CUDA atomics (cuda atomic sub does not support anything outside 32bit int/uint)
+    atomicAdd(&this->x, -vec.x);
+    atomicAdd(&this->y, -vec.y);
+    atomicAdd(&this->z, -vec.z);
 #else
     // CPU atomics
 #pragma omp atomic update
@@ -186,7 +186,7 @@ inline tVect tVect::transport() const {
     return tVect(y*y+z*z,z*z+x*x,x*x+y*y);
 }
 
-inline tVect tVect::abs() const {
+__host__ __device__ inline tVect tVect::abs() const {
     return tVect(std::abs(x),std::abs(y),std::abs(z));
 }
 
@@ -216,21 +216,14 @@ inline constexpr tMat tVect::outer(const tVect& vec) const {
     return tMat(x*vec.x,x*vec.y,x*vec.z,y*vec.x,y*vec.y,y*vec.z,z*vec.x,z*vec.y,z*vec.z);
 }
 
-inline double tVect::norm() const {
+__host__ __device__ inline double tVect::norm() const {
     return sqrt(x*x+y*y+z*z);
 }
 
-inline __host__ __device__ double tVect::norm2() const {
+__host__ __device__ inline double tVect::norm2() const {
     return x*x+y*y+z*z;
 }
 
-inline __host__ __device__ int tVect::linearizePosition() const  {
-    const int xc = static_cast<int>(floor(x/DEM_P.cellWidth[0])+1);
-    const int yc = static_cast<int>(floor(y/ DEM_P.cellWidth[1])+1);
-    const int zc = static_cast<int>(floor(z/ DEM_P.cellWidth[2])+1);
-    const int index = static_cast<int>(xc+ DEM_P.nCells[0]*(yc+ DEM_P.nCells[1]*zc));
-    return index;
-}
 
 // geometric position functions
 
@@ -241,7 +234,7 @@ __host__ __device__ inline bool tVect::insideSphere(const tVect& center, const d
     return (dist.norm2()<radius*radius);
 }
 
-inline bool tVect::insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const {
+__host__ __device__ inline bool tVect::insideCylinder(const tVect& p1, const tVect& naxes, const double& R1, const double& R2) const {
     // distance to point 1 of axes
     const tVect p1dist=*this-p1;
     // same but projected on the axes
@@ -256,7 +249,7 @@ inline bool tVect::insideCylinder(const tVect& p1, const tVect& naxes, const dou
 
 
 
-inline bool tVect::insidePlane(const tVect& p, const tVect& n) const {
+__host__ __device__ inline bool tVect::insidePlane(const tVect& p, const tVect& n) const {
     tVect pdist=*this-p;
     return n.dot(pdist)<0.0;
 }
@@ -285,7 +278,7 @@ inline double tVect::isoparameterSphere(const tVect& center, const double& radiu
 // basic functions
 
 inline void quaternion::show() const {
-    cout<<" ("<<q0<<", "<<q1<<", "<<q2<<", "<<q3<<")";
+    printf("(%f, %f, %f, %f)", q0, q1, q2, q3);
 }
 
 inline void quaternion::printLine(std::ofstream& outputFile) const {
@@ -323,7 +316,7 @@ inline void quaternion::resetSoft() {
 
 // overloaded operators
 
-inline tQuat quaternion::operator+(const tQuat& quat) const {
+__host__ __device__ inline tQuat quaternion::operator+(const tQuat& quat) const {
     return tQuat(
         q0+quat.q0,
         q1+quat.q1,
@@ -331,7 +324,7 @@ inline tQuat quaternion::operator+(const tQuat& quat) const {
         q3+quat.q3);
 }
 
-inline tQuat quaternion::operator-(const tQuat& quat) const {
+__host__ __device__ inline tQuat quaternion::operator-(const tQuat& quat) const {
     return tQuat(
         q0-quat.q0,
         q1-quat.q1,
@@ -339,7 +332,7 @@ inline tQuat quaternion::operator-(const tQuat& quat) const {
         q3-quat.q3);
 }
 
-inline tQuat quaternion::operator*(const double& scalar) const {
+__host__ __device__ inline tQuat quaternion::operator*(const double& scalar) const {
     return tQuat(
         q0*scalar,
         q1*scalar,
@@ -347,7 +340,7 @@ inline tQuat quaternion::operator*(const double& scalar) const {
         q3*scalar);
 }
 
-inline tQuat quaternion::operator/(const double& scalar) const {
+__host__ __device__ inline tQuat quaternion::operator/(const double& scalar) const {
     return tQuat(
         q0/scalar,
         q1/scalar,
@@ -355,7 +348,7 @@ inline tQuat quaternion::operator/(const double& scalar) const {
         q3/scalar);
 }
 
-__host__ __device__ inline tQuat operator *(const double& scalar, const tQuat& quat){
+__host__ __device__ inline tQuat operator*(const double& scalar, const tQuat& quat){
     return tQuat(
         quat.q0*scalar,
         quat.q1*scalar,
@@ -365,7 +358,7 @@ __host__ __device__ inline tQuat operator *(const double& scalar, const tQuat& q
 
 // mathematical functions
 
-inline void quaternion::normalize(){
+__host__ __device__ inline void quaternion::normalize(){
     double norm=this->norm();
     q0/=norm;
     q1/=norm;
@@ -373,15 +366,15 @@ inline void quaternion::normalize(){
     q3/=norm;
 }
 
-inline double quaternion::norm() const {
+__host__ __device__ inline double quaternion::norm() const {
     return sqrt(q0*q0+q1*q1+q2*q2+q3*q3);
 }
 
-inline double quaternion::norm2() const {
+__host__ __device__ inline double quaternion::norm2() const {
     return q0*q0+q1*q1+q2*q2+q3*q3;
 }
 
-inline tQuat quaternion::adjoint() const {
+__host__ __device__ inline tQuat quaternion::adjoint() const {
     return tQuat(
         q0,
         -q1,
@@ -389,7 +382,7 @@ inline tQuat quaternion::adjoint() const {
         -q3);
 }
 
-inline tQuat quaternion::inverse() const {
+__host__ __device__ inline tQuat quaternion::inverse() const {
     // hopefully this is not needed, since for a unit quaternion inverse and adjoint are equal
     tQuat dummyQ;
     dummyQ=dummyQ.adjoint();
@@ -397,7 +390,7 @@ inline tQuat quaternion::inverse() const {
     return dummyQ;
 }
 
-inline tQuat quaternion::multiply(quaternion quat) const {
+__host__ __device__ inline tQuat quaternion::multiply(quaternion quat) const {
     // note that quaternion multiplication is non-commutative
     // here the product q*r is solved, which in general is different from r*q
     // refer to the internet (mathworks page on quaternion multiplication) for documentation
@@ -408,7 +401,7 @@ inline tQuat quaternion::multiply(quaternion quat) const {
         quat.q0*q3-quat.q1*q2+quat.q2*q1+quat.q3*q0);
 }
 
-inline double quaternion::dot(quaternion quat) const {
+__host__ __device__ inline double quaternion::dot(quaternion quat) const {
     // note that quaternion multiplication is non-commutative
     // here the product q*r is solved, which in general is different from r*q
     // refer to the internet (mathworks page on quaternion multiplication) for documentation
@@ -559,7 +552,7 @@ __host__ __device__ inline double tinyMatrix::magnitude() const {
 // INTER-CLASS
 /////////////////////////////////////////////////////////////////////////////////////////*/
 
-inline tVect quat2vec(tQuat quat) {
+__host__ __device__ inline tVect quat2vec(tQuat quat) {
     //if (abs(quat.q0)>0.001*abs(quat.q1)){
 //    cout<<"transform error="<<quat.q0<<"\n";
     //}
@@ -569,7 +562,7 @@ inline tVect quat2vec(tQuat quat) {
             quat.q3);
 }
 
-inline tQuat vec2quat(tVect vec){
+__host__ __device__ inline tQuat vec2quat(tVect vec){
     return tQuat(
             0.0,
             vec.x,
@@ -577,7 +570,7 @@ inline tQuat vec2quat(tVect vec){
             vec.z);
 }
 
-inline tVect project(tVect vec, tQuat quat){
+__host__ __device__ inline tVect project(tVect vec, tQuat quat){
     // projection of a vector  v from a reference frame to another.
     // the reference frame is identified by a quaternion q
     // v'=qvq*
@@ -589,14 +582,14 @@ inline tVect project(tVect vec, tQuat quat){
     return quat2vec(rotQuat);
 }
 
-inline tVect newtonAcc(tVect moment, tVect I, tVect wBf){
+__host__ __device__ inline tVect newtonAcc(tVect moment, tVect I, tVect wBf){
     const double xA=(moment.x+(I.y-I.z)*wBf.y*wBf.z)/I.x;
     const double yA=(moment.y+(I.z-I.x)*wBf.z*wBf.x)/I.y;
     const double zA=(moment.z+(I.x-I.y)*wBf.x*wBf.y)/I.z;
     return tVect(xA,yA,zA);
 }
 
-inline tQuat quatAcc(tVect waBf, tQuat Q1){
+__host__ __device__ inline tQuat quatAcc(tVect waBf, tQuat Q1){
     tQuat waQuat=vec2quat(waBf);
     waQuat.q0=-2.0*Q1.norm2();
     return waQuat;

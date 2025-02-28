@@ -75,8 +75,9 @@ struct Cylinder2 {
         if (type[i] == EMPTY) return (R[i] - p1distcylinder.norm());
         else if (type[i] == FULL) return (p1distcylinder.norm() - R[i]);
         else {
-            cout << "Problem with cylinder type" << endl;
+            printf("Problem with cylinder type\n");
             assert(false);
+            return 0;
         }
     }
 

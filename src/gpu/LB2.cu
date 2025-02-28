@@ -13,544 +13,6 @@ std::unique_ptr<CubTempMem> CubTempMem::_singletonT;
 std::unique_ptr<CubTempMem> CubTempMem::_singletonB;
 
 /**
- * (Temporary) DEM data synchronisation
- * Reformat DEM data to structure of arrays (for CPU), and copy it to device (for CUDA)
- */
-template<>
-bool LB2::syncElementsIn<CPU>(const elmtList &elements) {
-    bool componentsHasGrown = false;
-    if (h_elements.alloc < elements.size()) {
-        // Grow host buffers
-         if (h_elements.x1) {
-             free(h_elements.x1);
-             free(h_elements.wGlobal);
-             free(h_elements.FHydro);
-             free(h_elements.MHydro);
-             free(h_elements.fluidVolume);
-         }
-         h_elements.alloc = (unsigned int)elements.size();
-         h_elements.x1 = (tVect*)malloc(elements.size() * sizeof(tVect));
-         h_elements.wGlobal = (tVect*)malloc(elements.size() * sizeof(tVect));
-         h_elements.FHydro = (tVect*)malloc(elements.size() * sizeof(tVect));
-         h_elements.MHydro = (tVect*)malloc(elements.size() * sizeof(tVect));
-         h_elements.fluidVolume = (double*)malloc(elements.size() * sizeof(double));
-    }
-    // Update size
-    h_elements.count = (unsigned int)elements.size();
-    // Repackage host particle data from array of structures, to structure of arrays
-     for (unsigned int i = 0; i < h_elements.count; ++i) {
-         h_elements.x1[i] = elements[i].x1;
-         h_elements.wGlobal[i] = elements[i].wGlobal;
-         h_elements.FHydro[i] = elements[i].FHydro;
-         // h_elements.MHydro[i] = elements[i].MHydro; // This is zero'd before use in latticeBoltzmannStep()
-         // h_elements.fluidVolume[i] = elements[i].fluidVolume; // This is zero'd before use in latticeBoltzmannStep()
-     }
-    // Construct the components storage
-    {
-        // Allocate memory for componentsData
-        unsigned int totalComponents = 0;
-        for (const auto& e : elements)
-            totalComponents += static_cast<unsigned int>(e.components.size());
-        if (!h_elements.componentsIndex || totalComponents >= h_elements.componentsIndex[elements.size()]) {
-            if (h_elements.componentsData)
-                free(h_elements.componentsData);
-            h_elements.componentsData = (unsigned int*)malloc(totalComponents * sizeof(unsigned int));
-            componentsHasGrown = true;
-        }
-        // Allocate componentsIndex if first pass
-        if (!h_elements.componentsIndex)
-            h_elements.componentsIndex = (unsigned int*)malloc((elements.size() + 1) * sizeof(unsigned int));
-        // Fill componentsIndex and componentsData
-        totalComponents = 0;
-        for (int i = 0; i < elements.size(); ++i) {
-            h_elements.componentsIndex[i] = totalComponents;
-            if (!elements[i].components.empty()) {
-                memcpy(h_elements.componentsData + totalComponents, elements[i].components.data(), elements[i].components.size() * sizeof(unsigned int));
-                totalComponents += static_cast<unsigned int>(elements[i].components.size());
-            }
-        }
-        h_elements.componentsIndex[elements.size()] = totalComponents;
-    }
-    return componentsHasGrown;
-}
-template<>
-void LB2::syncParticlesIn<CPU>(const particleList &particles) {
-    if (h_particles.alloc < particles.size()) {
-        // Grow host buffers
-        if (h_particles.clusterIndex) {
-            free(h_particles.clusterIndex);
-            free(h_particles.r);
-            free(h_particles.x0);
-            free(h_particles.radiusVec);
-        }
-        h_particles.alloc = (unsigned int)particles.size();
-        h_particles.clusterIndex = (unsigned int*)malloc(particles.size() * sizeof(unsigned int));
-        h_particles.r = (double*)malloc(particles.size() * sizeof(double));
-        h_particles.x0 = (tVect*)malloc(particles.size() * sizeof(tVect));
-        h_particles.radiusVec = (tVect*)malloc(particles.size() * sizeof(tVect));
-    }
-    // Update size
-    h_particles.count = static_cast<unsigned int>(particles.size());
-    // Repackage host particle data from array of structures, to structure of arrays
-    for (unsigned int i = 0; i < h_particles.count; ++i) {
-        h_particles.clusterIndex[i] = particles[i].clusterIndex;
-        h_particles.r[i] = particles[i].r;
-        h_particles.x0[i] = particles[i].x0;
-        h_particles.radiusVec[i] = particles[i].radiusVec;
-    }
-}
-template<>
-void LB2::syncCylindersIn<CPU>(const cylinderList &cylinders) {
-    if (h_cylinders.count < cylinders.size()) {
-        // Grow host buffers
-        if (h_cylinders.p1) {
-            free(h_cylinders.p1);
-            free(h_cylinders.p2);
-            free(h_cylinders.R);
-            free(h_cylinders.naxes);
-            free(h_cylinders.omega);
-            free(h_cylinders.moving);
-        }
-        h_cylinders.p1 = (tVect*)malloc(cylinders.size() * sizeof(tVect));
-        h_cylinders.p2 = (tVect*)malloc(cylinders.size() * sizeof(tVect));
-        h_cylinders.R = (double*)malloc(cylinders.size() * sizeof(double));
-        h_cylinders.naxes = (tVect*)malloc(cylinders.size() * sizeof(tVect));
-        h_cylinders.omega = (tVect*)malloc(cylinders.size() * sizeof(tVect));
-        h_cylinders.moving = (bool*)malloc(cylinders.size() * sizeof(bool));
-    }
-    // Update size
-    h_cylinders.count = (unsigned int)cylinders.size();
-    // Repackage host particle data from array of structures, to structure of arrays
-    for (unsigned int i = 0; i < h_cylinders.count; ++i) {
-        h_cylinders.p1[i] = cylinders[i].p1;
-        h_cylinders.p2[i] = cylinders[i].p2;
-        h_cylinders.R[i] = cylinders[i].R;
-        h_cylinders.naxes[i] = cylinders[i].naxes;
-        h_cylinders.omega[i] = cylinders[i].omega;
-        h_cylinders.moving[i] = cylinders[i].moving;
-    }
-}
-template<>
-void LB2::syncWallsIn<CPU>(const wallList &walls) {
-    if (h_walls.count < walls.size()) {
-        // Grow host buffers
-        if (h_walls.n) {
-            free(h_walls.n);
-            free(h_walls.p);
-            free(h_walls.rotCenter);
-            free(h_walls.omega);
-            free(h_walls.vel);
-            free(h_walls.FHydro);
-        }
-        h_walls.n = (tVect*)malloc(walls.size() * sizeof(tVect));
-        h_walls.p = (tVect*)malloc(walls.size() * sizeof(tVect));
-        h_walls.rotCenter = (tVect*)malloc(walls.size() * sizeof(tVect));
-        h_walls.omega = (tVect*)malloc(walls.size() * sizeof(tVect));
-        h_walls.vel = (tVect*)malloc(walls.size() * sizeof(tVect));
-        h_walls.FHydro = (tVect*)malloc(walls.size() * sizeof(tVect));
-    }
-    // Update size
-    h_walls.count = static_cast<unsigned int>(walls.size());
-    // Repackage host particle data from array of structures, to structure of arrays
-    for (unsigned int i = 0; i < h_walls.count; ++i) {
-        h_walls.n[i] = walls[i].n;
-        h_walls.p[i] = walls[i].p;
-        h_walls.rotCenter[i] = walls[i].rotCenter;
-        h_walls.omega[i] = walls[i].omega;
-        h_walls.vel[i] = walls[i].vel;
-        // h_walls.FHydro[i] = walls[i].FHydro; // Zero'd before use in streaming()
-    }
-}
-template<>
-void LB2::syncObjectsIn<CPU>(const objectList &objects) {
-    if (h_objects.count < objects.size()) {
-        // Grow host buffers
-        if (h_objects.r) {
-            free(h_objects.r);
-            free(h_objects.x0);
-            free(h_objects.x1);
-            free(h_objects.FHydro);
-        }
-        h_objects.r = (double*)malloc(objects.size() * sizeof(double));
-        h_objects.x0 = (tVect*)malloc(objects.size() * sizeof(tVect));
-        h_objects.x1 = (tVect*)malloc(objects.size() * sizeof(tVect));
-        h_objects.FHydro = (tVect*)malloc(objects.size() * sizeof(tVect));
-    }
-    // Update size
-    h_objects.count = static_cast<unsigned int>(objects.size());
-    // Repackage host particle data from array of structures, to structure of arrays
-    for (unsigned int i = 0; i < h_objects.count; ++i) {
-        h_objects.r[i] = objects[i].r;
-        h_objects.x0[i] = objects[i].x0;
-        h_objects.x1[i] = objects[i].x1;
-        // h_objects.FHydro[i] = objects[i].FHydro; // Zero'd before use in streaming()
-    }
-}
-
-template<>
-void LB2::syncElementsOut<CPU>(elmtList &elements) {
-    // Assumes memory is already allocated
-    // Repackage device particle data from structure of arrays to array of structures 
-    for (unsigned int i = 0; i < h_elements.count; ++i) {
-        elements[i].x1 = h_elements.x1[i];
-        elements[i].wGlobal = h_elements.wGlobal[i];
-        elements[i].FHydro = h_elements.FHydro[i];
-        elements[i].MHydro = h_elements.MHydro[i];
-        elements[i].fluidVolume = h_elements.fluidVolume[i];
-    }
-}
-template<>
-void LB2::syncParticlesOut<CPU>(particleList &particles) {
-    // Assumes memory is already allocated
-    // Repackage device particle data from structure of arrays to array of structures 
-    for (unsigned int i = 0; i < h_particles.count; ++i) {
-        particles[i].clusterIndex = h_particles.clusterIndex[i];
-        particles[i].r = h_particles.r[i];
-        particles[i].x0 = h_particles.x0[i];
-        particles[i].radiusVec = h_particles.radiusVec[i];
-    }
-}
-template<>
-void LB2::syncCylindersOut<CPU>(cylinderList &cylinders) {
-    // Assumes memory is already allocated
-    // Repackage device particle data from structure of arrays to array of structures 
-    for (unsigned int i = 0; i < h_cylinders.count; ++i) {
-        cylinders[i].p1 = h_cylinders.p1[i];
-        cylinders[i].p2 = h_cylinders.p2[i];
-        cylinders[i].R = h_cylinders.R[i];
-        cylinders[i].naxes = h_cylinders.naxes[i];
-        cylinders[i].omega = h_cylinders.omega[i];
-        cylinders[i].moving = h_cylinders.moving[i];
-    }
-}
-template<>
-void LB2::syncWallsOut<CPU>(wallList &walls) {
-    // Assumes memory is already allocated
-    // Repackage device particle data from structure of arrays to array of structures 
-    for (unsigned int i = 0; i < h_walls.count; ++i) {
-        walls[i].n = h_walls.n[i];
-        walls[i].p = h_walls.p[i];
-        walls[i].rotCenter = h_walls.rotCenter[i];
-        walls[i].omega = h_walls.omega[i];
-        walls[i].vel = h_walls.vel[i];
-        walls[i].FHydro = h_walls.FHydro[i];
-    }
-}
-template<>
-void LB2::syncObjectsOut<CPU>(objectList &objects) {
-    // Assumes memory is already allocated
-    // Repackage device particle data from structure of arrays to array of structures 
-    for (unsigned int i = 0; i < h_objects.count; ++i) {
-        objects[i].r = h_objects.r[i];
-        objects[i].x0 = h_objects.x0[i];
-        objects[i].x1 = h_objects.x1[i];
-        objects[i].FHydro = h_objects.FHydro[i];
-    }
-}
-#ifdef USE_CUDA
-template<>
-bool LB2::syncElementsIn<CUDA>(const elmtList &elements) {
-    if (!d_elements) {
-        CUDA_CALL(cudaMalloc(&d_elements, sizeof(Element2)));
-    }
-    // Copy latest particle data from HOST DEM to the device
-    // @todo Can these copies be done ahead of time async?
-    // @todo These copies will be redundant if/when DEM is moved to CUDA
-    bool componentsHasGrown = this->syncElementsIn<CPU>(elements);
-    bool updateDeviceStruct = false;
-    if (hd_elements.alloc < h_elements.count) {
-        if (hd_elements.x1) {
-            CUDA_CALL(cudaFree(hd_elements.x1));
-            CUDA_CALL(cudaFree(hd_elements.wGlobal));
-            CUDA_CALL(cudaFree(hd_elements.FHydro));
-            CUDA_CALL(cudaFree(hd_elements.MHydro));
-            CUDA_CALL(cudaFree(hd_elements.fluidVolume));
-        }
-        hd_elements.alloc = h_elements.count;
-        // Initially allocate device buffers except components
-        CUDA_CALL(cudaMalloc(&hd_elements.x1, h_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.wGlobal, h_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.FHydro, h_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.MHydro, h_elements.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_elements.fluidVolume, h_elements.count * sizeof(double)));
-        updateDeviceStruct = true;
-    }
-    // Update size
-    hd_elements.count = static_cast<unsigned int>(elements.size());
-    if (componentsHasGrown || !hd_elements.componentsIndex) {
-        // Allocate components
-        if (hd_elements.componentsIndex)
-            CUDA_CALL(cudaFree(hd_elements.componentsIndex));
-        if (hd_elements.componentsData)
-            CUDA_CALL(cudaFree(hd_elements.componentsData));
-        // Allocate components
-        CUDA_CALL(cudaMalloc(&hd_elements.componentsIndex, (h_elements.count + 1) * sizeof(unsigned int)));
-        CUDA_CALL(cudaMalloc(&hd_elements.componentsData, h_elements.componentsIndex[h_elements.count] * sizeof(unsigned int)));
-        updateDeviceStruct = true;
-    }
-    if (updateDeviceStruct) {
-        // Copy updated device pointers to device (@todo When/where is d_elements allocated??)
-        CUDA_CALL(cudaMemcpy(d_elements, &hd_elements, sizeof(Element2), cudaMemcpyHostToDevice));
-    } else {
-        // Copy updated device pointers to device (@todo When/where is d_elements allocated??)
-        CUDA_CALL(cudaMemcpy(&d_elements->count, &hd_elements.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
-    }
-    // Copy data to device buffers
-    CUDA_CALL(cudaMemcpy(hd_elements.x1, h_elements.x1, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_elements.wGlobal, h_elements.wGlobal, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_elements.FHydro, h_elements.FHydro, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    // CUDA_CALL(cudaMemcpy(hd_elements.MHydro, &h_elements.MHydro, h_elements.count * sizeof(tVect), cudaMemcpyHostToDevice)); // This is zero'd before use in latticeBoltzmannStep()
-    // CUDA_CALL(cudaMemcpy(hd_elements.fluidVolume, &h_elements.fluidVolume, h_elements.count * sizeof(double), cudaMemcpyHostToDevice)); // This is zero'd before use in latticeBoltzmannStep()
-    CUDA_CALL(cudaMemcpy(hd_elements.componentsIndex, h_elements.componentsIndex, (h_elements.count + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_elements.componentsData, h_elements.componentsData, h_elements.componentsIndex[h_elements.count] * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    return componentsHasGrown;
-}
-template<>
-void LB2::syncParticlesIn<CUDA>(const particleList &particles) {
-    if (!d_particles) {
-        CUDA_CALL(cudaMalloc(&d_particles, sizeof(Particle2)));
-    }
-    // Copy latest particle data from HOST DEM to the device
-    // @todo Can these copies be done ahead of time async?
-    // @todo These copies will be redundant when DEM is moved to CUDA
-    this->syncParticlesIn<CPU>(particles);
-    bool updateDeviceStruct = false;
-    if (hd_particles.alloc < h_particles.count) {
-        // Grow device buffers
-        if (hd_particles.clusterIndex) {
-            CUDA_CALL(cudaFree(hd_particles.clusterIndex));
-            CUDA_CALL(cudaFree(hd_particles.r));
-            CUDA_CALL(cudaFree(hd_particles.x0));
-            CUDA_CALL(cudaFree(hd_particles.radiusVec));
-        }
-        hd_particles.alloc = h_particles.count;
-        CUDA_CALL(cudaMalloc(&hd_particles.clusterIndex, h_particles.count * sizeof(unsigned int)));
-        CUDA_CALL(cudaMalloc(&hd_particles.r, h_particles.count * sizeof(double)));
-        CUDA_CALL(cudaMalloc(&hd_particles.x0, h_particles.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_particles.radiusVec, h_particles.count * sizeof(tVect)));
-        hd_particles.count = h_particles.count;
-        updateDeviceStruct = true;
-    }
-    hd_particles.count = static_cast<unsigned int>(particles.size());
-    if (updateDeviceStruct) {
-        // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_particles, &hd_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
-    }else {
-        // Copy updated particle count to device
-        CUDA_CALL(cudaMemcpy(&d_particles->count, &hd_particles.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
-    }
-    // Copy data to device buffers
-    CUDA_CALL(cudaMemcpy(hd_particles.clusterIndex, h_particles.clusterIndex, h_particles.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_particles.r, h_particles.r, h_particles.count * sizeof(double), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_particles.x0, h_particles.x0, h_particles.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_particles.radiusVec, h_particles.radiusVec, h_particles.count * sizeof(tVect), cudaMemcpyHostToDevice));
-}
-template<>
-void LB2::syncCylindersIn<CUDA>(const cylinderList &cylinders) {
-    if (!d_cylinders) {
-        CUDA_CALL(cudaMalloc(&d_cylinders, sizeof(Cylinder2)));
-    }
-    // Copy latest particle data from HOST DEM to the device
-    // @todo Can these copies be done ahead of time async?
-    // @todo These copies will be redundant when DEM is moved to CUDA
-    this->syncCylindersIn<CPU>(cylinders);
-    if (hd_cylinders.count < cylinders.size()) {
-        // Grow device buffers
-        if (hd_cylinders.p1) {
-            CUDA_CALL(cudaFree(hd_cylinders.p1));
-            CUDA_CALL(cudaFree(hd_cylinders.p2));
-            CUDA_CALL(cudaFree(hd_cylinders.R));
-            CUDA_CALL(cudaFree(hd_cylinders.naxes));
-            CUDA_CALL(cudaFree(hd_cylinders.omega));
-            CUDA_CALL(cudaFree(hd_cylinders.moving));
-        }
-        CUDA_CALL(cudaMalloc(&hd_cylinders.p1, h_cylinders.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_cylinders.p2, h_cylinders.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_cylinders.R, h_cylinders.count * sizeof(double)));
-        CUDA_CALL(cudaMalloc(&hd_cylinders.naxes, h_cylinders.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_cylinders.omega, h_cylinders.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_cylinders.moving, h_cylinders.count * sizeof(bool)));
-        hd_cylinders.count = h_cylinders.count;
-        // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_cylinders, &hd_cylinders, sizeof(Cylinder2), cudaMemcpyHostToDevice));
-    } else if(hd_cylinders.count != cylinders.size()) {
-        // Buffer has shrunk, so just update size
-        hd_cylinders.count = static_cast<unsigned int>(cylinders.size());
-        // Copy updated particle count to device (@todo When/where is d_elements allocated??)
-        CUDA_CALL(cudaMemcpy(&d_cylinders->count, &h_walls.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
-    }
-    // Copy data to device buffers
-    CUDA_CALL(cudaMemcpy(hd_cylinders.p1, h_cylinders.p1, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_cylinders.p2, h_cylinders.p2, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_cylinders.R, h_cylinders.R, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_cylinders.naxes, h_cylinders.naxes, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_cylinders.omega, h_cylinders.omega, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_cylinders.moving, h_cylinders.moving, h_cylinders.count * sizeof(bool), cudaMemcpyHostToDevice));
-}
-template<>
-void LB2::syncWallsIn<CUDA>(const wallList &walls) {
-    if (!d_walls) {
-        CUDA_CALL(cudaMalloc(&d_walls, sizeof(Wall2)));
-    }
-    // Copy latest particle data from HOST DEM to the device
-    // @todo Can these copies be done ahead of time async?
-    // @todo These copies will be redundant when DEM is moved to CUDA
-    this->syncWallsIn<CPU>(walls);
-    if (hd_walls.count < walls.size()) {
-        // Grow device buffers
-        if (hd_walls.n) {
-            CUDA_CALL(cudaFree(hd_walls.n));
-            CUDA_CALL(cudaFree(hd_walls.p));
-            CUDA_CALL(cudaFree(hd_walls.rotCenter));
-            CUDA_CALL(cudaFree(hd_walls.omega));
-            CUDA_CALL(cudaFree(hd_walls.vel));
-            CUDA_CALL(cudaFree(hd_walls.FHydro));
-        }
-        CUDA_CALL(cudaMalloc(&hd_walls.n, h_walls.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_walls.p, h_walls.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_walls.rotCenter, h_walls.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_walls.omega, h_walls.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_walls.vel, h_walls.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_walls.FHydro, h_walls.count * sizeof(tVect)));
-        hd_walls.count = h_walls.count;
-        // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_walls, &hd_walls, sizeof(Wall2), cudaMemcpyHostToDevice));
-    } else if(hd_walls.count != walls.size()) {
-        // Buffer has shrunk, so just update size
-        hd_walls.count = static_cast<unsigned int>(walls.size());
-        // Copy updated particle count to device (@todo When/where is d_walls allocated??)
-        CUDA_CALL(cudaMemcpy(&d_walls->count, &h_walls.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
-    }
-    // Copy data to device buffers
-    CUDA_CALL(cudaMemcpy(hd_walls.n, h_walls.n, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_walls.p, h_walls.p, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_walls.rotCenter, h_walls.rotCenter, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_walls.omega, h_walls.omega, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_walls.vel, h_walls.vel, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    // CUDA_CALL(cudaMemcpy(hd_walls.FHydro, h_walls.FHydro, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice)); // Zero'd before use in streaming()
-}
-template<>
-void LB2::syncObjectsIn<CUDA>(const objectList &objects) {
-    if (!d_objects) {
-        CUDA_CALL(cudaMalloc(&d_objects, sizeof(Object2)));
-    }
-    // Copy latest particle data from HOST DEM to the device
-    // @todo Can these copies be done ahead of time async?
-    // @todo These copies will be redundant when DEM is moved to CUDA
-    this->syncObjectsIn<CPU>(objects);
-    if (hd_objects.count < objects.size()) {
-        // Grow device buffers
-        if (hd_objects.r) {
-            CUDA_CALL(cudaFree(hd_objects.r));
-            CUDA_CALL(cudaFree(hd_objects.x0));
-            CUDA_CALL(cudaFree(hd_objects.x1));
-            CUDA_CALL(cudaFree(hd_objects.FHydro));
-        }
-        CUDA_CALL(cudaMalloc(&hd_objects.r, h_objects.count * sizeof(double)));
-        CUDA_CALL(cudaMalloc(&hd_objects.x0, h_objects.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_objects.x1, h_objects.count * sizeof(tVect)));
-        CUDA_CALL(cudaMalloc(&hd_objects.FHydro, h_objects.count * sizeof(tVect)));
-        hd_objects.count = h_objects.count;
-        // Copy updated device pointers to device
-        CUDA_CALL(cudaMemcpy(d_objects, &hd_objects, sizeof(Object2), cudaMemcpyHostToDevice));
-    } else if(hd_objects.count != objects.size()) {
-        // Buffer has shrunk, so just update size
-        hd_objects.count = static_cast<unsigned int>(objects.size());
-        // Copy updated particle count to device (@todo When/where is d_objects allocated??)
-        CUDA_CALL(cudaMemcpy(&d_objects->count, &h_objects.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
-    }
-    // Copy data to device buffers
-    CUDA_CALL(cudaMemcpy(hd_objects.r, h_objects.r, h_objects.count * sizeof(double), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_objects.x0, h_objects.x0, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_objects.x1, h_objects.x1, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
-    // CUDA_CALL(cudaMemcpy(hd_objects.FHydro, h_objects.FHydro, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice)); // Zero'd before use in streaming()
-}
-template<>
-void LB2::syncElementsOut<CUDA>(elmtList &elements) {
-    // Assumes that all memory is appropriately allocated
-
-    // Copy data back to host
-    // CUDA_CALL(cudaMemcpy(&h_elements.count, &d_elements->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)) // Redundant, not updated by LBM
-    // CUDA_CALL(cudaMemcpy(&hd_elements.count, &d_elements->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)) // Redundant, not updated by LBM
-    CUDA_CALL(cudaMemcpy(h_elements.x1, hd_elements.x1, h_elements.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_elements.wGlobal, hd_elements.wGlobal, h_elements.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_elements.FHydro, hd_elements.FHydro, h_elements.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_elements.MHydro, hd_elements.MHydro, h_elements.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_elements.fluidVolume, hd_elements.fluidVolume, h_elements.count * sizeof(double), cudaMemcpyDeviceToHost));
-    // (cudaMemcpy(h_elements.componentsIndex, hd_elements.componentsIndex, (h_elements.count + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Assumed redundant
-    // CUDA_CALL(cudaMemcpy(h_elements.componentsData, hd_elements.componentsData, h_elements.componentsIndex[h_elements.count] * sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Assumed redundant
-
-    // Convert data back to array of struct
-    this->syncElementsOut<CPU>(elements);
-}
-template<>
-void LB2::syncParticlesOut<CUDA>(particleList &particles) {
-    // Assumes that all memory is appropriately allocated
-
-    // Copy data back to host
-    // CUDA_CALL(cudaMemcpy(&h_particles.count, &d_particles->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    // CUDA_CALL(cudaMemcpy(&hd_particles.count, &d_particles->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    CUDA_CALL(cudaMemcpy(h_particles.clusterIndex, hd_particles.clusterIndex, h_particles.count * sizeof(unsigned int), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_particles.r, hd_particles.r, h_particles.count * sizeof(double), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_particles.x0, hd_particles.x0, h_particles.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_particles.radiusVec, hd_particles.radiusVec, h_particles.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-
-    // Convert data back to array of struct
-    this->syncParticlesOut<CPU>(particles);
-}
-template<>
-void LB2::syncCylindersOut<CUDA>(cylinderList &cylinders) {
-    // Assumes that all memory is appropriately allocated
-
-    // Copy data back to host
-    // CUDA_CALL(cudaMemcpy(&h_cylinders.count, &d_cylinders->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    // CUDA_CALL(cudaMemcpy(&hd_cylinders.count, &d_cylinders->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    CUDA_CALL(cudaMemcpy(h_cylinders.p1, hd_cylinders.p1, h_cylinders.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_cylinders.p2, hd_cylinders.p2, h_cylinders.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_cylinders.R, hd_cylinders.R, h_cylinders.count * sizeof(double), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_cylinders.naxes, hd_cylinders.naxes, h_cylinders.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_cylinders.omega, hd_cylinders.omega, h_cylinders.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_cylinders.moving, hd_cylinders.moving, h_cylinders.count * sizeof(bool), cudaMemcpyDeviceToHost));
-
-    // Convert data back to array of struct
-    this->syncCylindersOut<CPU>(cylinders);
-}
-template<>
-void LB2::syncWallsOut<CUDA>(wallList &walls) {
-    // Assumes that all memory is appropriately allocated
-
-    // Copy data back to host
-    // CUDA_CALL(cudaMemcpy(&h_walls.count, &d_walls->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    // CUDA_CALL(cudaMemcpy(&hd_walls.count, &d_walls->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    CUDA_CALL(cudaMemcpy(h_walls.n, hd_walls.n, h_walls.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_walls.p, hd_walls.p, h_walls.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_walls.rotCenter, hd_walls.rotCenter, h_walls.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_walls.omega, hd_walls.omega, h_walls.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_walls.vel, hd_walls.vel, h_walls.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_walls.FHydro, hd_walls.FHydro, h_walls.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-
-    // Convert data back to array of struct
-    this->syncWallsOut<CPU>(walls);
-}
-template<>
-void LB2::syncObjectsOut<CUDA>(objectList &objects) {
-    // Assumes that all memory is appropriately allocated
-
-    // Copy data back to host
-    // CUDA_CALL(cudaMemcpy(&h_objects.count, &d_objects->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    // CUDA_CALL(cudaMemcpy(&hd_objects.count, &d_objects->count, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // Redundant, not updated by LBM
-    CUDA_CALL(cudaMemcpy(h_objects.r, hd_objects.r, h_objects.count * sizeof(double), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_objects.x0, hd_objects.x0, h_objects.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_objects.x1, hd_objects.x1, h_objects.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_objects.FHydro, hd_objects.FHydro, h_objects.count * sizeof(tVect), cudaMemcpyDeviceToHost));
-
-    // Convert data back to array of struct
-    this->syncObjectsOut<CPU>(objects);
-}
-#endif
-
-
-/**
  * initializeParticleBoundaries()
  */
 __host__ __device__ __forceinline__ double common_initializeParticleBoundaries(const unsigned int i, Node2* nodes, Particle2* particles) {
@@ -579,7 +41,7 @@ double LB2::initializeParticleBoundaries<CPU>() {
 #pragma omp parallel for reduction(+:totalParticleMass) 
     for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
         // Pass the active node index to the common implementation
-        totalParticleMass += common_initializeParticleBoundaries(i, d_nodes, d_particles);
+        totalParticleMass += common_initializeParticleBoundaries(i, d_nodes, dem.d_particles);
     }
     return totalParticleMass;
 }
@@ -615,7 +77,7 @@ double LB2::initializeParticleBoundaries<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_initializeParticleBoundaries, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
-    d_initializeParticleBoundaries << <gridSize, blockSize >> > (d_nodes, d_particles, d_return);
+    d_initializeParticleBoundaries << <gridSize, blockSize >> > (d_nodes, dem.d_particles, d_return);
     CUDA_CHECK();
 
     // Copy back return value
@@ -664,7 +126,7 @@ void LB2::findNewActive<CPU>() {
 #pragma omp parallel for
     for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
         // Pass the active node index to the common implementation
-        common_findNewActive(i, d_nodes, d_particles, d_elements);
+        common_findNewActive(i, d_nodes, dem.d_particles, dem.d_elements);
     }
 }
 #ifdef USE_CUDA
@@ -685,7 +147,7 @@ void LB2::findNewActive<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewActive, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewActive << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
+    d_findNewActive << <gridSize, blockSize >> > (d_nodes, dem.d_particles, dem.d_elements);
     CUDA_CHECK();
 }
 #endif
@@ -738,7 +200,7 @@ void LB2::findNewSolid<CPU>() {
 #pragma omp parallel for
     for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
         // Pass the active node index to the common implementation
-        common_findNewSolid(i, d_nodes, d_particles, d_elements);
+        common_findNewSolid(i, d_nodes, dem.d_particles, dem.d_elements);
     }
 }
 #ifdef USE_CUDA
@@ -759,7 +221,7 @@ void LB2::findNewSolid<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewSolid, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewSolid << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
+    d_findNewSolid << <gridSize, blockSize >> > (d_nodes, dem.d_particles, dem.d_elements);
     CUDA_CHECK();
 }
 #endif
@@ -794,8 +256,8 @@ __host__ __device__ __forceinline__ void common_checkNewInterfaceParticles(const
 template<>
 void LB2::checkNewInterfaceParticles<CPU>() {
 #pragma omp parallel for
-    for (unsigned int e_i = 0; e_i < d_elements->count; ++e_i) {
-        common_checkNewInterfaceParticles(e_i, d_nodes, d_particles, d_elements);
+    for (unsigned int e_i = 0; e_i < dem.d_elements->count; ++e_i) {
+        common_checkNewInterfaceParticles(e_i, d_nodes, dem.d_particles, dem.d_elements);
     }
 }
 #ifdef USE_CUDA
@@ -813,11 +275,11 @@ void LB2::checkNewInterfaceParticles<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_checkNewInterfaceParticles, 0, h_elements.count);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_checkNewInterfaceParticles, 0, dem.h_elements.count);
     // Round up to accommodate required threads
-    gridSize = (h_elements.count + blockSize - 1) / blockSize;
+    gridSize = (dem.h_elements.count + blockSize - 1) / blockSize;
     // @todo Are there more elements or particles? This may want to be inverted, and we can go straight to particles rather than components?
-    d_checkNewInterfaceParticles << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
+    d_checkNewInterfaceParticles << <gridSize, blockSize >> > (d_nodes, dem.d_particles, dem.d_elements);
     CUDA_CHECK();
 }
 #endif
@@ -882,8 +344,8 @@ void LB2::reconstructHydroCollide<CPU>() {
         d_nodes->reconstruct(an_i);
 
         // compute interaction forces
-        if (d_elements->count) {
-            common_computeHydroForces(an_i, d_nodes, d_particles, d_elements);
+        if (dem.d_elements->count) {
+            common_computeHydroForces(an_i, d_nodes, dem.d_particles, dem.d_elements);
         }
 
         //collision operator
@@ -921,7 +383,7 @@ void LB2::reconstructHydroCollide<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_reconstructHydroCollide, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
-    d_reconstructHydroCollide << <gridSize, blockSize >> > (d_nodes, d_particles, d_elements);
+    d_reconstructHydroCollide << <gridSize, blockSize >> > (d_nodes, dem.d_particles, dem.d_elements);
     CUDA_CHECK();
 }
 #endif
@@ -1176,14 +638,14 @@ template<>
 void LB2::streaming<CPU>() {
     // STREAMING STEP
     // Init forces to zero
-    hd_walls.initForces<CPU>();
-    hd_objects.initForces<CPU>();
+    dem.hd_walls.initForces<CPU>();
+    dem.hd_objects.initForces<CPU>();
     // Init streaming support vector
     hd_nodes.store<CPU>();
 
 #pragma omp parallel for // @note extraMass reduction is not currently implemented
     for (unsigned int i = 0; i < d_nodes->activeCount; ++i) {
-        common_streaming(i, d_nodes, d_walls);
+        common_streaming(i, d_nodes, dem.d_walls);
     }
 
     // redistributing extra mass due to bounce back to interface cells
@@ -1202,8 +664,8 @@ template<>
 void LB2::streaming<CUDA>() {
     // STREAMING STEP
     // Init forces to zero
-    hd_walls.initForces<CUDA>();
-    hd_objects.initForces<CUDA>();
+    dem.hd_walls.initForces<CUDA>();
+    dem.hd_objects.initForces<CUDA>();
     // Init streaming support vector
     hd_nodes.store<CUDA>();
 
@@ -1214,7 +676,7 @@ void LB2::streaming<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_streaming, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
-    d_streaming << <gridSize, blockSize >> > (d_nodes, d_walls);
+    d_streaming << <gridSize, blockSize >> > (d_nodes, dem.d_walls);
     CUDA_CHECK();
 
 #ifdef _DEBUG
@@ -1240,16 +702,16 @@ void LB2::streaming<CUDA>() {
  */
 template<>
 void LB2::shiftToPhysical<CPU>() {
-    for (unsigned int i = 0; i < d_elements->count; ++i) {
-        d_elements->FHydro[i] *= LB_P.unit.Force;
-        d_elements->MHydro[i] *= LB_P.unit.Torque;
-        d_elements->fluidVolume[i] *= LB_P.unit.Volume;
+    for (unsigned int i = 0; i < dem.d_elements->count; ++i) {
+        dem.d_elements->FHydro[i] *= LB_P.unit.Force;
+        dem.d_elements->MHydro[i] *= LB_P.unit.Torque;
+        dem.d_elements->fluidVolume[i] *= LB_P.unit.Volume;
     }
-    for (unsigned int i = 0; i < d_walls->count; ++i) {
-        d_walls->FHydro[i] *= LB_P.unit.Force;
+    for (unsigned int i = 0; i < dem.d_walls->count; ++i) {
+        dem.d_walls->FHydro[i] *= LB_P.unit.Force;
     }
-    for (unsigned int i = 0; i < d_objects->count; ++i) {
-        d_objects->FHydro[i] *= LB_P.unit.Force;
+    for (unsigned int i = 0; i < dem.d_objects->count; ++i) {
+        dem.d_objects->FHydro[i] *= LB_P.unit.Force;
     }
 }
 #ifdef USE_CUDA
@@ -1272,7 +734,7 @@ __global__ void d_shiftToPhysical(Element2* d_elements, Wall2* d_walls, Object2*
 template<>
 void LB2::shiftToPhysical<CUDA>() {
     // Launch enough threads to accomodate everything
-    const unsigned int maxCount = std::max(std::max(h_elements.count, h_walls.count), h_objects.count);
+    const unsigned int maxCount = std::max(std::max(dem.h_elements.count, dem.h_walls.count), dem.h_objects.count);
     // Launch cuda kernel to update
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
@@ -1280,7 +742,7 @@ void LB2::shiftToPhysical<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_shiftToPhysical, 0, maxCount);
     // Round up to accommodate required threads
     gridSize = (maxCount + blockSize - 1) / blockSize;
-    d_shiftToPhysical << <gridSize, blockSize >> > (d_elements, d_walls, d_objects);
+    d_shiftToPhysical<<<gridSize, blockSize>>>(dem.d_elements, dem.d_walls, dem.d_objects);
     CUDA_CHECK();
 }
 #endif
@@ -1454,11 +916,11 @@ __host__ __device__ __forceinline__ void common_updateMassInterface(const unsign
     nodes->newMass[in_i] += deltaMass;
 
     nodes->mass[in_i] = nodes->newMass[in_i];
-    nodes->age[in_i] = min(nodes->age[in_i] + PARAMS.ageRatio, 1.0f);
+    nodes->age[in_i] = min(nodes->age[in_i] + LB_P.ageRatio, 1.0f);
 }
 __host__ __device__ __forceinline__ void common_updateMassFluid(const unsigned int fn_i, Node2 *nodes) {
     nodes->mass[fn_i] = nodes->n[fn_i];
-    nodes->age[fn_i] = min(nodes->age[fn_i] + PARAMS.ageRatio, 1.0f);
+    nodes->age[fn_i] = min(nodes->age[fn_i] + LB_P.ageRatio, 1.0f);
 }
 template<>
 void LB2::updateMass<CPU>() {
@@ -1973,7 +1435,7 @@ void LB2::updateInterface<CUDA>() {
 #endif
 
 
-void LB2::latticeBoltzmannCouplingStep(bool& newNeighbourList) {
+void LB2::latticeBoltzmannCouplingStep(bool newNeighbourList) {
     // identifies which nodes need to have an update due to particle movement
     // the complexity arises from trying to keep the scaling as close to linear as possible
     // maybe the best idea is to do this in two step:
@@ -2011,7 +1473,7 @@ void LB2::latticeBoltzmannStep() {
     hd_nodes.cleanLists<IMPL>();
 
     // Initializing the elements forces (lattice units)
-    hd_elements.initElements<IMPL>();
+    dem.hd_elements.initElements<IMPL>();
 
     // Initialise lattice boltzmann force vector
     if (!h_LB_P.forceField) {
@@ -2770,14 +2232,14 @@ void LB2::initializeWalls() {
                 const tVect nodePosition = h_nodes.getPosition(i);
                 unsigned int solidIndex = h_nodes.solidIndex[i];
                 // wall
-                if (solidIndex < h_walls.count && nodePosition.insidePlane(h_walls.p[solidIndex] / LB_P.unit.Length, h_walls.n[solidIndex])) {
-                    solidVelocity = h_walls.getSpeed(solidIndex, nodePosition * LB_P.unit.Length) / LB_P.unit.Speed;
+                if (solidIndex < dem.h_walls.count && nodePosition.insidePlane(dem.h_walls.p[solidIndex] / LB_P.unit.Length, dem.h_walls.n[solidIndex])) {
+                    solidVelocity = dem.h_walls.getSpeed(solidIndex, nodePosition * LB_P.unit.Length) / LB_P.unit.Speed;
                 }// cylinder
-                else if (solidIndex < h_cylinders.count && !nodePosition.insideCylinder(h_cylinders.p1[solidIndex] / LB_P.unit.Length, h_cylinders.naxes[solidIndex], 0.0, h_cylinders.R[solidIndex] / LB_P.unit.Length)) {
-                    solidVelocity = h_cylinders.getSpeed(solidIndex, nodePosition * LB_P.unit.Length) / LB_P.unit.Speed;
+                else if (solidIndex < dem.h_cylinders.count && !nodePosition.insideCylinder(dem.h_cylinders.p1[solidIndex] / LB_P.unit.Length, dem.h_cylinders.naxes[solidIndex], 0.0, dem.h_cylinders.R[solidIndex] / LB_P.unit.Length)) {
+                    solidVelocity = dem.h_cylinders.getSpeed(solidIndex, nodePosition * LB_P.unit.Length) / LB_P.unit.Speed;
                 }// objects
-                else if (solidIndex < h_objects.count && nodePosition.insideSphere(h_objects.x0[solidIndex] / LB_P.unit.Length, h_objects.r[solidIndex] / LB_P.unit.Length)) {
-                    solidVelocity = h_objects.x1[solidIndex] / LB_P.unit.Speed;
+                else if (solidIndex < dem.h_objects.count && nodePosition.insideSphere(dem.h_objects.x0[solidIndex] / LB_P.unit.Length, dem.h_objects.r[solidIndex] / LB_P.unit.Length)) {
+                    solidVelocity = dem.h_objects.x1[solidIndex] / LB_P.unit.Speed;
                 }
                 // reset velocity and mass (useful for plotting)
                 // density=0.0; velocity=solidVelocity, mass=0.0; viscosity=0.0; force=(0.0,0.0,0.0)
@@ -2834,13 +2296,12 @@ void LB2::initializeLists() {
     
     cout << " done" << endl;
 }
-void LB2::step(DEM2 &dem, bool io_demSolver) {
+void LB2::step(bool io_demSolver) {
     if (io_demSolver) {
-        this->syncDEMIn(dem.elmts, dem.particles, dem.walls, dem.objects);
-        this->latticeBoltzmannCouplingStep(dem.newNeighborList);
+        this->latticeBoltzmannCouplingStep(true); // @todo DEM_P.newNeighborList ??
     }
 
-    if (dem.demTime >= dem.demInitialRepeat && hd_nodes.activeCount) {
+    if (DEM_P.demTime >= DEM_P.demInitialRepeat && hd_nodes.activeCount) {
         this->latticeBoltzmannStep();
 
         // Lattice Boltzmann core steps
@@ -2848,26 +2309,8 @@ void LB2::step(DEM2 &dem, bool io_demSolver) {
             this->latticeBoltzmannFreeSurfaceStep();
         }
     }
-    if (io_demSolver) {
-        this->syncDEMOut(dem.elmts, dem.particles, dem.walls, dem.objects);
-    }
 }
 
-void LB2::syncDEMIn(const elmtList &elmts, const particleList &particles, const wallList &walls, const objectList &objects) {
-    // Sync DEM data to structure of arrays format (and device memory)
-    syncElementsIn<IMPL>(elmts);
-    syncParticlesIn<IMPL>(particles);
-    syncWallsIn<IMPL>(walls);
-    syncObjectsIn<IMPL>(objects);
-}
-void LB2::syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects) {
-    // Sync DEM data from structure of arrays format (and device memory)
-    // @todo which of this sync is redundant?
-    syncElementsOut<IMPL>(elmts);
-    syncParticlesOut<IMPL>(particles);
-    syncWallsOut<IMPL>(walls);
-    syncObjectsOut<IMPL>(objects);
-}
 void LB2::setParams(const LBParams& params, const LBInitParams& initParams, bool skip_sync) {
     // CPU
     h_LB_P = params;

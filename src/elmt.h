@@ -176,60 +176,42 @@ enum ContactModel {LINEAR, HERTZIAN};
 class material{
 public:
     // density [ mass / length² ]
-    double density;
+    double density = 1.0;
 
     // contact model
-    ContactModel contactModel;
+    ContactModel contactModel = LINEAR;
 
     // linear model ////////////////////
     // stiffness
-    double linearStiff;
+    double linearStiff = 1.0;
 
     // Hertzian model /////////////////////////
     // Young modulus [ force/length² ]
-    double youngMod;
+    double youngMod = 1.0;
     // Poisson ratio [ / ]
-    double poisson;
+    double poisson = 0.3;
     // constant part of normal stiffness (dependent variable)
-    double knConst;
+    double knConst = 1.0;
     // constant part of shear stiffness (dependent variable) ->this is not physically sound
-    double ksConst;
+    double ksConst = 1.0;
 
     // normal damping ///////////////////////////
     // normal viscous coefficient
-    double restitution;
-    double dampCoeff;
+    double restitution = 0.5;
+    double dampCoeff = 0.5;
 
     // tangential model ////////////////////////
     // tangential viscous coefficient
-    double viscTang;
+    double viscTang = 0.5;
     // particle-particle friction
-    double frictionCoefPart;
+    double frictionCoefPart = 0.3;
     // particle-wall friction
-    double frictionCoefWall;
+    double frictionCoefWall = 0.3;
     // particle-object friction
-    double frictionCoefObj;
+    double frictionCoefObj = 0.3;
     // rolling model ////////////////////////  
     // particle-particle rolling friction
-    double rollingCoefPart;
-
-    // default constructor
-    material(){
-        contactModel=LINEAR;
-        density=1.0;
-        youngMod=1.0;
-        poisson=0.3;
-        knConst=1.0;
-        ksConst=1.0;
-        linearStiff=1.0;
-        restitution=0.5;
-        dampCoeff=0.5;
-        viscTang=0.5;
-        frictionCoefPart=0.3;
-        frictionCoefObj=0.3;
-        frictionCoefWall=0.3;
-        rollingCoefPart=0.02;
-    }
+    double rollingCoefPart = 0.02;
 };
 
 class ghost{

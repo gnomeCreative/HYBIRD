@@ -62,7 +62,15 @@ class DEM2 {
     template<int impl>
     void cylinderParticleContacts();
     template<int impl>
+    void computeApparentForces();
+    template<int impl>
+    void saveObjectForces();
+    template<int impl>
     void newtonEquationsSolution();
+    template<int impl>
+    void corrector();
+    template<int impl>
+    void updateParticlesCorrected();
 
     Particle2 &getParticles();
     Element2 &getElements();

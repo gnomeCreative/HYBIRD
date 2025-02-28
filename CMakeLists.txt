@@ -102,9 +102,9 @@ if(HYBIRD_ENABLE_OPENMP)
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             if(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
                 # Visual Studio 2019+ has experimental flag for OMP3.0 support
-                set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:C,CXX>:-openmp:experimental>")
+                set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:C,CXX>:-openmp:llvm>")
                 # Todo how to enable OpenMP in cuda files?/Is it desired/required?
-                # CMake 3.30 alt: set(OpenMP_RUNTIME_MSVC "experimental")
+                # CMake 3.30 alt: set(OpenMP_RUNTIME_MSVC "llvm")
             endif()
         endif()
     else()    

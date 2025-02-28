@@ -205,10 +205,6 @@ void DEM::discreteElementInit(const std::array<types, 6> &externalBoundary, cons
     demSize[0] = externalSize[0];
     demSize[1] = externalSize[1];
     demSize[2] = externalSize[2];
-    // @todo do lattice coords need to be converted to dem coords?
-    h_DEM_P.half_demSize.x = externalSize[0] / 2;
-    h_DEM_P.half_demSize.y = externalSize[1] / 2;
-    h_DEM_P.half_demSize.z = externalSize[2] / 2;
 
     // switchers for apparent accelerations
     solveCoriolis = externalSolveCoriolis;
@@ -611,7 +607,7 @@ void DEM::initializeWalls(const std::array<types, 6> &externalBoundary, const st
             dummyWall.limited = false;
             ++index;
             walls.push_back(dummyWall);
-            if (dem_p.depositArea) {
+            if (depositArea) {
                 // deposit area
                 dummyWall.p = tVect(25.2795, 0.5008, 0.0);
                 dummyWall.n = tVect(-0.342020, 0.939693, 0.0);

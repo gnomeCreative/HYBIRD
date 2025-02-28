@@ -38,7 +38,7 @@ void Cylinder2::initialize() {
 
             const double reservoirX = 0.8;
             const double wallSizeX = 0.025;
-            const double erodibleSizeX = 0.51;
+            // const double erodibleSizeX = 0.51;
             const double erodibleHeight = 0.02;
             const double edgeRadius = 0.005;
 
@@ -272,7 +272,7 @@ void Cylinder2::initialize() {
             this->p2[index] = tVect(intruderX, 100.0, intruderZ);
             this->R[index] = intruderd / 2.0;
             this->omega[index] = tVect(0.0, 0.0, 0.0);
-            this->initAxes();
+            this->initAxes(index);
             this->moving[index] = false;
             this->slip[index] = false;
             this->limited[index] = false;

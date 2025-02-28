@@ -13,7 +13,7 @@ class IO2 : public IO {
 
  private:
     // function that groups file creations
-    void createFiles(LB2& lb, const DEM2& dem);
+    void createFiles(LB2& lb, DEM2& dem);
 
     // PARAVIEW /////////////////////////////////////////////////////////////////////////////////////////
     

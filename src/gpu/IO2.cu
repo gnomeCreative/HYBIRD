@@ -214,7 +214,7 @@ void IO2::outputStep(LB2& lb, DEM2& dem) {
 
 // paraview files
 
-void IO2::createFiles(LB2& lb, const DEM2& dem) {
+void IO2::createFiles(LB2& lb, DEM2& dem) {
     // write vtk at regular interval defined with the input file
 
     if (lbmSolver) {

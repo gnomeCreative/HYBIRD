@@ -369,7 +369,7 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         case FRICTIONAL:
         {
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
+            const double pressure = std::max(LB_P.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
             if (this->basal[index]) {
                 this->friction[index] = LB_P.fluidMaterial.basalFrictionCoefFluid;
             } else {
@@ -381,7 +381,7 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         case VOELLMY:
         {
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
+            const double pressure = std::max(LB_P.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
             if (this->basal[index]) {
                 this->friction[index] = LB_P.fluidMaterial.basalFrictionCoefFluid;
             } else {
@@ -399,7 +399,7 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         case MUI:
         {
             // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0)); //smoothedPressure
+            const double pressure = std::max(LB_P.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0)); //smoothedPressure
             const double inertialNumber = LB_P.fluidMaterial.particleDiameter * shearRate / sqrt(pressure / LB_P.fluidMaterial.particleDensity);
             const double regularizationFactor = 1.0;//-exp(-shearRate/0.00005);
             if (this->basal[index]) {
@@ -422,7 +422,7 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
     }
 
     // limiting for stability
-    this->visc[index] = std::max(PARAMS.fluidMaterial.lbMinVisc, std::min(PARAMS.fluidMaterial.lbMaxVisc, nuApp));
+    this->visc[index] = std::max(LB_P.fluidMaterial.lbMinVisc, std::min(LB_P.fluidMaterial.lbMaxVisc, nuApp));
 }
 __host__ __device__ __forceinline__ void Node2::solveCollision(const unsigned int index, const std::array<double, lbmDirec> &feq) {
     // relaxation frequency

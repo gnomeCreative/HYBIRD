@@ -710,7 +710,7 @@ void Wall2::initialize(const std::array<types, 6> &externalBoundary, const std::
 
             break;
         }
-        case default: 
+        default: 
         {
             // no extra walls
             memoryAlloc<CPU>(basic_wall_count);
