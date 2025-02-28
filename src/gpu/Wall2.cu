@@ -725,7 +725,7 @@ void Wall2::initialize(const std::array<types, 6> &externalBoundary, const std::
             this->p[index] = boundaryLocation[i]; //tVect(0.5*unit.Length,0.0,0.0);
             this->n[index] = boundaryDirec[i];
             this->index[index] = index;
-            this->translating = false;
+            this->translating[index] = false;
             this->trans[index].reset();
             this->limited[index] = false;
             if (externalBoundary[i] == SLIP_STAT_WALL) {

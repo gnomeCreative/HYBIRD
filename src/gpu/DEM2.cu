@@ -62,15 +62,15 @@ void DEM2::buildActiveLists<CUDA>() {
     // Copy back element result to main list
     unsigned int new_particle_count = 0;
     CUDA_CALL(cudaMemcpy(&new_particle_count, builderI, sizeof(unsigned int), cudaMemcpyDeviceToHost)); // illegal memory access?
-    if (new_particle_count > hd_elements.activeAlloc) {
+    if (new_particle_count > hd_particles.activeAlloc) {
         // Resize interface buffer (it doesn't currently ever scale back down)
-        if (hd_elements.activeI) {
-            CUDA_CALL(cudaFree(hd_elements.activeI));
+        if (hd_particles.activeI) {
+            CUDA_CALL(cudaFree(hd_particles.activeI));
         }
-        CUDA_CALL(cudaMalloc(&hd_elements.activeI, new_particle_count * sizeof(unsigned int)));
-        hd_elements.activeAlloc = new_particle_count;
+        CUDA_CALL(cudaMalloc(&hd_particles.activeI, new_particle_count * sizeof(unsigned int)));
+        hd_particles.activeAlloc = new_particle_count;
     }
-    hd_elements.activeCount = new_particle_count;
+    hd_particles.activeCount = new_particle_count;
     // Sort list into it's new storage
     size_t temp_storage_bytes = 0;
     if (new_element_count > new_particle_count) {
@@ -82,6 +82,7 @@ void DEM2::buildActiveLists<CUDA>() {
     ctm.resize(temp_storage_bytes);
     CUDA_CALL(cub::DeviceRadixSort::SortKeys(ctm.getPtr(), temp_storage_bytes, &builderI[1], hd_elements.activeI, new_element_count));
     CUDA_CALL(cub::DeviceRadixSort::SortKeys(ctm.getPtr(), temp_storage_bytes, &builderI[hd_elements.count + 2], hd_particles.activeI, new_particle_count));
+    CUDA_CHECK()
     // Update device struct (new size and ptr, but whole struct because eh)
     CUDA_CALL(cudaMemcpy(d_elements, &hd_elements, sizeof(Element2), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(d_particles, &hd_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
@@ -145,8 +146,8 @@ void DEM2::evalNeighborTable<CUDA>() {
         size_t temp_storage_bytes = 0;
         CUDA_CALL(cub::DeviceScan::ExclusiveSum(nullptr, temp_storage_bytes, d_histogram, hd_particles.PBM, PBM_len));
         auto& ctm = CubTempMem::GetTempSingleton();
-        ctb.resize(temp_storage_bytes);
-        CUDA_CALL(cub::DeviceScan::ExclusiveSum(nullptr, temp_storage_bytes, d_histogram, hd_particles.PBM, PBM_len));
+        ctm.resize(temp_storage_bytes);
+        CUDA_CALL(cub::DeviceScan::ExclusiveSum(ctm.getPtr(), temp_storage_bytes, d_histogram, hd_particles.PBM, PBM_len));
     }
     { // Store particle indexes in the neighbour grid
         int blockSize = 0;  // The launch configurator returned block size
@@ -1541,11 +1542,17 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
     // used to get tot number of objects for CG (coarse graining)
     stdObjects = h_objects.count;
 
+    // Copy all initialise DEM data to device
+    syncElementsToDevice();
+    syncWallsToDevice();
+    syncObjectsToDevice();
+    syncCylindersToDevice();
+    syncParticlesToDevice();
+
     // initialize neighbor list parameters (also generate particles and set ghosts)
     if (h_elements.count) {
         initNeighborParameters();
         // @todo periodicObjects();
-        syncParticlesToDevice();
         evalNeighborTable<IMPL>();
     }
 
@@ -1597,11 +1604,6 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
             << ", object-particle friction = " << DEM_P.sphereMat.frictionCoefObj << endl;
     cout << "Rolling coefficient = " << DEM_P.sphereMat.rollingCoefPart << endl;
     cout << "Numerical viscosity =" << DEM_P.numVisc << endl;
-
-    syncElementsToDevice();
-    syncWallsToDevice();
-    syncObjectsToDevice();
-    syncCylindersToDevice();
 }
 
 void DEM2::initNeighborParameters() {
@@ -2131,7 +2133,6 @@ void DEM2::syncElementsToDevice() {
 #ifdef USE_CUDA
     if (!d_elements) {
         CUDA_CALL(cudaMalloc(&d_elements, sizeof(Element2)));
-        h_elements.memoryAlloc<CPU>(hd_elements.count);
     }
     // Copy particle data from h_elements to d_elements/hd_elements
     bool updateDeviceStruct = false;
