@@ -6,10 +6,6 @@ struct Object2 {
     unsigned int alloc;
     unsigned int count = 0;
     
-    // object index
-    unsigned int *index = nullptr;
-    // original object index in case of copies
-    unsigned int *originalIndex = nullptr;
     // element index
     unsigned int *ElID = nullptr;
     // particle radius
@@ -63,9 +59,7 @@ inline void Object2::initForces<CUDA>() {
 template<int impl>
 void Object2::allocObjects(unsigned int num) {
     alloc = num;
-
-    index = (unsigned int*)malloc(alloc * sizeof(unsigned int));
-    originalIndex = (unsigned int*)malloc(alloc * sizeof(unsigned int));
+    
     ElID = (unsigned int*)malloc(alloc * sizeof(unsigned int));
     r = (double*)malloc(alloc * sizeof(double));
     x0 = (tVect*)malloc(alloc * sizeof(tVect));

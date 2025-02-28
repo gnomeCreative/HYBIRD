@@ -145,7 +145,9 @@ void DEMParams::discreteElementGet(GetPot& configFile, GetPot& commandLine, Elem
     objects.allocObjects<CPU>(objects.count);
     for (int n = 0; n < objects.count; ++n) {
         // import variables
-        objectFileID >> objects.index[n];
+        //objectFileID >> objects.index[n];
+        double trash;
+        objectFileID >> trash; // @note index is no longer stored
         // this is used to identify objects belonging to different groups
         objectFileID >> objects.ElID[n]; // must be one
         objectFileID >> objects.r[n];
@@ -156,7 +158,6 @@ void DEMParams::discreteElementGet(GetPot& configFile, GetPot& commandLine, Elem
         objectFileID >> objects.x1[n].y;
         objectFileID >> objects.x1[n].z;
         // the next eight values are for rotation, and are not used
-        double trash;
         objectFileID>>trash;
         objectFileID>>trash;
         objectFileID>>trash;
@@ -168,7 +169,7 @@ void DEMParams::discreteElementGet(GetPot& configFile, GetPot& commandLine, Elem
         objectFileID>>trash;
         objectFileID>>trash;
         objectFileID>>trash;
-        objects.originalIndex[n] = objects.index[n];
+        //objects.originalIndex[n] = objects.index[n]; // @note originalIndex/index are no longer stored
     }
     cout << " done" << endl;
 

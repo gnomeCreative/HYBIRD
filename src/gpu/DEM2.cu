@@ -112,11 +112,7 @@ __global__ void d_updateNeighbourIndex(
     d_particles->neighbour_index[bin_data_start + bin_sub_index] = i;
 }
 template<>
-void DEM2::evalNeighborTable<CUDA>(bool sync_data) {
-    if (sync_data) {
-        // During init chain, particle data isn't already on device
-        syncParticlesToDevice();
-    }
+void DEM2::evalNeighborTable<CUDA>() {
     // Build list of active elements
     buildActiveLists<CUDA>();
     // Allocate enough memory to store partition boundary matrix (PBM)
@@ -1549,7 +1545,8 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
     if (h_elements.count) {
         initNeighborParameters();
         // @todo periodicObjects();
-        evalNeighborTable<IMPL>(true);
+        syncParticlesToDevice();
+        evalNeighborTable<IMPL>();
     }
 
 
@@ -1601,6 +1598,10 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
     cout << "Rolling coefficient = " << DEM_P.sphereMat.rollingCoefPart << endl;
     cout << "Numerical viscosity =" << DEM_P.numVisc << endl;
 
+    syncElementsToDevice();
+    syncWallsToDevice();
+    syncObjectsToDevice();
+    syncCylindersToDevice();
 }
 
 void DEM2::initNeighborParameters() {
@@ -1947,6 +1948,154 @@ void DEM2::syncParticlesToDevice() {
 #endif
 }
 
+void DEM2::syncWallsToDevice() {
+#ifdef USE_CUDA
+    if (!d_walls) {
+        CUDA_CALL(cudaMalloc(&d_walls, sizeof(Wall2)));
+    }
+    // Copy latest wall data from HOST DEM to the device
+    if (hd_walls.count < h_walls.count) {
+        // Grow device buffers
+        if (hd_walls.n) {
+            CUDA_CALL(cudaFree(hd_walls.index));
+            CUDA_CALL(cudaFree(hd_walls.n));
+            CUDA_CALL(cudaFree(hd_walls.p));
+            CUDA_CALL(cudaFree(hd_walls.FHydro));
+            CUDA_CALL(cudaFree(hd_walls.FParticle));
+            CUDA_CALL(cudaFree(hd_walls.rotCenter));
+            CUDA_CALL(cudaFree(hd_walls.omega));
+            CUDA_CALL(cudaFree(hd_walls.vel));
+            CUDA_CALL(cudaFree(hd_walls.moving));
+            CUDA_CALL(cudaFree(hd_walls.slip));
+            CUDA_CALL(cudaFree(hd_walls.translating));
+            CUDA_CALL(cudaFree(hd_walls.trans));
+            CUDA_CALL(cudaFree(hd_walls.limited));
+            CUDA_CALL(cudaFree(hd_walls.xMin));
+            CUDA_CALL(cudaFree(hd_walls.xMax));
+            CUDA_CALL(cudaFree(hd_walls.yMin));
+            CUDA_CALL(cudaFree(hd_walls.yMax));
+            CUDA_CALL(cudaFree(hd_walls.zMin));
+            CUDA_CALL(cudaFree(hd_walls.zMax));
+        }
+        CUDA_CALL(cudaMalloc(&hd_walls.index, h_walls.count * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_walls.n, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.p, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.FHydro, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.FParticle, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.rotCenter, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.omega, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.vel, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.moving, h_walls.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_walls.slip, h_walls.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_walls.translating, h_walls.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_walls.trans, h_walls.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_walls.limited, h_walls.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_walls.xMin, h_walls.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_walls.xMax, h_walls.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_walls.yMin, h_walls.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_walls.yMax, h_walls.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_walls.zMin, h_walls.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_walls.zMax, h_walls.count * sizeof(double)));
+        hd_walls.count = h_walls.count;
+        // Copy updated device pointers to device
+        CUDA_CALL(cudaMemcpy(d_walls, &hd_walls, sizeof(Wall2), cudaMemcpyHostToDevice));
+    } else if(hd_walls.count != h_walls.count) {
+        // Buffer has shrunk, so just update size
+        hd_walls.count = h_walls.count;
+        // Copy updated particle count to device
+        CUDA_CALL(cudaMemcpy(&d_walls->count, &h_walls.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+    }
+    // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_walls.index, h_walls.index, h_walls.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.n, h_walls.n, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.p, h_walls.p, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.FHydro, h_walls.FHydro, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.FParticle, h_walls.FParticle, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.rotCenter, h_walls.rotCenter, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.omega, h_walls.omega, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.vel, h_walls.vel, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.moving, h_walls.moving, h_walls.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.slip, h_walls.slip, h_walls.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.translating, h_walls.translating, h_walls.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.trans, h_walls.trans, h_walls.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.limited, h_walls.limited, h_walls.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.xMin, h_walls.xMin, h_walls.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.xMax, h_walls.xMax, h_walls.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.yMin, h_walls.yMin, h_walls.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.yMax, h_walls.yMax, h_walls.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.zMin, h_walls.zMin, h_walls.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_walls.zMax, h_walls.zMax, h_walls.count * sizeof(double), cudaMemcpyHostToDevice));
+#endif
+}
+
+void DEM2::syncCylindersToDevice() {
+#ifdef USE_CUDA
+    if (!d_cylinders) {
+        CUDA_CALL(cudaMalloc(&d_cylinders, sizeof(Cylinder2)));
+    }
+    // Copy latest wall data from HOST DEM to the device
+    if (hd_cylinders.count < h_cylinders.count) {
+        // Grow device buffers
+        if (hd_cylinders.p1) {
+            CUDA_CALL(cudaFree(hd_cylinders.p1));
+            CUDA_CALL(cudaFree(hd_cylinders.p2));
+            CUDA_CALL(cudaFree(hd_cylinders.R));
+            CUDA_CALL(cudaFree(hd_cylinders.naxes));
+            CUDA_CALL(cudaFree(hd_cylinders.omega));
+            CUDA_CALL(cudaFree(hd_cylinders.moving));
+            CUDA_CALL(cudaFree(hd_cylinders.slip));
+            CUDA_CALL(cudaFree(hd_cylinders.type));
+            CUDA_CALL(cudaFree(hd_cylinders.limited));
+            CUDA_CALL(cudaFree(hd_walls.xMin));
+            CUDA_CALL(cudaFree(hd_walls.xMax));
+            CUDA_CALL(cudaFree(hd_walls.yMin));
+            CUDA_CALL(cudaFree(hd_walls.yMax));
+            CUDA_CALL(cudaFree(hd_walls.zMin));
+            CUDA_CALL(cudaFree(hd_walls.zMax));
+        }
+        CUDA_CALL(cudaMalloc(&hd_cylinders.p1, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.p2, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.R, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.naxes, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.omega, h_cylinders.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.moving, h_cylinders.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.slip, h_cylinders.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.type, h_cylinders.count * sizeof(cylinderType)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.limited, h_cylinders.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.xMin, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.xMax, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.yMin, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.yMax, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.zMin, h_cylinders.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_cylinders.zMax, h_cylinders.count * sizeof(double)));
+        hd_cylinders.count = h_cylinders.count;
+        // Copy updated device pointers to device
+        CUDA_CALL(cudaMemcpy(d_cylinders, &hd_cylinders, sizeof(Cylinder2), cudaMemcpyHostToDevice));
+    } else if(hd_cylinders.count != h_cylinders.count) {
+        // Buffer has shrunk, so just update size
+        hd_cylinders.count = h_cylinders.count;
+        // Copy updated particle count to device
+        CUDA_CALL(cudaMemcpy(&d_cylinders->count, &h_cylinders.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+    }
+    // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_cylinders.p1, h_cylinders.p1, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.p2, h_cylinders.p2, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.R, h_cylinders.R, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.naxes, h_cylinders.naxes, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.omega, h_cylinders.omega, h_cylinders.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.moving, h_cylinders.moving, h_cylinders.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.slip, h_cylinders.slip, h_cylinders.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.type, h_cylinders.type, h_cylinders.count * sizeof(cylinderType), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.limited, h_cylinders.limited, h_cylinders.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.xMin, h_cylinders.xMin, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.xMax, h_cylinders.xMax, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.yMin, h_cylinders.yMin, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.yMax, h_cylinders.yMax, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.zMin, h_cylinders.zMin, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_cylinders.zMax, h_cylinders.zMax, h_cylinders.count * sizeof(double), cudaMemcpyHostToDevice));
+#endif
+}
+
 void DEM2::syncParticlesFromDevice() {
 #ifdef USE_CUDA
     // If using CUDA, data is on device by default, so sync back.
@@ -1969,13 +2118,251 @@ void DEM2::syncParticlesFromDevice() {
     h_particles.activeCount = hd_particles.activeCount;
     if (hd_particles.activeCount > h_particles.activeAlloc) {
         if (h_particles.activeI) {
-            CUDA_CALL(cudaFree(h_particles.activeI));
+            free(h_particles.activeI);
         }
-        CUDA_CALL(cudaMalloc(&h_particles.activeI, hd_particles.activeCount * sizeof(unsigned int)));
+        h_particles.activeI = (unsigned int*)malloc(hd_particles.activeCount * sizeof(unsigned int));
         h_particles.activeAlloc = hd_particles.activeCount;
     }
     CUDA_CALL(cudaMemcpy(h_particles.activeI, hd_particles.activeI, hd_particles.activeCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
 
+#endif
+}
+void DEM2::syncElementsToDevice() {
+#ifdef USE_CUDA
+    if (!d_elements) {
+        CUDA_CALL(cudaMalloc(&d_elements, sizeof(Element2)));
+        h_elements.memoryAlloc<CPU>(hd_elements.count);
+    }
+    // Copy particle data from h_elements to d_elements/hd_elements
+    bool updateDeviceStruct = false;
+    if (hd_elements.alloc < h_elements.count) {
+        // Grow device buffers
+        if (hd_elements.wSolver) {
+            CUDA_CALL(cudaFree(h_elements.wSolver));
+            CUDA_CALL(cudaFree(h_elements.index));
+            CUDA_CALL(cudaFree(h_elements.active));
+            CUDA_CALL(cudaFree(h_elements.componentsIndex));
+            CUDA_CALL(cudaFree(h_elements.size));
+            CUDA_CALL(cudaFree(h_elements.radius));
+            CUDA_CALL(cudaFree(h_elements.m));
+            CUDA_CALL(cudaFree(h_elements.I));
+            CUDA_CALL(cudaFree(h_elements.x0));
+            CUDA_CALL(cudaFree(h_elements.x1));
+            CUDA_CALL(cudaFree(h_elements.x2));
+            CUDA_CALL(cudaFree(h_elements.x3));
+            CUDA_CALL(cudaFree(h_elements.x4));
+            CUDA_CALL(cudaFree(h_elements.x5));
+            CUDA_CALL(cudaFree(h_elements.xp0));
+            CUDA_CALL(cudaFree(h_elements.xp1));
+            CUDA_CALL(cudaFree(h_elements.xp2));
+            CUDA_CALL(cudaFree(h_elements.xp3));
+            CUDA_CALL(cudaFree(h_elements.xp4));
+            CUDA_CALL(cudaFree(h_elements.xp5));
+            CUDA_CALL(cudaFree(h_elements.x0history));
+            CUDA_CALL(cudaFree(h_elements.q0));
+            CUDA_CALL(cudaFree(h_elements.q1));
+            CUDA_CALL(cudaFree(h_elements.q2));
+            CUDA_CALL(cudaFree(h_elements.q3));
+            CUDA_CALL(cudaFree(h_elements.q4));
+            CUDA_CALL(cudaFree(h_elements.q5));
+            CUDA_CALL(cudaFree(h_elements.qp0));
+            CUDA_CALL(cudaFree(h_elements.qp1));
+            CUDA_CALL(cudaFree(h_elements.qp2));
+            CUDA_CALL(cudaFree(h_elements.qp3));
+            CUDA_CALL(cudaFree(h_elements.qp4));
+            CUDA_CALL(cudaFree(h_elements.qp5));
+            CUDA_CALL(cudaFree(h_elements.wGlobal));
+            CUDA_CALL(cudaFree(h_elements.wLocal));
+            CUDA_CALL(cudaFree(h_elements.wpLocal));
+            CUDA_CALL(cudaFree(h_elements.wpGlobal));
+            CUDA_CALL(cudaFree(h_elements.w0));
+            CUDA_CALL(cudaFree(h_elements.w1));
+            CUDA_CALL(cudaFree(h_elements.w2));
+            CUDA_CALL(cudaFree(h_elements.w3));
+            CUDA_CALL(cudaFree(h_elements.w4));
+            CUDA_CALL(cudaFree(h_elements.w5));
+            CUDA_CALL(cudaFree(h_elements.wp0));
+            CUDA_CALL(cudaFree(h_elements.wp1));
+            CUDA_CALL(cudaFree(h_elements.wp2));
+            CUDA_CALL(cudaFree(h_elements.wp3));
+            CUDA_CALL(cudaFree(h_elements.wp4));
+            CUDA_CALL(cudaFree(h_elements.wp5));
+            CUDA_CALL(cudaFree(h_elements.FHydro));
+            CUDA_CALL(cudaFree(h_elements.FParticle));
+            CUDA_CALL(cudaFree(h_elements.FWall));
+            CUDA_CALL(cudaFree(h_elements.FGrav));
+            CUDA_CALL(cudaFree(h_elements.FSpringP));
+            CUDA_CALL(cudaFree(h_elements.FSpringW));
+            CUDA_CALL(cudaFree(h_elements.MHydro));
+            CUDA_CALL(cudaFree(h_elements.MParticle));
+            CUDA_CALL(cudaFree(h_elements.MWall));
+            CUDA_CALL(cudaFree(h_elements.MRolling));
+            CUDA_CALL(cudaFree(h_elements.solidIntensity));
+            CUDA_CALL(cudaFree(h_elements.coordination));
+            CUDA_CALL(cudaFree(h_elements.ACoriolis));
+            CUDA_CALL(cudaFree(h_elements.ACentrifugal));
+            CUDA_CALL(cudaFree(h_elements.fluidVolume));
+            CUDA_CALL(cudaFree(h_elements.maxOverlap));
+            CUDA_CALL(cudaFree(h_elements.maxDtOverlap));
+            CUDA_CALL(cudaFree(h_elements.slippingCase));
+        }
+        hd_elements.alloc = h_elements.count;
+        CUDA_CALL(cudaMalloc(&hd_elements.wSolver, h_elements.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_elements.index, h_elements.count * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_elements.active, h_elements.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_elements.componentsIndex, h_elements.count * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_elements.size, h_elements.count * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_elements.radius, h_elements.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_elements.m, h_elements.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_elements.I, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x0, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x2, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x3, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x4, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x5, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.xp0, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.xp1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.xp2, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.xp3, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.xp4, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.xp5, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.x0history, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.q0, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.q1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.q2, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.q3, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.q4, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.q5, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.qp0, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.qp1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.qp2, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.qp3, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.qp4, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.qp5, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wGlobal, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wLocal, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wpLocal, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wpGlobal, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.w0, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.w1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.w2, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.w3, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.w4, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.w5, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wp0, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wp1, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wp2, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wp3, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wp4, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.wp5, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FHydro, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FParticle, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FWall, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FGrav, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FSpringP, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.FSpringW, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.MHydro, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.MParticle, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.MWall, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.MRolling, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.solidIntensity, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.coordination, h_elements.count * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_elements.ACoriolis, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.ACentrifugal, h_elements.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_elements.fluidVolume, h_elements.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_elements.maxOverlap, h_elements.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_elements.maxDtOverlap, h_elements.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_elements.slippingCase, h_elements.count * sizeof(int)));
+        //todo springs
+        updateDeviceStruct = true;
+    }
+    hd_elements.count = h_elements.count;
+    if (updateDeviceStruct) {
+        // Copy updated device pointers to device
+        CUDA_CALL(cudaMemcpy(d_elements, &hd_elements, sizeof(Element2), cudaMemcpyHostToDevice));
+    } else {
+        // Copy updated particle count to device
+        CUDA_CALL(cudaMemcpy(&d_elements->count, &hd_elements.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+    }
+    // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_elements.wSolver, h_elements.wSolver, hd_elements.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.index, h_elements.index, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.active, h_elements.active, hd_elements.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.componentsIndex, h_elements.componentsIndex, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.size, h_elements.size, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.radius, h_elements.radius, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.m, h_elements.m, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.I, h_elements.I, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x0, h_elements.x0, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x1, h_elements.x1, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x2, h_elements.x2, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x3, h_elements.x3, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x4, h_elements.x4, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x5, h_elements.x5, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.xp0, h_elements.xp0, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.xp1, h_elements.xp1, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.xp2, h_elements.xp2, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.xp3, h_elements.xp3, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.xp4, h_elements.xp4, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.xp5, h_elements.xp5, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.x0history, h_elements.x0history, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.q0, h_elements.q0, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.q1, h_elements.q1, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.q2, h_elements.q2, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.q3, h_elements.q3, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.q4, h_elements.q4, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.q5, h_elements.q5, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.qp0, h_elements.qp0, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.qp1, h_elements.qp1, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.qp2, h_elements.qp2, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.qp3, h_elements.qp3, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.qp4, h_elements.qp4, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.qp5, h_elements.qp5, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wGlobal, h_elements.wGlobal, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wLocal, h_elements.wLocal, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wpLocal, h_elements.wpLocal, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wpGlobal, h_elements.wpGlobal, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.w0, h_elements.w0, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.w1, h_elements.w1, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.w2, h_elements.w2, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.w3, h_elements.w3, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.w4, h_elements.w4, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.w5, h_elements.w5, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wp0, h_elements.wp0, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wp1, h_elements.wp1, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wp2, h_elements.wp2, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wp3, h_elements.wp3, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wp4, h_elements.wp4, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.wp5, h_elements.wp5, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FHydro, h_elements.FHydro, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FParticle, h_elements.FParticle, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FWall, h_elements.FWall, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FGrav, h_elements.FGrav, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FSpringP, h_elements.FSpringP, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.FSpringW, h_elements.FSpringW, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.MHydro, h_elements.MHydro, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.MParticle, h_elements.MParticle, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.MWall, h_elements.MWall, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.MRolling, h_elements.MRolling, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.solidIntensity, h_elements.solidIntensity, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.coordination, h_elements.coordination, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.ACoriolis, h_elements.ACoriolis, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.ACentrifugal, h_elements.ACentrifugal, hd_elements.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.fluidVolume, h_elements.fluidVolume, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.maxOverlap, h_elements.maxOverlap, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.maxDtOverlap, h_elements.maxDtOverlap, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.slippingCase, h_elements.slippingCase, hd_elements.count * sizeof(int), cudaMemcpyHostToDevice));
+    // Copy tertiary buffers to device
+    h_elements.activeCount = hd_elements.activeCount;
+    if (h_elements.activeCount > hd_elements.activeAlloc) {
+        if (hd_elements.activeI) {
+            CUDA_CALL(cudaFree(hd_elements.activeI));
+        }
+        CUDA_CALL(cudaMalloc(&hd_elements.activeI, hd_elements.activeCount * sizeof(unsigned int)));
+        hd_elements.activeAlloc = hd_elements.activeCount;
+    }
+    CUDA_CALL(cudaMemcpy(hd_elements.activeI, h_elements.activeI, hd_elements.activeCount * sizeof(unsigned int), cudaMemcpyHostToDevice));
 #endif
 }
 void DEM2::syncElementsFromDevice() {
@@ -2063,5 +2450,61 @@ void DEM2::syncElementsFromDevice() {
         h_elements.activeAlloc = hd_elements.activeCount;
     }
     CUDA_CALL(cudaMemcpy(h_elements.activeI, hd_elements.activeI, hd_elements.activeCount * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+#endif
+}
+
+void DEM2::syncObjectsToDevice() {
+#ifdef USE_CUDA
+    if (!d_objects) {
+        CUDA_CALL(cudaMalloc(&d_objects, sizeof(Object2)));
+    }
+    // Copy latest wall data from HOST DEM to the device
+    if (hd_objects.count < h_objects.count) {
+        // Grow device buffers
+        if (hd_objects.r) {
+            CUDA_CALL(cudaFree(hd_objects.ElID));
+            CUDA_CALL(cudaFree(hd_objects.r));
+            CUDA_CALL(cudaFree(hd_objects.x0));
+            CUDA_CALL(cudaFree(hd_objects.x1));
+            CUDA_CALL(cudaFree(hd_objects.FParticle));
+            CUDA_CALL(cudaFree(hd_objects.FHydro));
+            CUDA_CALL(cudaFree(hd_objects.maxFParticle));
+            CUDA_CALL(cudaFree(hd_objects.timeMaxFParticle));
+            CUDA_CALL(cudaFree(hd_objects.savedFParticle));
+            CUDA_CALL(cudaFree(hd_objects.translating));
+            CUDA_CALL(cudaFree(hd_objects.trans));
+        }
+        CUDA_CALL(cudaMalloc(&hd_objects.ElID, h_objects.count * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_objects.r, h_objects.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_objects.x0, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.x1, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.FParticle, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.FHydro, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.maxFParticle, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.timeMaxFParticle, h_objects.count * sizeof(double)));
+        CUDA_CALL(cudaMalloc(&hd_objects.savedFParticle, h_objects.count * sizeof(tVect)));
+        CUDA_CALL(cudaMalloc(&hd_objects.translating, h_objects.count * sizeof(bool)));
+        CUDA_CALL(cudaMalloc(&hd_objects.trans, h_objects.count * sizeof(tVect)));
+        hd_objects.count = h_objects.count;
+        // Copy updated device pointers to device
+        CUDA_CALL(cudaMemcpy(d_objects, &hd_objects, sizeof(Object2), cudaMemcpyHostToDevice));
+    } else if(hd_objects.count != h_objects.count) {
+        // Buffer has shrunk, so just update size
+        hd_objects.count = h_objects.count;
+        // Copy updated particle count to device
+        CUDA_CALL(cudaMemcpy(&d_objects->count, &h_objects.count, sizeof(unsigned int), cudaMemcpyHostToDevice));
+    }
+    // Copy data to device buffers
+    CUDA_CALL(cudaMemcpy(hd_objects.ElID, h_objects.ElID, h_objects.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.r, h_objects.r, h_objects.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.x0, h_objects.x0, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.x1, h_objects.x1, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.FParticle, h_objects.FParticle, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.FHydro, h_objects.FHydro, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.maxFParticle, h_objects.maxFParticle, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.timeMaxFParticle, h_objects.timeMaxFParticle, h_objects.count * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.savedFParticle, h_objects.savedFParticle, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.translating, h_objects.translating, h_objects.count * sizeof(bool), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_objects.trans, h_objects.trans, h_objects.count * sizeof(tVect), cudaMemcpyHostToDevice));
 #endif
 }

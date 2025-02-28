@@ -13,7 +13,6 @@ void Cylinder2::initialize() {
         {
             if (DEM_P.depositArea) {
                 this->memoryAlloc<CPU>(1);
-                this->index[index] = index;
                 this->p1[index] = tVect(21.0858, 13.3466, 0.0);
                 this->p2[index] = tVect(21.0858, 13.3466, 100.0);
                 this->R[index] = 13.513015;
@@ -52,7 +51,6 @@ void Cylinder2::initialize() {
 
 
             // erodible part borders
-            this->index[index] = index;
             this->p1[index] = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
             this->p2[index] = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
             this->initAxes(index);
@@ -77,7 +75,6 @@ void Cylinder2::initialize() {
 
             // Common features
             for (unsigned int i = 0; i < 10; ++i) {
-                this->index[index] = i;
                 this->R[index] = edgeRadius;
                 this->omega[index] = tVect(0.0, 0.0, 0.0);
                 this->type[index] = FULL;
@@ -145,8 +142,7 @@ void Cylinder2::initialize() {
         case IERVOLINO_CYLINDERTEST:
         {
             this->memoryAlloc<CPU>(2);
-
-            this->index[index] = index;
+            
             this->p1[index] = tVect(1.5, 0, 1.5);
             this->p2[index] = tVect(1.5, 1.0, 1.5);
             this->R[index] = 1.0;
@@ -157,8 +153,7 @@ void Cylinder2::initialize() {
             this->slip[index] = false;
             this->limited[index] = false;
             ++index;
-
-            this->index[index] = index;
+            
             this->p1[index] = tVect(1.5, 0, 1.5);
             this->p2[index] = tVect(1.5, 1.0, 1.5);
             this->R[index] = 0.5;
@@ -176,7 +171,6 @@ void Cylinder2::initialize() {
         case WILL_SETTLING:
         {
             this->memoryAlloc<CPU>(1);
-            this->index[index] = index;
             this->p1[index] = tVect(0, 0, 0);
             this->p2[index] = tVect(0, 0, 1);
             this->R[index] = 0.108 / 2.0;
@@ -194,7 +188,6 @@ void Cylinder2::initialize() {
         case KELVIN:
         {
             this->memoryAlloc<CPU>(1);
-            this->index[index] = index;
             this->p1[index] = tVect(1.2504, 0.4, 0.0);
             this->p2[index] = tVect(1.2504, 0.4, 100.0);
             this->R[index] = 0.400;
@@ -216,7 +209,6 @@ void Cylinder2::initialize() {
         case DRUM:
         {
             this->memoryAlloc<CPU>(1);
-            this->index[index] = index;
             this->p1[index] = tVect(0.0 + 0.6 + 0.35, 0.0, 1.26);
             this->p2[index] = tVect(0.0 + 0.6 + 0.35, 1.0, 1.26);
             this->R[index] = 1.243;
@@ -232,7 +224,6 @@ void Cylinder2::initialize() {
         case AVALANCHE:
         {
             this->memoryAlloc<CPU>(1);
-            this->index[index] = index;
             this->p1[index] = tVect(0.0, 15, 15); //tVect(0.0,14.86,14.86);
             this->p2[index] = tVect(1.0, 15, 15);
             this->R[index] = 14.86;
@@ -248,7 +239,6 @@ void Cylinder2::initialize() {
         case NET:
         {
             this->memoryAlloc<CPU>(1);
-            this->index[index] = index;
             this->p1[index] = tVect(0.0, 4.0, 4.0);
             this->p2[index] = tVect(1.0, 4.0, 4.0);
             this->R[index] = 4.0;
@@ -267,7 +257,6 @@ void Cylinder2::initialize() {
             const double intruderZ = 0.0675;
             const double intruderd = 16e-3; // diameter of the intruder
             this->memoryAlloc<CPU>(1);
-            this->index[index] = index;
             this->p1[index] = tVect(intruderX, 0.0, intruderZ);
             this->p2[index] = tVect(intruderX, 100.0, intruderZ);
             this->R[index] = intruderd / 2.0;
@@ -304,7 +293,7 @@ void Cylinder2::cylinderShow(const unsigned int i) const {
     } else if (type[i] == FULL) {
         cout << "Outer ";
     }
-    cout << "cylinder, number " << index;
+    cout << "cylinder, number " << i;
     cout << " with base point: p1";
     p1[i].show();
     cout << ", p2";

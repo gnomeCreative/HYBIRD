@@ -1862,7 +1862,6 @@ void LB2::initializeWallBoundaries(const Wall2 &h_walls) {
     for (unsigned int iw = 0; iw < h_walls.count; ++iw) {
         const tVect convertedWallp = h_walls.p[iw] / h_LB_P.unit.Length;
         const tVect normHere = h_walls.n[iw];
-        const unsigned int indexHere = h_walls.index[iw];
         const bool slipHere = h_walls.slip[iw];
         const bool movingHere = h_walls.moving[iw];
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
@@ -1888,7 +1887,7 @@ void LB2::initializeWallBoundaries(const Wall2 &h_walls) {
                 // generate node (tentatively as static wall)
                 generateNode(it, STAT_WALL);
                 // setting solidIndex
-                h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use iw?
+                h_nodes.solidIndex[it] = h_walls.index[iw]; // @todo One of the problems gives walls non-consecutive/unique indices?
                 // setting type: 5-6=slip, 7-8=no-slip
                 if (slipHere) {
                     // setting type for slip: 5=static, 6=moving
@@ -1915,13 +1914,12 @@ void LB2::initializeObjectBoundaries(const Object2 &h_objects) {
     for (unsigned int io = 0; io < h_objects.count; ++io) {
         const tVect convertedPosition = h_objects.x0[io] / h_LB_P.unit.Length;
         const double convertedRadius = h_objects.r[io] / h_LB_P.unit.Length;
-        const unsigned int indexHere = h_objects.index[io];
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
         for (unsigned int it = 0; it < h_LB_P.totPossibleNodes; ++it) {
             const tVect nodePosition = h_LB_P.getPosition(it);
             if (nodePosition.insideSphere(convertedPosition, convertedRadius)) {
                 generateNode(it, OBJ);
-                h_nodes.solidIndex[it] = indexHere; // TODO indexHere is redundant, use io?
+                h_nodes.solidIndex[it] = io;
             }
         }
     }
@@ -1932,7 +1930,6 @@ void LB2::initializeCylinderBoundaries(const Cylinder2 &h_cylinders) {
         const tVect convertedCylinderp1 = h_cylinders.p1[ic] / h_LB_P.unit.Length;
         const tVect naxesHere = h_cylinders.naxes[ic];
         const double convertedRadius = h_cylinders.R[ic] / h_LB_P.unit.Length;
-        const unsigned int indexHere = h_cylinders.index[ic];
         const bool slipHere = h_cylinders.slip[ic];
         const bool movingHere = h_cylinders.moving[ic];
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
@@ -1956,7 +1953,7 @@ void LB2::initializeCylinderBoundaries(const Cylinder2 &h_cylinders) {
                 // tentatively static
                 generateNode(it, STAT_WALL);
                 // setting solidIndex
-                h_nodes.solidIndex[it] = indexHere;  // TODO indexHere is redundant, use ic?
+                h_nodes.solidIndex[it] = ic;
                 // setting type: 5-6=slip, 7-8=no-slip
                 if (slipHere) {
                     // setting type for slip: 5=static, 6=moving

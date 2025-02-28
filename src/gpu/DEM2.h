@@ -37,7 +37,7 @@ class DEM2 {
      * (re)construct the neighbour table
      */
     template<int impl>
-    void evalNeighborTable(bool sync_data = false);
+    void evalNeighborTable();
 
     void evolveBoundaries();
     void discreteElementStep();
@@ -82,7 +82,11 @@ class DEM2 {
      */
     void syncParticlesToDevice();
     void syncParticlesFromDevice();
+    void syncWallsToDevice();
+    void syncCylindersToDevice();
+    void syncElementsToDevice();
     void syncElementsFromDevice();
+    void syncObjectsToDevice();
  public: // Public for convenience
     Particle2 h_particles, hd_particles, * d_particles = nullptr;
     Wall2 h_walls, hd_walls, * d_walls = nullptr;

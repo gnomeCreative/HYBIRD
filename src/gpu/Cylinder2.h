@@ -8,9 +8,7 @@ struct DEMParams;
 struct Cylinder2 {
     unsigned int alloc = 0;
     unsigned int count = 0;
-
-    //index
-    unsigned int *index = nullptr;
+    
     // two axes point
     tVect *p1 = nullptr;
     tVect *p2 = nullptr;
@@ -159,8 +157,7 @@ template<>
 inline void Cylinder2::memoryAlloc<CPU>(unsigned int num) {
     alloc = num;
     if (!num) return;
-
-    index = (unsigned int*)malloc(alloc * sizeof(unsigned int));
+    
     p1 = (tVect*)malloc(alloc * sizeof(tVect));
     p2 = (tVect*)malloc(alloc * sizeof(tVect));
     R = (double*)malloc(alloc * sizeof(double));
@@ -180,7 +177,6 @@ inline void Cylinder2::memoryAlloc<CPU>(unsigned int num) {
     translating = (bool*)malloc(alloc * sizeof(bool));
     trans = (tVect*)malloc(alloc * sizeof(tVect));
     // Init
-    memset(index, 0, alloc * sizeof(unsigned int));
     memset(p1, 0, alloc * sizeof(tVect));
     std::fill(p2, p2 + alloc, tVect(1.0, 0.0, 0.0));
     std::fill(R, R + alloc, 1.0);
