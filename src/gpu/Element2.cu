@@ -89,7 +89,7 @@ void Element2::generateParticles(const unsigned int e_i, unsigned int& p_i, Part
         // add standard particle
         particles.particleIndex[p_i] = p_i;
         componentsData[componentsIndex[e_i] + i] = p_i;
-        particles.clusterIndex = index;
+        particles.clusterIndex[p_i] = index[e_i];
         particles.r[p_i] = radius[e_i];
         particles.protoIndex[p_i] = i;
         particles.isGhost[p_i] = false;
