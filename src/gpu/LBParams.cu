@@ -428,7 +428,7 @@ void LBParams::LBShow() const {
     cout << "Rotation center =";
     rotationCenter.show();
     cout << ";" << endl;
-    cout << "X(-)=" << boundary[0] << "; X(+)=" << boundary[1] << "; Y(-)=" << boundary[2] << "; Y(+)=" << boundary[3] << "; Z(-)=" << boundary[4] << "; Z(+)=" << boundary[5] << ";" << endl;
+    cout << "X(-)=" << typeString(boundary[0]) << "; X(+)=" << typeString(boundary[1]) << "; Y(-)=" << typeString(boundary[2]) << "; Y(+)=" << typeString(boundary[3]) << "; Z(-)=" << typeString(boundary[4]) << "; Z(+)=" << typeString(boundary[5]) << ";" << endl;
     cout << "PHISICAL CHARACTERISTICS (physical units)" << endl;
     cout << "xdim=" << (lbSize[0] - 2) * unit.Length << "; ydim= " << (lbSize[1] - 2) * unit.Length << "; zdim= " << (lbSize[2] - 2) * unit.Length << ";" << endl;
     cout << "u_sound=" << unit.Speed/ sqrt(3)<<endl;
