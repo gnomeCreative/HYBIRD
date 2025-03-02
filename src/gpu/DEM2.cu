@@ -122,11 +122,10 @@ void DEM2::evalNeighborTable<CUDA>() {
     if (hd_particles.PBM_alloc < PBM_len) {
         if (hd_particles.PBM) {
             CUDA_CALL(cudaFree(hd_particles.PBM));
-            CUDA_CALL(cudaFree(hd_particles.PBM));
         }
         CUDA_CALL(cudaMalloc(&hd_particles.PBM, PBM_len * sizeof(unsigned int)));
         hd_particles.PBM_alloc = PBM_len;
-        // Sync this change to device (just copy the whole struct
+        // Sync this change to device (just copy the whole struct)
         CUDA_CALL(cudaMemcpy(d_particles, &hd_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
     }
     auto& ctb = CubTempMem::GetBufferSingleton();
@@ -140,7 +139,8 @@ void DEM2::evalNeighborTable<CUDA>() {
         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_atomicHistogram3D, 0, hd_particles.count);
         // Round up to accommodate required threads
         gridSize = (hd_particles.count + blockSize - 1) / blockSize;
-        d_atomicHistogram3D <<<gridSize, blockSize>>>(d_particles, d_histogram);
+        d_atomicHistogram3D<<<gridSize, blockSize>>>(d_particles, d_histogram);
+        CUDA_CHECK()
     }
     {  // Scan (sum) histogram, to finalise PBM
         size_t temp_storage_bytes = 0;
@@ -1551,7 +1551,9 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
 
     // initialize neighbor list parameters (also generate particles and set ghosts)
     if (h_elements.count) {
+        // Init params for neighbours, and make them available on device
         initNeighborParameters();
+        syncParamsToDevice();
         // @todo periodicObjects();
         evalNeighborTable<IMPL>();
     }
@@ -1914,6 +1916,7 @@ void DEM2::syncParticlesToDevice() {
             CUDA_CALL(cudaFree(hd_particles.x1));
             CUDA_CALL(cudaFree(hd_particles.radiusVec));
             //todo springs
+            CUDA_CALL(cudaFree(hd_particles.neighbour_index));
         }
         hd_particles.alloc = h_particles.count;
         CUDA_CALL(cudaMalloc(&hd_particles.particleIndex, h_particles.count * sizeof(unsigned int)));
@@ -1926,6 +1929,7 @@ void DEM2::syncParticlesToDevice() {
         CUDA_CALL(cudaMalloc(&hd_particles.x1, h_particles.count * sizeof(tVect)));
         CUDA_CALL(cudaMalloc(&hd_particles.radiusVec, h_particles.count * sizeof(tVect)));
         //todo springs
+        CUDA_CALL(cudaMalloc(&hd_particles.neighbour_index, h_particles.count * sizeof(unsigned int)));
         updateDeviceStruct = true;
     }
     hd_particles.count = h_particles.count;

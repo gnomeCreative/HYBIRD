@@ -103,5 +103,6 @@ void Element2::generateParticles(const unsigned int e_i, unsigned int& p_i, Part
         */
         particles.updateCorrected(p_i, this, e_i); // was predicted
         ++p_i;
+        ++particles.count;
     }
 }
