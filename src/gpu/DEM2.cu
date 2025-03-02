@@ -1511,7 +1511,6 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
     // initializing particles
     const double partDensity = DEM_P.sphereMat.density;
     
-    unsigned int globalIndex = 0;
     unsigned int particleCount = 0;
     for (unsigned int i = 0; i < h_elements.count; ++i) {
         // initialize element
@@ -1526,7 +1525,7 @@ void DEM2::discreteElementInit(const std::array<types, 6>& externalBoundary, con
     h_elements.allocComponentsData();
 
     for (unsigned int i = 0; i < h_elements.count; ++i) {
-        h_elements.generateParticles(i, globalIndex, h_particles);
+        h_elements.generateParticles(i, h_particles.count, h_particles);
     }
 
     // the number of standard particles (=not ghosts) is now fixed, and WILL NOT BE CHANGED
