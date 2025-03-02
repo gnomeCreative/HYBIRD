@@ -860,7 +860,7 @@ __global__ void d_wallParticleContacts(Particle2* d_particles, Wall2* d_walls, E
                 elongation_here_new = findSpring(1, indexI, p_i);
             }
             */
-            d_wallParticleCollision(d_particles, d_walls, d_elements, w_i, p_i, overlap, elongation_here_new);
+            d_wallParticleCollision(d_particles, d_walls, d_elements, p_i, w_i, overlap, elongation_here_new);
         }
     }
 }
