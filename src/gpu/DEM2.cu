@@ -326,7 +326,7 @@ __device__ __forceinline__ tVect FRtangentialContact(const tVect& tangRelVelCont
 
     // model with static friction
     if (DEM_P.staticFrictionSolve) {
-
+        /* @todo springs
         const tVect F_control = elongation_new->e * ks + viscousForce;
 
         const double F_control_norm = F_control.norm();
@@ -369,7 +369,7 @@ __device__ __forceinline__ tVect FRtangentialContact(const tVect& tangRelVelCont
             }
 
         }
-
+        */
 
     }// model without static friction
     else {
@@ -485,7 +485,7 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
 
         // update spring
         if (DEM_P.staticFrictionSolve) {
-
+            /* @todo springs
             const double elong_old_norm = elongation_new->e.norm();
 
             double normElong = elongation_new->e.dot(en);
@@ -500,6 +500,7 @@ __device__ __forceinline__ void d_particleParticleCollision(Particle2* d_particl
                 const double scaling = 0.0;
                 elongation_new->e = elongation_new->e*scaling;
             }
+            */
         }
 
         //elongation.e.show();
@@ -626,37 +627,39 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
                 // Iterate particles within the bin
                 const unsigned int hash = x + DEM_P.nCells[0] * (y + DEM_P.nCells[1] * x);
                 for (unsigned int i = d_particles->PBM[hash]; i < d_particles->PBM[hash+1]; ++i){
-                    // Filter out particles that are same cluster or not in contact
                     const unsigned int n_i = d_particles->neighbour_index[i];
-                    if (d_particles->clusterIndex[n_i] != my_cluster) {
-                        // checking for overlap
-                        const double ri = d_particles->r[a_i];
-                        const double rj = d_particles->r[n_i];
-                        const double sigij = ri + rj;
-                        const double sigij2 = sigij * sigij;
-                        // Convert the neighbour's location to it's closest ghost position in a wrapped environment
-                        tVect n_x0 = d_particles->x0[n_i];
-                        const tVect an_x0 = n_x0 - d_particles->x0[a_i];
-                        n_x0 = 
-                        {
-                            abs(an_x0.x) > DEM_P.half_demSize.x ? n_x0.x - (an_x0.x / abs(an_x0.x) * DEM_P.half_demSize.x) : n_x0.x,
-                            abs(an_x0.y) > DEM_P.half_demSize.y ? n_x0.y - (an_x0.y / abs(an_x0.y) * DEM_P.half_demSize.y) : n_x0.y,
-                            abs(an_x0.z) > DEM_P.half_demSize.z ? n_x0.z - (an_x0.z / abs(an_x0.z) * DEM_P.half_demSize.z) : n_x0.z,
-                        };
-                        // recalculate distance between centers with virtual neighbour position
-                        const tVect vectorDistance = d_particles->x0[a_i] - n_x0;
-                        const double distance2 = an_x0.norm2();
-                        // check for contact
-                        if (distance2 < sigij2) {
-                            // pointer to elongation, initially pointing to an empty spring
-                            Elongation* elongation_here_new;
-                            /* @TODO SPRINGS
-                            if (DEM_P.staticFrictionSolve) {
-                                elongation_here_new = findSpring(0, a_i, n_i);
-                            }*/
-                            d_particleParticleCollision(d_particles, d_elements, a_i, n_i, vectorDistance, elongation_here_new);
+                    // @temp Filter out particles that have lower index, we are operating naive reciprocity
+                    if (n_i > a_i) {
+                        // Filter out particles that are same cluster or not in contact
+                        if (d_particles->clusterIndex[n_i] != my_cluster) {
+                            // checking for overlap
+                            const double ri = d_particles->r[a_i];
+                            const double rj = d_particles->r[n_i];
+                            const double sigij = ri + rj;
+                            const double sigij2 = sigij * sigij;
+                            // Convert the neighbour's location to it's closest ghost position in a wrapped environment
+                            tVect n_x0 = d_particles->x0[n_i];
+                            const tVect an_x0 = n_x0 - d_particles->x0[a_i];
+                            n_x0 = 
+                            {
+                                abs(an_x0.x) > DEM_P.half_demSize.x ? n_x0.x - (an_x0.x / abs(an_x0.x) * DEM_P.half_demSize.x) : n_x0.x,
+                                abs(an_x0.y) > DEM_P.half_demSize.y ? n_x0.y - (an_x0.y / abs(an_x0.y) * DEM_P.half_demSize.y) : n_x0.y,
+                                abs(an_x0.z) > DEM_P.half_demSize.z ? n_x0.z - (an_x0.z / abs(an_x0.z) * DEM_P.half_demSize.z) : n_x0.z,
+                            };
+                            // recalculate distance between centers with virtual neighbour position
+                            const tVect vectorDistance = d_particles->x0[a_i] - n_x0;
+                            const double distance2 = an_x0.norm2();
+                            // check for contact
+                            if (distance2 < sigij2) {
+                                // pointer to elongation, initially pointing to an empty spring
+                                Elongation* elongation_here_new;
+                                /* @TODO SPRINGS
+                                if (DEM_P.staticFrictionSolve) {
+                                    elongation_here_new = findSpring(0, a_i, n_i);
+                                }*/
+                                d_particleParticleCollision(d_particles, d_elements, a_i, n_i, vectorDistance, elongation_here_new);
+                            }
                         }
-
                     }
                 }
             }
