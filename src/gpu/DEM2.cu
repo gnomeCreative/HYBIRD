@@ -1304,6 +1304,13 @@ __global__ void d_newtonEquationsSolution(Element2* d_elements) {
     // acceleration (sum of forces / mass + sum of accelerations)
     d_elements->x2[e_i] = (FVisc + d_elements->FHydro[e_i] + d_elements->FParticle[e_i] + d_elements->FWall[e_i]) / d_elements->m[e_i] + DEM_P.demF + d_elements->ACoriolis[e_i] + d_elements->ACentrifugal[e_i];
 
+    if (d_elements->x2[e_i].x > 1 || d_elements->x2[e_i].y > 1 || d_elements->x2[e_i].z > 1 || d_elements->x2[e_i].x < -1 || d_elements->x2[e_i].y < -1 || d_elements->x2[e_i].z < -10) {
+        printf("Bad acceleration (%f, %f, %f) from Part(%f, %f, %f) +Hydr(%f, %f, %f) +Wall(%f, %f, %f) +...\n", d_elements->x2[e_i].x, d_elements->x2[e_i].y, d_elements->x2[e_i].z,
+            d_elements->FHydro[e_i].x, d_elements->FHydro[e_i].y, d_elements->FHydro[e_i].z,
+            d_elements->FParticle[e_i].x, d_elements->FParticle[e_i].y, d_elements->FParticle[e_i].z,
+            d_elements->FWall[e_i].x, d_elements->FWall[e_i].y, d_elements->FWall[e_i].z);
+    }
+
     // rotational motion
     // adjoint of orientation quaternion
     //const tQuat q0adj=d_elements->qp0.adjoint();
