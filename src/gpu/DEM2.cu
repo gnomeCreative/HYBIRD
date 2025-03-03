@@ -652,8 +652,8 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
                                 abs(an_x0.z) > DEM_P.half_demSize.z ? n_x0.z - (an_x0.z / abs(an_x0.z) * DEM_P.half_demSize.z) : n_x0.z,
                             };
                             // recalculate distance between centers with virtual neighbour position
-                            const tVect vectorDistance = d_particles->x0[a_i] - n_x0;
-                            const double distance2 = an_x0.norm2();
+                            const tVect vectorDistance = n_x0 - d_particles->x0[a_i];
+                            const double distance2 = vectorDistance.norm2();
                             // check for contact
                             if (distance2 < sigij2) {
                                 // pointer to elongation, initially pointing to an empty spring
