@@ -88,7 +88,7 @@ void DEM2::buildActiveLists<CUDA>() {
     CUDA_CALL(cudaMemcpy(d_particles, &hd_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
 }
 __global__ void d_atomicHistogram3D(
-    Particle2 *d_particles, unsigned int *d_histogram) {
+    Particle2 *d_particles, unsigned int *d_histogram, unsigned int *d_subindex) {
     const unsigned int i = (blockIdx.x * blockDim.x) + threadIdx.x;
     // Kill excess threads
     if (i >= d_particles->count) return;
@@ -101,10 +101,10 @@ __global__ void d_atomicHistogram3D(
     }
     // Contribute to the histogram, and log our position within our neighbour grid bin
     const unsigned int bin_idx = atomicInc(&d_histogram[hash], 0xFFFFFFFF);
-    d_particles->neighbour_index[i] = bin_idx;
+    d_subindex[i] = bin_idx;
 }
 __global__ void d_updateNeighbourIndex(
-    Particle2* d_particles) {
+    Particle2* d_particles, unsigned int* d_subindex) {
     const unsigned int i = (blockIdx.x * blockDim.x) + threadIdx.x;
     // Kill excess threads
     if (i >= d_particles->count) return;
@@ -113,7 +113,7 @@ __global__ void d_updateNeighbourIndex(
     const unsigned int hash = d_particles->x0[i].linearizePosition();
     // Store our index within the neighbour grid so our data can be looked up
     const unsigned int bin_data_start = d_particles->PBM[hash];
-    const unsigned int bin_sub_index = d_particles->neighbour_index[i];
+    const unsigned int bin_sub_index = d_subindex[i];
     d_particles->neighbour_index[bin_data_start + bin_sub_index] = i;
 }
 template<>
@@ -133,8 +133,9 @@ void DEM2::evalNeighborTable<CUDA>() {
         CUDA_CALL(cudaMemcpy(d_particles, &hd_particles, sizeof(Particle2), cudaMemcpyHostToDevice));
     }
     auto& ctb = CubTempMem::GetBufferSingleton();
-    ctb.resize(PBM_len * sizeof(unsigned int));
+    ctb.resize((PBM_len + hd_particles.count) * sizeof(unsigned int));
     unsigned int *d_histogram = reinterpret_cast<unsigned int*>(ctb.getPtr());
+    unsigned int *d_sub_index = d_histogram + PBM_len;
     { // Build a histogram of particles using atomics
         CUDA_CALL(cudaMemset(d_histogram, 0x00000000, PBM_len * sizeof(unsigned int)));
         int blockSize = 0;  // The launch configurator returned block size
@@ -143,7 +144,7 @@ void DEM2::evalNeighborTable<CUDA>() {
         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_atomicHistogram3D, 0, hd_particles.count);
         // Round up to accommodate required threads
         gridSize = (hd_particles.count + blockSize - 1) / blockSize;
-        d_atomicHistogram3D<<<gridSize, blockSize>>>(d_particles, d_histogram);
+        d_atomicHistogram3D<<<gridSize, blockSize>>>(d_particles, d_histogram, d_sub_index);
         CUDA_CHECK()
     }
     {  // Scan (sum) histogram, to finalise PBM
@@ -160,7 +161,7 @@ void DEM2::evalNeighborTable<CUDA>() {
         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateNeighbourIndex, 0, hd_particles.count);
         // Round up to accommodate required threads
         gridSize = (hd_particles.count + blockSize - 1) / blockSize;
-        d_updateNeighbourIndex <<<gridSize, blockSize>>>(d_particles);
+        d_updateNeighbourIndex<<<gridSize, blockSize>>>(d_particles, d_sub_index);
     }
 }
 
@@ -614,7 +615,7 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
             }
             for (int dz = -1; dz <= 1; ++dz) {
                 // Clamp/Wrap y coord
-                int z = bin_pos[1] + dz;                
+                int z = bin_pos[2] + dz;                
                 if (z < 0) {
                     if (LB_P.boundary[4] == PERIODIC) {
                         z = DEM_P.nCells[2] - 1;  // Note bugprone if less than 3 bins across
