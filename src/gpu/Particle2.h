@@ -76,6 +76,9 @@ struct Particle2 {
 
 __host__ __device__ __forceinline__ void Particle2::updateCorrected(const unsigned int i, const Element2 *elements, const unsigned int e_i) {
     // updating position and velocity for simple case
+    if (elements->x0[e_i].x < 0 || elements->x0[e_i].y < 0 || elements->x0[e_i].z < 0 || isnan(elements->x0[e_i].x) || isnan(elements->x0[e_i].y) || isnan(elements->x0[e_i].z)) {
+        printf("Bad element x (%f, %f, %f)\n", elements->x0[e_i].x, elements->x0[e_i].y, elements->x0[e_i].z);
+    }
     x0[i] = elements->x0[e_i];
     radiusVec[i] = {0,0,0};
     x1[i] = elements->x1[e_i];
@@ -91,15 +94,18 @@ __host__ __device__ __forceinline__ void Particle2::updatePredicted(const unsign
     // Mother element index
     const unsigned int me_i = clusterIndex[i];
     // updating position and velocity for simple case
+    if (elements->xp0[me_i].x < 0 || elements->xp0[me_i].y < 0 || elements->xp0[me_i].z < 0 || isnan(elements->xp0[me_i].x) || isnan(elements->xp0[me_i].y) || isnan(elements->xp0[me_i].z)) {
+        printf("Bad element xp (%f, %f, %f)\n", elements->xp0[me_i].x, elements->xp0[me_i].y, elements->xp0[me_i].z);
+    }
     x0[i] = elements->xp0[me_i];
     radiusVec[i] = {0, 0, 0};
     x1[i] = elements->xp1[me_i];
 
     if (elements->size[me_i] > 1) {
-        x0[i] = x0[i] + r[i] * project(prototypes[elements->size[me_i]][protoIndex[i]], elements->qp0[me_i]);
+        x0[i] += r[i] * project(prototypes[elements->size[me_i]][protoIndex[i]], elements->qp0[me_i]);
         // updating radius (distance of particle center of mass to element center of mass)
         radiusVec[i] = x0[i] - elements->xp0[me_i];
-        x1[i] = x1[i] + elements->wpGlobal[me_i].cross(radiusVec[i]);
+        x1[i] += elements->wpGlobal[me_i].cross(radiusVec[i]);
     }
 }
 

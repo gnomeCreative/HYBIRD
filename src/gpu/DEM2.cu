@@ -95,6 +95,10 @@ __global__ void d_atomicHistogram3D(
 
     // Calculate this particle's bin within the neighbour grid
     const unsigned int hash = d_particles->x0[i].linearizePosition();
+    if (hash >= (DEM_P.nCells[0] * DEM_P.nCells[1] * DEM_P.nCells[2]) + 1) {
+        printf("Hash: %u >= %u at location (%f, %f, %f)\n", hash, (DEM_P.nCells[0] * DEM_P.nCells[1] * DEM_P.nCells[2]) + 1, d_particles->x0[i].x, d_particles->x0[i].y, d_particles->x0[i].z);
+        
+    }
     // Contribute to the histogram, and log our position within our neighbour grid bin
     const unsigned int bin_idx = atomicInc(&d_histogram[hash], 0xFFFFFFFF);
     d_particles->neighbour_index[i] = bin_idx;
@@ -680,7 +684,7 @@ void DEM2::particleParticleContacts<CUDA>() {
     CUDA_CHECK();
 }
 
-__device__ __forceinline__ void d_wallParticleCollision(Particle2 *d_particles, Wall2 *d_walls, Element2* d_elements, const unsigned int p_i, const unsigned int w_i, const double overlap, Elongation* elongation_new) {
+__device__ __forceinline__ void d_wallParticleCollision(Particle2 *d_particles, Wall2 *d_walls, Element2* d_elements, const unsigned int w_i, const unsigned int p_i, const double overlap, Elongation* elongation_new) {
 
     // pointers to element
     const unsigned int e_i = d_particles->clusterIndex[p_i];
@@ -860,7 +864,7 @@ __global__ void d_wallParticleContacts(Particle2* d_particles, Wall2* d_walls, E
                 elongation_here_new = findSpring(1, indexI, p_i);
             }
             */
-            d_wallParticleCollision(d_particles, d_walls, d_elements, p_i, w_i, overlap, elongation_here_new);
+            d_wallParticleCollision(d_particles, d_walls, d_elements, w_i, p_i, overlap, elongation_here_new);
         }
     }
 }

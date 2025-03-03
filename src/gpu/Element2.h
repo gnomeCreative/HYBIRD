@@ -139,7 +139,13 @@ struct Element2 {
 
 
 __host__ __device__ __forceinline__ void Element2::predict(const unsigned int i) {
+    tVect t = xp0[i];
     xp0[i] = x0[i] + x1[i] * DEM_P.c2[0] + x2[i] * DEM_P.c2[1] + x3[i] * DEM_P.c2[2] + x4[i] * DEM_P.c2[3] + x5[i] * DEM_P.c2[4];
+
+    if (xp0[i].x < 0 || xp0[i].y < 0 || xp0[i].z < 0 || isnan(xp0[i].x) || isnan(xp0[i].y) || isnan(xp0[i].z)) {
+        printf("Bad element predict xp0 (%f, %f, %f)->(%f, %f, %f) from x0(%f, %f, %f), x1(%f, %f, %f), x2(%f, %f, %f), x3(%f, %f, %f), x4 (%f, %f, %f), x5(%f, %f, %f)\n",
+            t.x, t.y, t.z, xp0[i].x, xp0[i].y, xp0[i].z, x0[i].x, x0[i].y, x0[i].z, x1[i].x, x1[i].y, x1[i].z, x2[i].x, x2[i].y, x2[i].z, x3[i].x, x3[i].y, x3[i].z, x4[i].x, x4[i].y, x4[i].z, x5[i].x, x5[i].y, x5[i].z);
+    }
     xp1[i] = x1[i] + x2[i] * DEM_P.c2[0] + x3[i] * DEM_P.c2[1] + x4[i] * DEM_P.c2[2] + x5[i] * DEM_P.c2[3];
     xp2[i] = x2[i] + x3[i] * DEM_P.c2[0] + x4[i] * DEM_P.c2[1] + x5[i] * DEM_P.c2[2];
     xp3[i] = x3[i] + x4[i] * DEM_P.c2[0] + x5[i] * DEM_P.c2[1];
@@ -176,8 +182,11 @@ __host__ __device__ __forceinline__ void Element2::predict(const unsigned int i)
 __host__ __device__ __forceinline__ void Element2::correct(const unsigned int i, const std::array<double, 6> &coeff1ord, const std::array<double, 6> &coeff2ord) {
 
     const tVect x2Corr = x2[i] - xp2[i];
-
+    tVect t = x0[i];
     x0[i] = xp0[i] + x2Corr * coeff2ord[0];
+    if (x0[i].x < 0 || x0[i].y < 0 || x0[i].z < 0 || isnan(x0[i].x) || isnan(x0[i].y) || isnan(x0[i].z)) {
+        printf("Bad element correct x0 (%f, %f, %f)->(%f, %f, %f) from x2Corr: (%f, %f, %f). coeff2ord[0]: %f\n", t.x, t.y, t.z, x0[i].x, x0[i].y, x0[i].z, x2Corr.x, x2Corr.y, x2Corr.z, coeff2ord[0]);
+    }
     x1[i] = xp1[i] + x2Corr * coeff2ord[1];
     // x2 calculated directly at the end of force routine
     x3[i] = xp3[i] + x2Corr * coeff2ord[3];
