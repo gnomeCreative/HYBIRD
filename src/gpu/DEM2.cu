@@ -691,9 +691,9 @@ __device__ __forceinline__ void d_wallParticleCollision(Particle2 *d_particles, 
     // particle radius
     const double radJ = d_particles->r[p_i];
     // first local unit vector (normal)
-    const tVect en = d_walls->n[e_i];
+    const tVect en = d_walls->n[w_i];
     // speed of the wall at contact point
-    const tVect contactPointVelocity = d_walls->getSpeed(e_i, d_particles->x0[p_i]); // fix this, contact point not defined
+    const tVect contactPointVelocity = d_walls->getSpeed(w_i, d_particles->x0[p_i]); // fix this, contact point not defined
     // relative velocity
     const tVect relVel = d_particles->x1[p_i] - contactPointVelocity;
     // relative normal velocity (modulus)
@@ -2148,7 +2148,6 @@ void DEM2::syncElementsToDevice() {
             CUDA_CALL(cudaFree(h_elements.wSolver));
             CUDA_CALL(cudaFree(h_elements.index));
             CUDA_CALL(cudaFree(h_elements.active));
-            CUDA_CALL(cudaFree(h_elements.componentsIndex));
             CUDA_CALL(cudaFree(h_elements.size));
             CUDA_CALL(cudaFree(h_elements.radius));
             CUDA_CALL(cudaFree(h_elements.m));
@@ -2212,12 +2211,13 @@ void DEM2::syncElementsToDevice() {
             CUDA_CALL(cudaFree(h_elements.maxOverlap));
             CUDA_CALL(cudaFree(h_elements.maxDtOverlap));
             CUDA_CALL(cudaFree(h_elements.slippingCase));
+            CUDA_CALL(cudaFree(h_elements.componentsIndex));
+            CUDA_CALL(cudaFree(h_elements.componentsData));
         }
         hd_elements.alloc = h_elements.count;
         CUDA_CALL(cudaMalloc(&hd_elements.wSolver, h_elements.count * sizeof(bool)));
         CUDA_CALL(cudaMalloc(&hd_elements.index, h_elements.count * sizeof(unsigned int)));
         CUDA_CALL(cudaMalloc(&hd_elements.active, h_elements.count * sizeof(bool)));
-        CUDA_CALL(cudaMalloc(&hd_elements.componentsIndex, h_elements.count * sizeof(unsigned int)));
         CUDA_CALL(cudaMalloc(&hd_elements.size, h_elements.count * sizeof(unsigned int)));
         CUDA_CALL(cudaMalloc(&hd_elements.radius, h_elements.count * sizeof(double)));
         CUDA_CALL(cudaMalloc(&hd_elements.m, h_elements.count * sizeof(double)));
@@ -2281,6 +2281,8 @@ void DEM2::syncElementsToDevice() {
         CUDA_CALL(cudaMalloc(&hd_elements.maxOverlap, h_elements.count * sizeof(double)));
         CUDA_CALL(cudaMalloc(&hd_elements.maxDtOverlap, h_elements.count * sizeof(double)));
         CUDA_CALL(cudaMalloc(&hd_elements.slippingCase, h_elements.count * sizeof(int)));
+        CUDA_CALL(cudaMalloc(&hd_elements.componentsIndex, (h_elements.count + 1) * sizeof(unsigned int)));
+        CUDA_CALL(cudaMalloc(&hd_elements.componentsData, h_elements.componentsIndex[h_elements.count] * sizeof(unsigned int)));
         //todo springs
         updateDeviceStruct = true;
     }
@@ -2296,7 +2298,6 @@ void DEM2::syncElementsToDevice() {
     CUDA_CALL(cudaMemcpy(hd_elements.wSolver, h_elements.wSolver, hd_elements.count * sizeof(bool), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.index, h_elements.index, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.active, h_elements.active, hd_elements.count * sizeof(bool), cudaMemcpyHostToDevice));
-    CUDA_CALL(cudaMemcpy(hd_elements.componentsIndex, h_elements.componentsIndex, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.size, h_elements.size, hd_elements.count * sizeof(unsigned int), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.radius, h_elements.radius, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.m, h_elements.m, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
@@ -2360,6 +2361,8 @@ void DEM2::syncElementsToDevice() {
     CUDA_CALL(cudaMemcpy(hd_elements.maxOverlap, h_elements.maxOverlap, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.maxDtOverlap, h_elements.maxDtOverlap, hd_elements.count * sizeof(double), cudaMemcpyHostToDevice));
     CUDA_CALL(cudaMemcpy(hd_elements.slippingCase, h_elements.slippingCase, hd_elements.count * sizeof(int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.componentsIndex, h_elements.componentsIndex, (hd_elements.count + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    CUDA_CALL(cudaMemcpy(hd_elements.componentsData, h_elements.componentsData, h_elements.componentsIndex[h_elements.count] * sizeof(unsigned int), cudaMemcpyHostToDevice));
     // Copy tertiary buffers to device
     h_elements.activeCount = hd_elements.activeCount;
     if (h_elements.activeCount > hd_elements.activeAlloc) {

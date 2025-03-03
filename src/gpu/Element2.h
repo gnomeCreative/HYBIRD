@@ -259,7 +259,6 @@ inline void Element2::memoryAlloc<CPU>(unsigned int num) {
     if(wSolver) {
         free(wSolver);
         free(index);
-        free(componentsIndex);
         free(size);
         free(m);
         free(I);
@@ -325,6 +324,7 @@ inline void Element2::memoryAlloc<CPU>(unsigned int num) {
         free(maxOverlap);
         free(maxDtOverlap);
         free(slippingCase);
+        free(componentsIndex);
     }
 
     wSolver = (bool*)malloc(alloc * sizeof(bool));
