@@ -1440,7 +1440,7 @@ void DEM2::corrector<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_newtonEquationsSolution, 0, hd_elements.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_corrector, 0, hd_elements.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_elements.activeCount + blockSize - 1) / blockSize;
     d_corrector<<<gridSize, blockSize>>>(d_elements, coeff1ord, coeff2ord);
@@ -1469,7 +1469,7 @@ void DEM2::updateParticlesCorrected<CUDA>() {
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the // maximum occupancy for a full device // launch
     int gridSize = 0;  // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_newtonEquationsSolution, 0, hd_particles.activeCount);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateParticlesCorrected, 0, hd_particles.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_particles.activeCount + blockSize - 1) / blockSize;
     d_updateParticlesCorrected<<<gridSize, blockSize>>>(d_particles, d_elements);
