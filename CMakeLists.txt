@@ -120,6 +120,9 @@ if(CMAKE_CUDA_COMPILER AND HYBIRD_ENABLE_CUDA)
     target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
     # Enable relocatable device code
     set_property(TARGET hybird PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+    # Enable -lineinfo for Release builds, for improved profiling output.
+    # CMAKE >=3.19 required for multivalue CONFIG:
+    target_compile_options(hybird PRIVATE "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>,$<CONFIG:RelWithDebInfo>>>:-lineinfo>")
 else()
     # Or set .cu files to be compiled as .cpp
     foreach(HYBIRD_SRC_FILE HYBIRD_SRC)
