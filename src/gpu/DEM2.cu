@@ -577,9 +577,9 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
     // a_i's 3D bin coordinate
     const tVect pos = d_particles->x0[a_i];
     const std::array<int, 3> bin_pos = {
-    static_cast<int>(floor(pos.x / DEM_P.cellWidth[0]) + 1),
-    static_cast<int>(floor(pos.y / DEM_P.cellWidth[1]) + 1),
-    static_cast<int>(floor(pos.z / DEM_P.cellWidth[2]) + 1) };
+    static_cast<int>(floor(pos.x / DEM_P.cellWidth[0])),
+    static_cast<int>(floor(pos.y / DEM_P.cellWidth[1])),
+    static_cast<int>(floor(pos.z / DEM_P.cellWidth[2])) };
     for (int dx = -1; dx <= 1; ++dx) {
         // Clamp/Wrap x coord
         int x = bin_pos[0] + dx;
@@ -629,7 +629,7 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
                     }
                 }
                 // Iterate particles within the bin
-                const unsigned int hash = x + DEM_P.nCells[0] * (y + DEM_P.nCells[1] * x);
+                const unsigned int hash = x + DEM_P.nCells[0] * (y + DEM_P.nCells[1] * z);
                 for (unsigned int i = d_particles->PBM[hash]; i < d_particles->PBM[hash+1]; ++i){
                     const unsigned int n_i = d_particles->neighbour_index[i];
                     // @temp Filter out particles that have lower index, we are operating naive reciprocity
@@ -1655,7 +1655,7 @@ void DEM2::initNeighborParameters() {
         // width of the cells (actual)
         DEM_P.cellWidth[k] = DEM_P.demSize[k] / (double)DEM_P.nCells[k];
         // increase by two to give a container for ghost cells, in case of periodicity
-        DEM_P.nCells[k] += 2;
+        //DEM_P.nCells[k] += 2;
     }
 
     // may need a revision

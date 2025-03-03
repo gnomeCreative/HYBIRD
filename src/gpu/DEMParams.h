@@ -153,9 +153,9 @@ extern DEMParams h_DEM_P;
 // Implemented here, rather than myvector.inl, to avoid circular dependency
 // (whilst keeping it inlined)
 inline __host__ __device__ int tVect::linearizePosition() const {
-    const int xc = static_cast<int>(floor(x / DEM_P.cellWidth[0]) + 1);
-    const int yc = static_cast<int>(floor(y / DEM_P.cellWidth[1]) + 1);
-    const int zc = static_cast<int>(floor(z / DEM_P.cellWidth[2]) + 1);
+    const int xc = static_cast<int>(floor(x / DEM_P.cellWidth[0]));
+    const int yc = static_cast<int>(floor(y / DEM_P.cellWidth[1]));
+    const int zc = static_cast<int>(floor(z / DEM_P.cellWidth[2]));
     const int index = static_cast<int>(xc + DEM_P.nCells[0] * (yc + DEM_P.nCells[1] * zc));
     return index;
 }
