@@ -221,7 +221,7 @@ void LB2::findNewSolid<CUDA>() {
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findNewSolid, 0, hd_nodes.activeCount);
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
-    d_findNewSolid << <gridSize, blockSize >> > (d_nodes, dem.d_particles, dem.d_elements);
+    d_findNewSolid<<<gridSize, blockSize>>>(d_nodes, dem.d_particles, dem.d_elements);
     CUDA_CHECK();
 }
 #endif
