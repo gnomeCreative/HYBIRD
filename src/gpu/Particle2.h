@@ -2,6 +2,7 @@
 #define PARTICLE2_H
 #include "DEMParams.h"
 #include "Element2.h"
+#include "LBParams.h"
 
 /**
  * \brief Elements within the DEM are decomposed into spherical particles.
@@ -66,7 +67,7 @@ struct Particle2 {
      * @param elements elements structure
      * @param e_i Index of mother element
      */
-    __host__ __device__ void updateCorrected(unsigned int i, const Element2 *elements, unsigned int e_i);
+    __host__ __device__ void updateCorrected(unsigned int i, const Element2 *elements);
 
 
     __host__ __device__ void updatePredicted(unsigned int i, const Element2 *elements);
@@ -74,7 +75,9 @@ struct Particle2 {
 };
 
 
-__host__ __device__ __forceinline__ void Particle2::updateCorrected(const unsigned int i, const Element2 *elements, const unsigned int e_i) {
+__host__ __device__ __forceinline__ void Particle2::updateCorrected(const unsigned int i, const Element2 *elements) {
+    // Mother element index
+    const unsigned int e_i = clusterIndex[i];
     // updating position and velocity for simple case
     x0[i] = elements->x0[e_i];
     radiusVec[i] = {0,0,0};
@@ -82,9 +85,36 @@ __host__ __device__ __forceinline__ void Particle2::updateCorrected(const unsign
 
     if (elements->size[e_i] > 1) {
         x0[i] += r[i] * project(prototypes[elements->size[e_i]][protoIndex[i]], elements->q0[e_i]);
+        // Virtual distance, incase element is wrapped before particle
+        tVect e_x0 = elements->x0[e_i];
+        tVect ae_x0 = e_x0 - x0[i];
+        e_x0 =
+        {
+            abs(ae_x0.x) > DEM_P.half_demSize.x ? e_x0.x - (ae_x0.x / abs(ae_x0.x) * DEM_P.demSize.x) : e_x0.x,
+            abs(ae_x0.y) > DEM_P.half_demSize.y ? e_x0.y - (ae_x0.y / abs(ae_x0.y) * DEM_P.demSize.y) : e_x0.y,
+            abs(ae_x0.z) > DEM_P.half_demSize.z ? e_x0.z - (ae_x0.z / abs(ae_x0.z) * DEM_P.demSize.z) : e_x0.z,
+        };
+
         // updating radius (distance of particle center of mass to element center of mass)
-        radiusVec[i] = x0[i] - elements->x0[e_i];
+        radiusVec[i] = x0[i] - e_x0;
         x1[i] += elements->wGlobal[e_i].cross(radiusVec[i]);
+    }
+
+    // Wrap particle location if periodic boundaries
+    if (LB_P.boundary[0] == PERIODIC && x0[i].x < 0) {
+        x0[i].x += DEM_P.demSize.x;
+    } else if (LB_P.boundary[1] == PERIODIC && x0[i].x >= DEM_P.demSize.x) {
+        x0[i].x -= DEM_P.demSize.x;
+    }
+    if (LB_P.boundary[2] == PERIODIC && x0[i].y < 0) {
+        x0[i].y += DEM_P.demSize.y;
+    } else if (LB_P.boundary[3] == PERIODIC && x0[i].y >= DEM_P.demSize.y) {
+        x0[i].y -= DEM_P.demSize.y;
+    }
+    if (LB_P.boundary[4] == PERIODIC && x0[i].z < 0) {
+        x0[i].z += DEM_P.demSize.z;
+    } else if (LB_P.boundary[5] == PERIODIC && x0[i].z >= DEM_P.demSize.z) {
+        x0[i].z -= DEM_P.demSize.z;
     }
 }
 __host__ __device__ __forceinline__ void Particle2::updatePredicted(const unsigned int i, const Element2 *elements) {
@@ -97,8 +127,18 @@ __host__ __device__ __forceinline__ void Particle2::updatePredicted(const unsign
 
     if (elements->size[me_i] > 1) {
         x0[i] = x0[i] + r[i] * project(prototypes[elements->size[me_i]][protoIndex[i]], elements->qp0[me_i]);
+        // Virtual distance, incase element is wrapped before particle
+        tVect e_x0 = elements->x0[me_i];
+        tVect ae_x0 = e_x0 - x0[i];
+        e_x0 =
+        {
+            abs(ae_x0.x) > DEM_P.half_demSize.x ? e_x0.x - (ae_x0.x / abs(ae_x0.x) * DEM_P.demSize.x) : e_x0.x,
+            abs(ae_x0.y) > DEM_P.half_demSize.y ? e_x0.y - (ae_x0.y / abs(ae_x0.y) * DEM_P.demSize.y) : e_x0.y,
+            abs(ae_x0.z) > DEM_P.half_demSize.z ? e_x0.z - (ae_x0.z / abs(ae_x0.z) * DEM_P.demSize.z) : e_x0.z,
+        };
+
         // updating radius (distance of particle center of mass to element center of mass)
-        radiusVec[i] = x0[i] - elements->xp0[me_i];
+        radiusVec[i] = x0[i] - e_x0;
         x1[i] = x1[i] + elements->wpGlobal[me_i].cross(radiusVec[i]);
     }
 }

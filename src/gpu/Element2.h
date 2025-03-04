@@ -1,6 +1,7 @@
 #ifndef ELEMENT2_H
 #define ELEMENT2_H
 #include "cuda_helper.h"
+#include "LBParams.h"
 #include "myvector.h"
 
 struct Particle2;
@@ -234,6 +235,23 @@ __host__ __device__ __forceinline__ void Element2::correct(const unsigned int i,
         const tQuat q0adj = q0[i].adjoint();
         wGlobal[i] = 2.0 * quat2vec(q1[i].multiply(q0adj));
         wLocal[i] = 2.0 * quat2vec(q0adj.multiply(q1[i]));
+    }
+
+    // Wrap a particle's location if periodic boundaries are enabled
+    if (LB_P.boundary[0] == PERIODIC && x0[i].x < 0) {
+        x0[i].x += DEM_P.demSize.x;
+    } else if (LB_P.boundary[1] == PERIODIC && x0[i].x >= DEM_P.demSize.x) {
+        x0[i].x -= DEM_P.demSize.x;
+    }
+    if (LB_P.boundary[2] == PERIODIC && x0[i].y < 0) {
+        x0[i].y += DEM_P.demSize.y;
+    } else if (LB_P.boundary[3] == PERIODIC && x0[i].y >= DEM_P.demSize.y) {
+        x0[i].y -= DEM_P.demSize.y;
+    }
+    if (LB_P.boundary[4] == PERIODIC && x0[i].z < 0) {
+        x0[i].z += DEM_P.demSize.z;
+    } else if (LB_P.boundary[5] == PERIODIC && x0[i].z >= DEM_P.demSize.z) {
+        x0[i].z -= DEM_P.demSize.z;
     }
 }
 __host__ __device__ inline void Element2::atomicMaxOverlap(unsigned int index, const double overlap) {

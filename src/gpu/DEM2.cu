@@ -643,9 +643,9 @@ __global__ void d_particleParticleContacts(Particle2 *d_particles, Element2 *d_e
                             const tVect an_x0 = n_x0 - d_particles->x0[a_i];
                             n_x0 = 
                             {
-                                abs(an_x0.x) > DEM_P.half_demSize.x ? n_x0.x - (an_x0.x / abs(an_x0.x) * DEM_P.half_demSize.x) : n_x0.x,
-                                abs(an_x0.y) > DEM_P.half_demSize.y ? n_x0.y - (an_x0.y / abs(an_x0.y) * DEM_P.half_demSize.y) : n_x0.y,
-                                abs(an_x0.z) > DEM_P.half_demSize.z ? n_x0.z - (an_x0.z / abs(an_x0.z) * DEM_P.half_demSize.z) : n_x0.z,
+                                abs(an_x0.x) > DEM_P.half_demSize.x ? n_x0.x - (an_x0.x / abs(an_x0.x) * DEM_P.demSize.x) : n_x0.x,
+                                abs(an_x0.y) > DEM_P.half_demSize.y ? n_x0.y - (an_x0.y / abs(an_x0.y) * DEM_P.demSize.y) : n_x0.y,
+                                abs(an_x0.z) > DEM_P.half_demSize.z ? n_x0.z - (an_x0.z / abs(an_x0.z) * DEM_P.demSize.z) : n_x0.z,
                             };
                             // recalculate distance between centers with virtual neighbour position
                             const tVect vectorDistance = n_x0 - d_particles->x0[a_i];
@@ -1451,11 +1451,8 @@ __global__ void d_updateParticlesCorrected(Particle2 *d_particles, Element2 *d_e
     if (i >= d_particles->activeCount)
         return;
 
-    const unsigned int ap_i = d_particles->activeI[i];
-
-    //getting belonging element index
-    const unsigned int clusterIndex = d_particles->clusterIndex[ap_i];
-    d_particles->updateCorrected(ap_i, d_elements, clusterIndex);
+    const unsigned int ap_i = d_particles->activeI[i];    
+    d_particles->updateCorrected(ap_i, d_elements);
 }
 template<>
 void DEM2::updateParticlesCorrected<CUDA>() {

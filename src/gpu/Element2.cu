@@ -101,7 +101,7 @@ void Element2::generateParticles(const unsigned int e_i, unsigned int& p_i, Part
             particles.springs[t].clear();
         }
         */
-        particles.updateCorrected(p_i, this, e_i); // was predicted
+        particles.updateCorrected(p_i, this); // was predicted
         ++p_i;
     }
 }
