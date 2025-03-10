@@ -5,6 +5,7 @@
 #include "cuda_helper.h"
 
 #include "DEM.h"
+#include "Problem.h"
 
 /**
  * Storage for static members must be defined
@@ -2205,7 +2206,7 @@ void LB2::initDeviceNodes() {
 #endif    
 }
 
-void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
+void LB2::init(Problem &problem, cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, bool externalSolveCoriolis, bool externalSolveCentrifugal) {
     // Convert from AoS format to SoA and copy to device
     syncCylindersIn<IMPL>(cylinders);
     syncWallsIn<IMPL>(walls);
@@ -2253,7 +2254,7 @@ void LB2::init(cylinderList& cylinders, wallList& walls, particleList& particles
         // restartInterface(fluidFileID, restartNodes);
     } else {
         // initialize interface
-        initializeInterface();
+        initializeInterface(problem);
         // initialize variables for active nodes
         initializeVariables();
     }
@@ -2558,8 +2559,8 @@ void LB2::initializeTopography() {
         }
     }
 }
-void LB2::initializeInterface() {
-    // TODO Currently only default case is supported
+void LB2::initializeInterface(const Problem &problem) {
+    // TODO old problem switch is no longer supported!
     // creates an interface electing interface cells from active cells
     if (h_PARAMS.lbTopographySurface) {
         // Formerly setTopographySurface()
@@ -2574,9 +2575,28 @@ void LB2::initializeInterface() {
                 }
             }
         }
+    } else if(!problem.file.empty()) { // Problem file was loaded
+        cout << "Initializing from problem file:" << endl;
+        for (const auto &f : problem.fluids_basic) {
+            cout << "BOX=min(" << f.min.x << ", " << f.min.y << ", " << f.min.z << ")" << endl;
+            cout << "    max(" << f.max.x << ", " << f.max.y << ", " << f.max.z << ")" << endl;
+        }
+        for (const auto& f : problem.fluids_complex_str) {
+            cout << "EXPRESSION=if (" << f <<") > 0" << endl;
+        }
+        unsigned int ct = 0;
+        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+            if (h_nodes.type[it] == GAS) {
+                // creating fluid cells
+                if (problem.isFluid(h_PARAMS.getPosition(it))) {
+                    generateNode(it, LIQUID);
+                    ++ct;
+                }
+            }
+        }
+        cout << ct << " of " << h_PARAMS.totPossibleNodes << " nodes were init as liquid." << endl;
     } else {
         switch (problemName) {
-        case NONE:
         case SHEARCELL:
         case AVALANCHE:
         case DRUM:
@@ -2612,9 +2632,13 @@ void LB2::initializeInterface() {
         case SHEARCELL2023:
         case INTRUDER:
         case OBJMOVING:
+            cerr << "Error: problem '" << problemName << "' is not supported by LB2::initializeInterface()" << endl;
+            cerr << "config file should be upgraded to use a problem file free surface definition" << endl;
+            std::abort();
+        case NONE:
         default:
             {
-                cout << "Initializing interface using box defined in config file:" << endl;
+                cout << "Initializing from problem file:" << endl;
                 cout << "X=(" << double(h_PARAMS.freeSurfaceBorders[0]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[1]) * h_PARAMS.unit.Length << ")" << endl;
                 cout << "Y=(" << double(h_PARAMS.freeSurfaceBorders[2]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[3]) * h_PARAMS.unit.Length << ")" << endl;
                 cout << "Z=(" << double(h_PARAMS.freeSurfaceBorders[4]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[5]) * h_PARAMS.unit.Length << ")" << endl;
@@ -2632,8 +2656,8 @@ void LB2::initializeInterface() {
                         }
                     }
                 }
-                break;
             }
+            break;
         }
     }
 }

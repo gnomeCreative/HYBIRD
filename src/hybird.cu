@@ -518,7 +518,7 @@ int main(int argc, char** argv) {
     const tVect externalRotation = lb_p.rotationSpeed * lb_p.unit.AngVel;
     const tVect externalRotationCenter = lb_p.rotationCenter * lb_p.unit.Length;
 
-    dem.discreteElementInit(lb_p.boundary, lb_p.lbPhysicalSize, lb_p.lbBoundaryLocation, externalForce,
+    dem.discreteElementInit(problem, lb_p.boundary, lb_p.lbPhysicalSize, lb_p.lbBoundaryLocation, externalForce,
             externalRotation, externalRotationCenter, io.coriolisSolver, io.centrifugalSolver, lb_p.unit.Time);
 
     // setting time
@@ -532,7 +532,7 @@ int main(int argc, char** argv) {
     lb.setParams(lb_p, lb_ip);
 
     if (io.lbmSolver) {
-        lb.init(dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
+        lb.init(problem, dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
     }
         
     // initial output

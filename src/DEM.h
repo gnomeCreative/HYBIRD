@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "LB.h"
 
+class Problem;
 using namespace std;
 extern ProblemName problemName;
 
@@ -182,7 +183,7 @@ public:
     }
     void discreteElementStep();
     void discreteElementGet(GetPot& config_file, GetPot& command_line);
-    void discreteElementInit(const std::array<types, 6> &externalBoundary, const std::array<double, 3> &externalSize, const std::array<tVect, 6> &externalBoundaryLocation,
+    void discreteElementInit(const Problem& problem, const std::array<types, 6> &externalBoundary, const std::array<double, 3> &externalSize, const std::array<tVect, 6> &externalBoundaryLocation,
             const tVect externalAccel, const tVect externalRotation, const tVect externalRotationCenter, const bool externalSolveCoriolis, const bool externalSolveCentrifugal, const double& externalTimeStep);
     void evolveBoundaries();
 //    void evolveObj();
@@ -192,8 +193,8 @@ public:
 private:
     // initialization functions
     void compositeProperties();
-    void initializeWalls(const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation);
-    void initializeCylinders();
+    void initializeWalls(const Problem& problem, const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation);
+    void initializeCylinders(const Problem& problem);
     void initializePbcs(const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation);
     // integration functions
     void predictor();

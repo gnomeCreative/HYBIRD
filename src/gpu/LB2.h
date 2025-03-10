@@ -12,6 +12,7 @@
 #include "Cylinder2.h"
 #include "Wall2.h"
 
+class Problem;
 class DEM;
 
 /**
@@ -29,7 +30,7 @@ class LB2 {
     // @todo how do we init params from config?
     LB2() = default;
 
-    void init(cylinderList &cylinders, wallList &walls, particleList &particles, objectList &objects, bool externalSolveCoriolis, bool externalSolveCentrifugal);
+    void init(Problem& problem, cylinderList &cylinders, wallList &walls, particleList &particles, objectList &objects, bool externalSolveCoriolis, bool externalSolveCentrifugal);
     void allocateHostNodes(unsigned int count);
     void initializeLatticeBoundaries();
     void initializeTypes(const wallList &walls, const cylinderList &cylinders, const objectList &objects);
@@ -37,7 +38,7 @@ class LB2 {
     void initializeObjectBoundaries(const objectList &objects);
     void initializeCylinderBoundaries(const cylinderList &cylinders);
     void initializeTopography();
-    void initializeInterface();
+    void initializeInterface(const Problem& problem);
     void initializeVariables();
     void generateNode(unsigned int coord, types typeHere);
     void initializeWalls();
