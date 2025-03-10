@@ -21,6 +21,7 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/myvector.inl
     ${PROJECT_SOURCE_DIR}/src/node.h
     ${PROJECT_SOURCE_DIR}/src/utils.h
+    ${PROJECT_SOURCE_DIR}/src/Problem.h
     )
     
 # Define source files
@@ -32,10 +33,20 @@ set(HYBIRD_SRC
     ${PROJECT_SOURCE_DIR}/src/LB.cpp
     ${PROJECT_SOURCE_DIR}/src/node.cpp
     ${PROJECT_SOURCE_DIR}/src/utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/Problem.cpp
     )
 
 # Define the target we wish to build
 add_executable(hybird ${HYBIRD_INCLUDE} ${HYBIRD_SRC})
+
+# Allow includes relative to src root
+target_include_directories(hybird PRIVATE "${PROJECT_SOURCE_DIR}/src")
+
+# Link with dependencies
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependencies/exprtk.cmake)
+target_link_libraries(hybird PRIVATE exprtk)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependencies/yaml-cpp.cmake)
+target_link_libraries(hybird PRIVATE yaml-cpp)
 
 # Use C++17
 target_compile_features(hybird PUBLIC cxx_std_17)

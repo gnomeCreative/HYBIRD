@@ -14,6 +14,7 @@
 #include "IO.h"
 #include "DEM.h"
 #include "LB.h"
+#include "Problem.h"
 
 /*
  *      HYBIRD
@@ -25,7 +26,7 @@
 
 
 enum ExitCode {
-    UNFINISHED = -1, SUCCESS = 0, TIME_LIMIT_REACHED, SIGNAL_CAUGHT, ERROR
+    UNFINISHED = -1, SUCCESS = 0, TIME_LIMIT_REACHED, SIGNAL_CAUGHT, ERR
 };
 
 
@@ -147,13 +148,12 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
     std::ifstream configFile(io.configFileName.c_str());
     if (!configFile) {
         cout << "ERROR: Can't open config file \"" << io.configFileName << "\" for reading!\n";
-        //        return ERROR;
+        //        return ERR;
     }
     configFile.close();
 }
 
-void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& commandLine) {
-
+void parseConfigFile(IO& io, DEM& dem, LB& lb, Problem& problem, GetPot& configFile, GetPot& commandLine) {
     cout << "Parsing input file" << endl;
     // PROBLEM NAME //////////////
     // necessary for hard coded sections of the code
@@ -195,8 +195,11 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
     else if (problemNameString == "INTRUDER") problemName = INTRUDER;
     else if (problemNameString == "OBJMOVING") problemName = OBJMOVING;
-
-
+    string problemFileString;
+    PARSE_CLASS_MEMBER(configFile, problemFileString, "problemFile", "");
+    if (!problemFileString.empty()) {
+        problem = Problem::loadFile(problemFileString);
+    }
 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
@@ -480,7 +483,8 @@ int main(int argc, char** argv) {
 
     // parsing LBM input file
     GetPot configFile(io.configFileName);
-    parseConfigFile(io, dem, lb, configFile, commandLine);
+    Problem problem;
+    parseConfigFile(io, dem, lb, problem, configFile, commandLine);
 
     printUfo(commandLine, configFile);
 
@@ -541,7 +545,7 @@ int main(int argc, char** argv) {
 
             //            // exit abnormally if a serious problem has occurred
             //            if (io.problem) {
-            //                exit_code = ERROR;
+            //                exit_code = ERR;
             //            }
         }
 

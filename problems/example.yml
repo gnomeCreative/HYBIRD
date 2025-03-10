@@ -1,0 +1,51 @@
+# Name of the problem (0-1)
+name: example problem
+
+# If multiple fluid volumes are specified, they are all additive
+# Cuboid fluid volumes (0-many)
+fluids_basic:
+    - min: [-50, -50, -50]
+      max: [50, 50, 50]
+    - min: [10, 50, 10]
+      max: [10, 100.5, 10]
+# Mathematical expression fluid volumes (0-many)
+# Provide an expression that takes any/all (x/y/z)
+# Passed the coordinates of a node, it should return
+# >0 to denote that a node is fluid
+# <=0 to denote that a node is gas
+fluids_complex:
+    - (x + y)/z
+    
+    
+# Flat walls (0-many)
+walls:
+    - normal: [1,0,0]
+      point: [0,0,0]
+      # Remaining properties are optional, and will default to the below values if not specified
+      moving: false
+      rotational_center: [0,0,0]
+      rotational_speed: [0,0,0] # aka angular velocity?
+      translation_speed: [0,0,0] # aren't translation vector/speed the the same thing?
+      slipping: false
+      translating: false
+      translation_vector: [0,0,0]
+      limited: false
+      min: [-1.79769e+308, -1.79769e+308, -1.79769e+308] # aka -DBL_MAX
+      max: [1.79769e+308, 1.79769e+308, 1.79769e+308] # aka +DBL_MAX
+      
+      
+# Curved cylinders (0-many)
+cylinders:
+    - point1: [0,0,0]
+      point2: [1,0,0]
+      radius: 1
+      # Remaining properties are optional, and will default to the below values if not specified
+      moving: false
+      rotational_speed: [0,0,0]
+      slipping: false
+      empty: true # Define whether the cylinder is empty/inner or full/outer
+      translating: false
+      translation_vector: [0,0,0]
+      limited: false
+      min: [-1.79769e+308, -1.79769e+308, -1.79769e+308] # aka -DBL_MAX
+      max: [1.79769e+308, 1.79769e+308, 1.79769e+308] # aka +DBL_MAX
