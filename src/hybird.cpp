@@ -513,11 +513,11 @@ int main(int argc, char** argv) {
     const tVect externalRotation = lb.rotationSpeed * lb.unit.AngVel;
     const tVect externalRotationCenter = lb.rotationCenter * lb.unit.Length;
 
-    dem.discreteElementInit(lb.boundary, lb.lbPhysicalSize, lb.lbBoundaryLocation, externalForce,
+    dem.discreteElementInit(problem, lb.boundary, lb.lbPhysicalSize, lb.lbBoundaryLocation, externalForce,
             externalRotation, externalRotationCenter, io.coriolisSolver, io.centrifugalSolver, lb.unit.Time);
 
     if (io.lbmSolver) {
-        lb.latticeBolzmannInit(dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
+        lb.latticeBolzmannInit(problem, dem.cylinders, dem.walls, dem.particles, dem.objects, io.coriolisSolver, io.centrifugalSolver);
     }
 
     // setting time
