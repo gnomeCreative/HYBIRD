@@ -3,6 +3,8 @@
 #include "macros.h"
 
 
+#include "Problem.h"
+
 #define USE_MATH_DEFINES
 
 using namespace std;
@@ -195,7 +197,7 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
 
 }
 
-void DEM::discreteElementInit(const typeList& externalBoundary, const doubleList& externalSize, const vecList& externalBoundaryLocation,
+void DEM::discreteElementInit(const Problem &problem, const typeList& externalBoundary, const doubleList& externalSize, const vecList& externalBoundaryLocation,
         const tVect externalAccel, const tVect externalRotation, const tVect externalRotationCenter, const bool externalSolveCoriolis, const bool externalSolveCentrifugal, const double& externalTimeStep) {
 
     // initializing DEM parameters from external parameters (LES or LBM))
@@ -237,9 +239,9 @@ void DEM::discreteElementInit(const typeList& externalBoundary, const doubleList
     actvPartNumber = stdPartNumber;
 
     // initializing wall for DEM
-    initializeWalls(externalBoundary, externalBoundaryLocation);
+    initializeWalls(problem, externalBoundary, externalBoundaryLocation);
     // initializing cylinders for DEM
-    initializeCylinders();
+    initializeCylinders(problem);
     // initializing periodic boundary conditions for DEM
     initializePbcs(externalBoundary, externalBoundaryLocation);
     // initializing destroy planes for DEM
@@ -541,7 +543,7 @@ void DEM::compositeProperties() {
 
 }
 
-void DEM::initializeWalls(const typeList& externalBoundary, const vecList& boundaryLocation) {
+void DEM::initializeWalls(const Problem &problem, const typeList& externalBoundary, const vecList& boundaryLocation) {
     walls.clear();
 
     // boundary directors
@@ -590,7 +592,11 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
     }
 
     // additional walls
-    switch (problemName) {
+    if (!problem.file.empty()) {  // Problem file was loaded
+        // Copy additional walls directly from problem file
+        walls.insert(walls.end(), problem.walls.begin(), problem.walls.end());
+    } else {
+        switch (problemName) {
         case HK_LARGE:
         {
             // storage container
@@ -687,17 +693,20 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
                     dummyWall.slip = true;
                     dummyWall.rotCenter.reset();
                     dummyWall.omega.reset();
-                } else if (externalBoundary[2] == SLIP_DYN_WALL) {
+                }
+                else if (externalBoundary[2] == SLIP_DYN_WALL) {
                     dummyWall.moving = true;
                     dummyWall.slip = true;
                     dummyWall.rotCenter = dummyWall.p;
                     dummyWall.omega = tVect(0.0, drumSpeed, 0.0);
-                } else if (externalBoundary[2] == STAT_WALL) {
+                }
+                else if (externalBoundary[2] == STAT_WALL) {
                     dummyWall.moving = false;
                     dummyWall.slip = false;
                     dummyWall.rotCenter.reset();
                     dummyWall.omega.reset();
-                } else if (externalBoundary[2] == DYN_WALL) {
+                }
+                else if (externalBoundary[2] == DYN_WALL) {
                     dummyWall.moving = true;
                     dummyWall.slip = false;
                     dummyWall.rotCenter = dummyWall.p;
@@ -717,17 +726,20 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
                     dummyWall.slip = true;
                     dummyWall.rotCenter.reset();
                     dummyWall.omega.reset();
-                } else if (externalBoundary[3] == SLIP_DYN_WALL) {
+                }
+                else if (externalBoundary[3] == SLIP_DYN_WALL) {
                     dummyWall.moving = true;
                     dummyWall.slip = true;
                     dummyWall.rotCenter = dummyWall.p;
                     dummyWall.omega = tVect(0.0, drumSpeed, 0.0);
-                } else if (externalBoundary[3] == STAT_WALL) {
+                }
+                else if (externalBoundary[3] == STAT_WALL) {
                     dummyWall.moving = false;
                     dummyWall.slip = false;
                     dummyWall.rotCenter.reset();
                     dummyWall.omega.reset();
-                } else if (externalBoundary[3] == DYN_WALL) {
+                }
+                else if (externalBoundary[3] == DYN_WALL) {
                     dummyWall.moving = true;
                     dummyWall.slip = false;
                     dummyWall.rotCenter = dummyWall.p;
@@ -1291,18 +1303,21 @@ void DEM::initializeWalls(const typeList& externalBoundary, const vecList& bound
 
             break;
         }
+        }
     }
-
     for (int n = 0; n < walls.size(); ++n) {
         walls[n].wallShow();
     }
 }
 
-void DEM::initializeCylinders() {
+void DEM::initializeCylinders(const Problem &problem) {
     cylinders.clear();
     unsigned int index = 0;
-
-    switch (problemName) {
+    if (!problem.file.empty()) {  // Problem file was loaded
+        // Copy cylinders directly from problem file
+        cylinders.insert(cylinders.end(), problem.cylinders.begin(), problem.cylinders.end());
+    } else {
+        switch (problemName) {
         case HK_LARGE:
         {
             if (depositArea) {
@@ -1599,8 +1614,8 @@ void DEM::initializeCylinders() {
             ++index;
             break;
         }
+        }
     }
-
     for (int n = 0; n < cylinders.size(); ++n) {
         cylinders[n].cylinderShow();
     }

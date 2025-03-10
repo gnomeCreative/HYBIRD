@@ -184,6 +184,7 @@ Problem Problem::loadFile(const std::string& filePath) {
         throw std::exception(err.str().c_str());
     }
     Problem p;
+    p.file = filePath;
     // Name
     if (problem["name"]) {
         p.name = problem["name"].as<std::string>();
@@ -204,11 +205,15 @@ Problem Problem::loadFile(const std::string& filePath) {
         exprtk::parser<double> parser;
         if (problem["fluids_complex"].IsSequence()) {
             for (const auto &fluid : problem["fluids_complex"]) {
-                p.fluids_complex.push_back(parse_expression(parser, p.symbol_table, fluid.as<std::string>()));
+                const std::string t = fluid.as<std::string>();
+                p.fluids_complex_str.push_back(t);
+                p.fluids_complex.push_back(parse_expression(parser, p.symbol_table, t));
             }
         } else {
             // They didn't provide it as a list, parse anyway
-            p.fluids_complex.push_back(parse_expression(parser, p.symbol_table, problem["fluids_complex"].as<std::string>()));
+            const std::string t = problem["fluids_complex"].as<std::string>();
+            p.fluids_complex_str.push_back(t);
+            p.fluids_complex.push_back(parse_expression(parser, p.symbol_table, t));
         }        
     }
     // Walls

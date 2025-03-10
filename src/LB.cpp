@@ -1,5 +1,6 @@
  
 #include "LB.h"
+#include "Problem.h"
 
 namespace {
 // extra mass due to bounce-back and moving walls
@@ -511,7 +512,7 @@ void LB::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
 
 }
 
-void LB::latticeBolzmannInit(cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, const bool externalSolveCoriolis, const bool externalSolveCentrifugal) {
+void LB::latticeBolzmannInit(Problem &problem, cylinderList& cylinders, wallList& walls, particleList& particles, objectList& objects, const bool externalSolveCoriolis, const bool externalSolveCentrifugal) {
     //  Lattice Boltzmann initialization steps
     
     // switchers for apparent accelerations
@@ -545,7 +546,7 @@ void LB::latticeBolzmannInit(cylinderList& cylinders, wallList& walls, particleL
         restartInterface(fluidFileID, restartNodes);
     } else {
         // initialize interface
-        initializeInterface(particles.size());
+        initializeInterface(problem, particles.size());
         // initialize variables for active nodes
         initializeVariables();
     }
@@ -1341,7 +1342,7 @@ void LB::setTopographySurface() {
     }
 }
 
-void LB::initializeInterface(double totParticles) {
+void LB::initializeInterface(Problem& problem, double totParticles) {
     // creates an interface electing interface cells from active cells
     // defining a surface
 
@@ -1350,6 +1351,26 @@ void LB::initializeInterface(double totParticles) {
     if (lbTopographySurface) {
         cout << "Initializing interface as set in topography file" << endl;
         setTopographySurface();
+    } else if (!problem.file.empty()) { // Problem file was loaded
+        cout << "Initializing from problem file (" << problem.name << "):" << endl;
+        for (const auto& f : problem.fluids_basic) {
+            cout << "BOX=min(" << f.min.x << ", " << f.min.y << ", " << f.min.z << ")" << endl;
+            cout << "    max(" << f.max.x << ", " << f.max.y << ", " << f.max.z << ")" << endl;
+        }
+        for (const auto& f : problem.fluids_complex_str) {
+            cout << "EXPRESSION=if (" << f << ") > 0" << endl;
+        }
+        unsigned int ct = 0;
+        for (unsigned int it = 0; it < totPossibleNodes; ++it) {
+            if (nodes.count(it) == 0) {
+                // creating fluid cells
+                if (problem.isFluid(getPosition(it))) {
+                    generateNode(it, LIQUID);
+                    ++ct;
+                }
+            }
+        }
+        cout << ct << " of " << totPossibleNodes << " nodes were init as liquid." << endl;
     } else {
         switch (problemName) {
             case HK_LARGE:

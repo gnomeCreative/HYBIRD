@@ -16,9 +16,12 @@ class Problem {
     struct MinMaxPair {
         tVect min, max;
     };
+    std::string file;
     std::string name;
     std::vector<MinMaxPair> fluids_basic;
     std::vector<exprtk::expression<double>> fluids_complex;
+    // String representation of loaded expressions
+    std::vector<std::string> fluids_complex_str;
     std::vector<wall> walls;
     std::vector<cylinder> cylinders;
     /**
@@ -37,7 +40,7 @@ class Problem {
      * @return True if the node is fluid
      * @note Defined here so that it is inlined as this may be called millions of times during init
      */
-    bool isFluid(const tVect& pos) {
+    bool isFluid(const tVect& pos) const {
         // Check basic fluid volumes
         if (std::any_of(fluids_basic.cbegin(), fluids_basic.cend(),
             // Lambda function
@@ -55,7 +58,7 @@ class Problem {
             [](const exprtk::expression<double>& expr) { return expr.value() > 0; });
     }
 private:
-    tVect exprtk_pos;
+    mutable tVect exprtk_pos;
     exprtk::symbol_table<double> symbol_table;
 };
 
