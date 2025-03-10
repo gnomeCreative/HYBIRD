@@ -29,7 +29,9 @@
 #define __GETPOT_H__
 
 #if defined(WIN32) || defined(SOLARIS_RAW) || (__GNUC__ == 2) || defined(__HP_aCC)
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 #define strtok_r(a, b, c) strtok(a, b)
 #endif // WINDOWS or SOLARIS or gcc 2.* or HP aCC
 

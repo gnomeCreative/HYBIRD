@@ -13,6 +13,7 @@
 
 #include "IO.h"
 #include "DEM.h"
+#include "Problem.h"
 #include "gpu/IO2.h"
 #include "gpu/LB2.h"
 #include "gpu/LBParams.h"
@@ -154,7 +155,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
     configFile.close();
 }
 
-void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, GetPot& configFile, GetPot& commandLine) {
+void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem &problem, GetPot& configFile, GetPot& commandLine) {
 
     cout << "Parsing input file" << endl;
     // PROBLEM NAME //////////////
@@ -197,8 +198,11 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, GetPot& 
     else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
     else if (problemNameString == "INTRUDER") problemName = INTRUDER;
     else if (problemNameString == "OBJMOVING") problemName = OBJMOVING;
-
-
+    string problemFileString;
+    PARSE_CLASS_MEMBER(configFile, problemFileString, "problemFile", "");
+    if (!problemFileString.empty()) {
+        problem = Problem::loadFile(problemFileString);
+    }
 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
@@ -484,7 +488,8 @@ int main(int argc, char** argv) {
 
     // parsing LBM input file
     GetPot configFile(io.configFileName);
-    parseConfigFile(io, dem, lb_p, lb_ip, configFile, commandLine);
+    Problem problem;
+    parseConfigFile(io, dem, lb_p, lb_ip, problem, configFile, commandLine);
 
     printUfo(commandLine, configFile);
 

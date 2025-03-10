@@ -34,6 +34,7 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/node.h
     ${PROJECT_SOURCE_DIR}/src/utils.h
     ${PROJECT_SOURCE_DIR}/src/MeasureUnits.h
+    ${PROJECT_SOURCE_DIR}/src/Problem.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cuda_helper.h
     ${PROJECT_SOURCE_DIR}/src/gpu/cub_temp_mem.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Cylinder2.h
@@ -59,6 +60,7 @@ set(HYBIRD_SRC
     ${PROJECT_SOURCE_DIR}/src/LB.cpp
     ${PROJECT_SOURCE_DIR}/src/node.cpp
     ${PROJECT_SOURCE_DIR}/src/utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/Problem.cpp
     # @todo How can we compile these as cpp when CUDA is disabled?
     # e.g. set_source_files_properties(test.cu PROPERTIES LANGUAGE CXX)
     ${PROJECT_SOURCE_DIR}/src/gpu/IO2.cu
@@ -72,6 +74,12 @@ add_executable(hybird ${HYBIRD_INCLUDE} ${HYBIRD_SRC})
 
 # Allow includes relative to src root
 target_include_directories(hybird PRIVATE "${PROJECT_SOURCE_DIR}/src")
+
+# Link with dependencies
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependencies/exprtk.cmake)
+target_link_libraries(hybird PRIVATE exprtk)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependencies/yaml-cpp.cmake)
+target_link_libraries(hybird PRIVATE yaml-cpp)
 
 # Use C++17
 target_compile_features(hybird PUBLIC cxx_std_17)
