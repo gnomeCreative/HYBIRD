@@ -222,6 +222,18 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, Problem& problem, GetPot& configF
     ASSERT(io.screenExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.fluidExpTime, "fluidExpTime", 0.0);
     ASSERT(io.fluidExpTime >= 0);
+    if (io.fluidLagrangianExpTime > 0.0) {
+        string fluidFormatString;
+        PARSE_CLASS_MEMBER(configFile, fluidFormatString, "fluidFormat", "BINARY");
+        std::transform(fluidFormatString.begin(), fluidFormatString.end(), fluidFormatString.begin(), ::tolower);
+        if (fluidFormatString == "ascii"
+            || fluidFormatString == "text"
+            || fluidFormatString == "txt") {
+            io.fluidFormat = IO::ParaviewFormat::Ascii;
+        } else { // "binary"
+            io.fluidFormat = IO::ParaviewFormat::Binary;
+        }
+    }
     PARSE_CLASS_MEMBER(configFile, io.fluidLagrangianExpTime, "fluidLagrangianExpTime", 0.0);
     ASSERT(io.fluidLagrangianExpTime >= 0);
     if (io.fluidLagrangianExpTime > 0.0) {
@@ -232,14 +244,14 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, Problem& problem, GetPot& configF
          || fluidLagrangianFormatString == "text"
          || fluidLagrangianFormatString == "txt") {
             io.fluidLagrangianFormat = IO::ParaviewFormat::Ascii;
-         } else if (fluidLagrangianFormatString == "binary_low_memory"
-                 || fluidLagrangianFormatString == "binary_lowmem"
-                 || fluidLagrangianFormatString == "low_memory"
-                 || fluidLagrangianFormatString == "lowmem") {
-             io.fluidLagrangianFormat = IO::ParaviewFormat::BinaryLowMem;
-         } else { // "binary"
-                     io.fluidLagrangianFormat = IO::ParaviewFormat::Binary;
-         }
+        } else if (fluidLagrangianFormatString == "binary_low_memory"
+                || fluidLagrangianFormatString == "binary_lowmem"
+                || fluidLagrangianFormatString == "low_memory"
+                || fluidLagrangianFormatString == "lowmem") {
+            io.fluidLagrangianFormat = IO::ParaviewFormat::BinaryLowMem;
+        } else { // "binary"
+            io.fluidLagrangianFormat = IO::ParaviewFormat::Binary;
+        }
     }
     PARSE_CLASS_MEMBER(configFile, io.fluid2DExpTime, "fluid2DExpTime", 0.0);
     ASSERT(io.fluid2DExpTime >= 0);
