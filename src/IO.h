@@ -63,7 +63,7 @@ public:
     // Formats for output
     enum ParaviewFormat {
         Binary, BinaryLowMem, Ascii
-    } fluidLagrangianFormat = Binary, partExpFormat = Binary;
+    } fluidFormat = Binary, fluidLagrangianFormat = Binary, partExpFormat = Binary;
     // recycle intervals
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
@@ -142,6 +142,7 @@ private:
     unsigned int lastFluidLagrangianExp;
     string fluidLagrangianFileFormat;
     void exportLagrangianParaviewFluid(const LB& lb, const string& fluidFile);
+    void exportLagrangianParaviewFluid_binaryv3(const LB& lb, const string& fluidFile);
     
     // 2D files for GIS/////////////////////////////////////////////////////////////////////////////////////////
     
