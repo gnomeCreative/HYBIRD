@@ -14,7 +14,7 @@ inline bool parse_bool(const YAML::Node& node, const std::string &parent, const 
         std::stringstream err;
         err << "'" << parent << "::" << child << "', if present, should be parseable as type boolean.";
         std::cout << err.str();
-        throw std::exception(err.str().c_str());
+        throw std::runtime_error(err.str().c_str());
     }
     return node[child].as<bool>();
 }
@@ -23,7 +23,7 @@ inline tVect parse_tVect(const YAML::Node& node, const std::string& parent, cons
         std::stringstream err;
         err << "'" << parent << "::" << child << "', if present, should be parseable as type double[3].";
         std::cout << err.str();
-        throw std::exception(err.str().c_str());
+        throw std::runtime_error(err.str().c_str());
     }
     return { node[child][0].as<double>(), node[child][1].as<double>() , node[child][2].as<double>() };
 }
@@ -34,7 +34,7 @@ inline exprtk::expression<double> parse_expression(exprtk::parser<double> &parse
         std::stringstream err;
         err << "Unable to parse expression '" << expression_string << "'.";
         std::cout << err.str();
-        throw std::exception(err.str().c_str());
+        throw std::runtime_error(err.str().c_str());
     }
     return expression;
 }
@@ -45,7 +45,7 @@ Problem::MinMaxPair readBasicFluid(const YAML::Node &basic_fluid) {
         || basic_fluid["min"].size() != 3 || basic_fluid["max"].size() != 3) {
         const std::string err = "'fluids_basic' nodes should contain both a 'min' and 'max' type double[3].";
         std::cout << err;
-        throw std::exception(err.c_str());
+        throw std::runtime_error(err.c_str());
     }
     Problem::MinMaxPair rtn;
     rtn.min.x = basic_fluid["min"][0].as<double>();
@@ -63,7 +63,7 @@ wall readWall(const YAML::Node& wall_node) {
         || wall_node["normal"].size() != 3 || wall_node["point"].size() != 3) {
         const std::string err = "'walls' nodes should contain both a 'normal' and 'point' as type double[3].";
         std::cout << err;
-        throw std::exception(err.c_str());
+        throw std::runtime_error(err.c_str());
     }
     wall rtn;
     // Mandatory components
@@ -119,12 +119,12 @@ cylinder readCylinder(const YAML::Node& cylinder_node) {
         || cylinder_node["point1"].size() != 3 || cylinder_node["point2"].size() != 3) {
         const std::string err = "'cylinders' nodes should contain both a 'point1' and 'point2' as type double[3].";
         std::cout << err;
-        throw std::exception(err.c_str());
+        throw std::runtime_error(err.c_str());
     }
     if (!cylinder_node["radius"] || cylinder_node["radius"].IsSequence()) {
         const std::string err = "'cylinders' nodes should contain a 'radius' as type double.";
         std::cout << err;
-        throw std::exception(err.c_str());
+        throw std::runtime_error(err.c_str());
     }
     cylinder rtn;
     // Mandatory components
@@ -181,7 +181,7 @@ Problem Problem::loadFile(const std::string& filePath) {
         std::stringstream err;
         err << "Unable to open file '" << filePath << "' for reading, does it exist?";
         std::cout << err.str();
-        throw std::exception(err.str().c_str());
+        throw std::runtime_error(err.str().c_str());
     }
     Problem p;
     p.file = filePath;
