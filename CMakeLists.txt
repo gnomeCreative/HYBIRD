@@ -1,6 +1,20 @@
 # Minimum required CMake version
 # This specifies which default policies/settings are expected
 cmake_minimum_required(VERSION 3.22)
+
+# Set CMAKE_CUDA_ARCHITECTURES defaults, now CUDA is enabled.
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  # 61: Pascal (Alessandro's Office machine)
+  # 70: Volta V100 (Bessemer, Bede)
+  # 80: Ampere A100 (Stanage)
+  # 90: Hopper H100 (Stanage, Bede)
+  # We can specify multiple target CUDA architectures
+  # It merely increases compilation time and the output binary size
+  # (because all CUDA is compiled for each architecture)
+  # Alternatively, you can specify the minimum required directly when configuring CMake
+  set(CMAKE_CUDA_ARCHITECTURES "61;70;80;90" CACHE STRING "CUDA architectures" FORCE)
+endif()
+
 # Set the name for the project
 # Can also specify VERSION, DESCRIPTION etc here if desired
 project(HYBIRD LANGUAGES CXX)
@@ -15,8 +29,6 @@ if(CMAKE_CUDA_COMPILER)
     option(HYBIRD_ENABLE_CUDA "If enabled CUDA support will be used" ON)
     if(HYBIRD_ENABLE_CUDA)
         enable_language(CUDA)
-        # @todo Set CMAKE_CUDA_ARCHITECTURES correctly, now CUDA is enabled.
-        # @see https://github.com/FLAMEGPU/FLAMEGPU2/blob/master/cmake/CUDAArchitectures.cmake
     endif()
 endif()
 
@@ -101,7 +113,7 @@ if(HYBIRD_ENABLE_OPENMP)
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             if(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
                 # Visual Studio 2019+ has experimental flag for OMP3.0 support
-                set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:C,CXX>:-openmp:experimental>")
+                set_target_properties(OpenMP::OpenMP_CXX PROPERTIES INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:C,CXX>:-openmp:experimental>")
                 # Todo how to enable OpenMP in cuda files?/Is it desired/required?
                 # CMake 3.30 alt: set(OpenMP_RUNTIME_MSVC "experimental")
             endif()
@@ -114,11 +126,14 @@ else()
 endif()
 
 if(CMAKE_CUDA_COMPILER AND HYBIRD_ENABLE_CUDA)
-# Notify the build that we are building for cuda
+    # Notify the build that we are building for cuda
     target_compile_definitions(hybird PRIVATE USE_CUDA)
     target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
     # Enable relocatable device code
-    set_property(TARGET hybird PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+    set_target_properties(hybird PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    # Make CUDA include/lib available to cpp compiler
+    find_package(CUDAToolkit)
+    target_link_libraries(hybird PRIVATE CUDA::cudart)
 else()
     # Or set .cu files to be compiled as .cpp
     foreach(HYBIRD_SRC_FILE HYBIRD_SRC)
@@ -171,6 +186,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         target_link_options(hybird PRIVATE -static-libgcc -static-libstdc++)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # todo, test the correct configuration for MSVC 
-    # set_property(TARGET hybird PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # Don't think this is required on Windows
+    # set_target_properties(hybird PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
