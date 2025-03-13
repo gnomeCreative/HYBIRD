@@ -19,12 +19,14 @@
     var = commandLine.next(var);
 
 ////// read a 3-vector parameter from the config file, and if it is also given on the command line, overwrite it with that one
-//#define BASE_PARSE_CFG(cfg,type,var,name,def,def_typed) \
-//  if (!cfg.have_variable(name) && !commandLine.search("-" name))\
-//    cout << INFO << "WARNING: Parameter " name " is missing! Using default: " << def << std::endl;\
-//  type var = cfg(name, def_typed);\
-//  if (commandLine.search("-" name))\
-//    var = commandLine.next(var);
+/*
+#define BASE_PARSE_CFG(cfg,type,var,name,def,def_typed) \
+ if (!cfg.have_variable(name) && !commandLine.search("-" name))\
+   cout << INFO << "WARNING: Parameter " name " is missing! Using default: " << def << std::endl;\
+ type var = cfg(name, def_typed);\
+ if (commandLine.search("-" name))\
+   var = commandLine.next(var);
+*/
 
 //// read a member of vector parameter from the config file, and if it is also given on the command line, overwrite it with that one
 #define BASE_PARSE_CFG_VEC(cfg,type,var,name,index,def,def_typed) \

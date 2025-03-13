@@ -13,7 +13,9 @@ enum Implementation {
 };
 
 #ifdef USE_CUDA
-#pragma warning( disable: 4505 )    // unreferenced function has been removed
+#ifdef _MSC_VER
+#pragma warning( disable: 4505 )    // unreferenced function has been removed (under visual studio)
+#endif
 #include <cuda_runtime.h>
 #include <thrust/transform_reduce.h>
 

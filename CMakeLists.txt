@@ -129,6 +129,8 @@ if(CMAKE_CUDA_COMPILER AND HYBIRD_ENABLE_CUDA)
     # Notify the build that we are building for cuda
     target_compile_definitions(hybird PRIVATE USE_CUDA)
     target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+    # Suppress deprecated target warning, we know Pascal that we normally want to build for is deprecated
+    target_compile_options(hybird PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Wno-deprecated-gpu-targets>)     
     # Enable relocatable device code
     set_target_properties(hybird PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     # Make CUDA include/lib available to cpp compiler
