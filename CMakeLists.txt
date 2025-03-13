@@ -30,6 +30,8 @@ if(CMAKE_CUDA_COMPILER)
     if(HYBIRD_ENABLE_CUDA)
         enable_language(CUDA)
     endif()
+else()
+    message(FATAL_ERROR "CMake did not find a CUDA compiler, it is required for this branch of HYBIRD.") 
 endif()
 
 # Define headers

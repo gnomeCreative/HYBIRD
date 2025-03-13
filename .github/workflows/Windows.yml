@@ -12,6 +12,7 @@ on:
       - "!.github/**"
       - "!matlab/**"
       - ".github/workflows/Windows.yml"
+      - ".github/scripts/install_cuda_windows.ps1"
   # Pull requests to main, that do not only modify other workflow files
   pull_request:
     branches:
@@ -39,6 +40,7 @@ jobs:
         cxx:
           - compiler: "Visual Studio 17 2022"
             os: windows-2022
+            cuda: "12.4.0"
         config:
           - name: "Release"
             config: "Release"
@@ -52,15 +54,16 @@ jobs:
         # exclude:
 
     # Name the job based on matrix/env options
-    name: "build (${{ matrix.cxx.compiler }}, ${{ matrix.config.name }}, ${{ matrix.cxx.os }})"
+    name: "build (${{ matrix.cxx.cuda }}, ${{ matrix.cxx.compiler }}, ${{ matrix.config.name }}, ${{ matrix.cxx.os }})"
 
     # Define job-wide env constants, and promote matrix elements to env constants for portable steps.
     env:
       # Workflow specific constants for building a specific example
       # Compute the output name which should be unique within the matrix. This must be unique per build matrix/job combination
-      ARTIFACT_NAME: hybird-${{ matrix.cxx.os }}-${{ matrix.config.name }}
+      ARTIFACT_NAME: hybird-${{ matrix.cxx.cuda }}-${{ matrix.cxx.os }}-${{ matrix.config.name }}
       # Define constants
       BUILD_DIR: "build"
+      CUDA: ${{ matrix.cxx.cuda }}
       COMPILER: ${{ matrix.cxx.compiler }}
       OS: ${{ matrix.cxx.os }}
       CONFIG: ${{ matrix.config.config }}
@@ -69,6 +72,14 @@ jobs:
     # What the CI actually runs
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install CUDA (Windows)
+      if: ${{ runner.os == 'Windows' && env.CUDA != '' }}
+      shell: powershell
+      env:
+        cuda: ${{ env.CUDA }}
+        visual_studio: ${{ env.HOSTCXX }}
+      run: .github\scripts\install_cuda_windows.ps1
 
     # Problem matchers allow compilation warnings/errors to be highlighted on GitHub
     - name: Add custom problem matchers for annotations
