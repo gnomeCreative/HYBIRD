@@ -136,8 +136,12 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
         int a;
         a = filesystem::create_directories(io.workDirectory);
         cout << "Work directory created = " << io.workDirectory << ". Result: " << a << "\n";
-
-        std::system(("cp '" + io.configFileName + "' '" + io.workDirectory + "'").c_str());
+        try  {
+            std::filesystem::copy_file(io.configFileName,
+                std::filesystem::path(io.workDirectory)/std::filesystem::path(io.configFileName).filename());
+        } catch (std::filesystem::filesystem_error& e) {
+            cout << "Failed to copy config to working directory. Result: " << e.what() << "\n";
+        }
     }
     // make sure the config files can be read
     std::ifstream configFile(io.configFileName.c_str());
@@ -217,10 +221,39 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, GetPot& configFile, GetPot& comma
     ASSERT(io.fluidExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.fluidLagrangianExpTime, "fluidLagrangianExpTime", 0.0);
     ASSERT(io.fluidLagrangianExpTime >= 0);
+    if (io.fluidLagrangianExpTime > 0.0) {
+        string fluidLagrangianFormatString;
+        PARSE_CLASS_MEMBER(configFile, fluidLagrangianFormatString, "fluidLagrangianFormat", "BINARY");
+        std::transform(fluidLagrangianFormatString.begin(), fluidLagrangianFormatString.end(), fluidLagrangianFormatString.begin(), ::tolower);
+        if (fluidLagrangianFormatString == "ascii"
+         || fluidLagrangianFormatString == "text"
+         || fluidLagrangianFormatString == "txt") {
+            io.fluidLagrangianFormat = IO::ParaviewFormat::Ascii;
+         } else if (fluidLagrangianFormatString == "binary_low_memory"
+                 || fluidLagrangianFormatString == "binary_lowmem"
+                 || fluidLagrangianFormatString == "low_memory"
+                 || fluidLagrangianFormatString == "lowmem") {
+             io.fluidLagrangianFormat = IO::ParaviewFormat::BinaryLowMem;
+         } else { // "binary"
+                     io.fluidLagrangianFormat = IO::ParaviewFormat::Binary;
+         }
+    }
     PARSE_CLASS_MEMBER(configFile, io.fluid2DExpTime, "fluid2DExpTime", 0.0);
     ASSERT(io.fluid2DExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partExpTime, "partExpTime", 0.0);
     ASSERT(io.partExpTime >= 0);
+    if (io.partExpTime > 0.0) {
+        string partExpFormatString;
+        PARSE_CLASS_MEMBER(configFile, partExpFormatString, "partExpFormat", "BINARY");
+        std::transform(partExpFormatString.begin(), partExpFormatString.end(), partExpFormatString.begin(), ::tolower);
+        if (partExpFormatString == "ascii"
+         || partExpFormatString == "text"
+         || partExpFormatString == "txt") {
+            io.partExpFormat = IO::ParaviewFormat::Ascii;
+        } else { // "binary"
+            io.partExpFormat = IO::ParaviewFormat::Binary;
+        }
+    }
     PARSE_CLASS_MEMBER(configFile, io.fluidRecycleExpTime, "fluidRecycleExpTime", 0.0);
     ASSERT(io.fluidRecycleExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partRecycleExpTime, "partRecycleExpTime", 0.0);
@@ -409,6 +442,7 @@ int main(int argc, char** argv) {
     const auto chrono_start = std::chrono::steady_clock::now();
     // Checking number of processes involved
 #ifdef USE_OPENMP
+    //omp_set_num_threads(8);
     #pragma omp parallel
     {
         #pragma omp single
@@ -494,7 +528,6 @@ int main(int argc, char** argv) {
     // CYCLE /////////////////////////////
     // integrate in time
     while (true) {
-
         if (io.realTime != 0.0 && io.realTime > io.maxTime) {
             exit_code = SUCCESS;
         }// exit normally if the maximum simulation time has been reached
