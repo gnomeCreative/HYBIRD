@@ -906,7 +906,8 @@ __global__ void d_reconstructHydroCollide(Node2* d_nodes, Particle2* d_particles
     d_nodes->reconstruct(an_i);
 
     // compute interaction forces
-    if (d_elements->count) {
+    // (note d_elements may not be allocated if model has no DEM)
+    if (d_elements && d_elements->count) {
         common_computeHydroForces(an_i, d_nodes, d_particles, d_elements);
     }
 
@@ -2028,9 +2029,6 @@ void LB2::latticeBoltzmannStep() {
 
     // Streaming operator
     this->streaming<IMPL>();
-
-    // Shift element/wall/object forces and torques to physical units
-    this->shiftToPhysical<IMPL>();
 }
 extern ProblemName problemName;
 void LB2::latticeBoltzmannFreeSurfaceStep() {
@@ -2872,6 +2870,11 @@ void LB2::step(DEM &dem, bool io_demSolver) {
 
     if (dem.demTime >= dem.demInitialRepeat && hd_nodes.activeCount) {
         this->latticeBoltzmannStep();
+        
+        if (io_demSolver) {
+            // Shift element/wall/object forces and torques to physical units
+            this->shiftToPhysical<IMPL>();
+        }
 
         // Lattice Boltzmann core steps
         if (PARAMS.freeSurface) {
