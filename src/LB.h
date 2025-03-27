@@ -7,7 +7,6 @@
 
 #ifndef LB_H
 #define LB_H
-
 //class IO;
 
 #include <stdio.h>
