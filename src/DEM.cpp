@@ -1337,354 +1337,355 @@ void DEM::initializeCylinders(const Problem &problem) {
         cylinders.insert(cylinders.end(), problem.cylinders.begin(), problem.cylinders.end());
     } else {
         switch (problemName) {
-        case HK_LARGE:
-        {
-            if (depositArea) {
+            case HK_LARGE:
+            {
+                if (depositArea) {
+                    cylinder dummyCylinder;
+                    dummyCylinder.index = index;
+                    dummyCylinder.p1 = tVect(21.0858, 13.3466, 0.0);
+                    dummyCylinder.p2 = tVect(21.0858, 13.3466, 100.0);
+                    dummyCylinder.R = 13.513015;
+                    dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                    dummyCylinder.initAxes();
+                    dummyCylinder.type = EMPTY;
+                    dummyCylinder.moving = false;
+                    dummyCylinder.slip = false;
+                    dummyCylinder.limited = true;
+                    dummyCylinder.xMin = 23.2;
+                    dummyCylinder.xMax = 25.2795;
+                    dummyCylinder.yMin = 0.0;
+                    dummyCylinder.yMax = 0.5008;
+                    dummyCylinder.zMin = -1.0;
+                    dummyCylinder.zMax = 2.0 * demSize[2];
+                    cylinders.push_back(dummyCylinder);
+                    ++index;
+                }
+                break;
+            }
+            case IERVOLINO_2D:
+            {
+
+                const double reservoirX = 0.8;
+                const double wallSizeX = 0.025;
+                const double erodibleSizeX = 0.51;
+                const double erodibleHeight = 0.02;
+                const double edgeRadius = 0.005;
+
+                cylinder dummyCylinder;
+                dummyCylinder.R = edgeRadius;
+                dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                dummyCylinder.type = FULL;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+
+
+                // erodible part borders
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                break;
+            }
+            case IERVOLINO:
+            {
+
+                const double centerY = demSize[1] / 2.0;
+                const double reservoirX = 0.8;
+                const double wallSizeX = 0.025;
+                const double outletSizeY = 0.3;
+                const double obstacleSizeX = 0.155;
+                const double obstacleSizeY = 0.3;
+                const double erodibleSizeX = 0.51;
+                const double erodibleHeight = 0.02;
+                const double edgeRadius = 0.005;
+
+                // left wall borders
                 cylinder dummyCylinder;
                 dummyCylinder.index = index;
-                dummyCylinder.p1 = tVect(21.0858, 13.3466, 0.0);
-                dummyCylinder.p2 = tVect(21.0858, 13.3466, 100.0);
-                dummyCylinder.R = 13.513015;
+                dummyCylinder.p1 = tVect(reservoirX + edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 1.0);
+                dummyCylinder.R = edgeRadius;
+                dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                dummyCylinder.initAxes();
+                dummyCylinder.type = FULL;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                // right wall borders
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                // obstacle corners
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 0.0);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 1.0);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                // erodible part borders
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, 0.0, erodibleHeight - edgeRadius);
+                dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, 1.0, erodibleHeight - edgeRadius);
+                dummyCylinder.initAxes();
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                break;
+            }
+            case IERVOLINO_CYLINDERTEST:
+            {
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(1.5, 0, 1.5);
+                dummyCylinder.p2 = tVect(1.5, 1.0, 1.5);
+                dummyCylinder.R = 1.0;
+                dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                dummyCylinder.initAxes();
+                dummyCylinder.type = EMPTY;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(1.5, 0, 1.5);
+                dummyCylinder.p2 = tVect(1.5, 1.0, 1.5);
+                dummyCylinder.R = 0.5;
+                dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                dummyCylinder.initAxes();
+                dummyCylinder.type = FULL;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                break;
+
+            }
+            case WILL_SETTLING:
+            {
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(0, 0, 0);
+                dummyCylinder.p2 = tVect(0, 0, 1);
+                dummyCylinder.R = 0.108 / 2.0;
+                dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
+                dummyCylinder.initAxes();
+                dummyCylinder.type = EMPTY;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+
+                break;
+
+            }
+            case KELVIN:
+            {
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(1.2504, 0.4, 0.0);
+                dummyCylinder.p2 = tVect(1.2504, 0.4, 100.0);
+                dummyCylinder.R = 0.400;
                 dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
                 dummyCylinder.initAxes();
                 dummyCylinder.type = EMPTY;
                 dummyCylinder.moving = false;
                 dummyCylinder.slip = false;
                 dummyCylinder.limited = true;
-                dummyCylinder.xMin = 23.2;
-                dummyCylinder.xMax = 25.2795;
-                dummyCylinder.yMin = 0.0;
-                dummyCylinder.yMax = 0.5008;
+                dummyCylinder.xMin = 1.250;
+                dummyCylinder.xMax = 1.42535;
+                dummyCylinder.yMin = -10.0;
+                dummyCylinder.yMax = 0.04048;
                 dummyCylinder.zMin = -1.0;
                 dummyCylinder.zMax = 2.0 * demSize[2];
                 cylinders.push_back(dummyCylinder);
                 ++index;
+                break;
             }
-            break;
+            case DRUM:
+            {
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(0.0 + 0.6 + 0.35, 0.0, 1.26);
+                dummyCylinder.p2 = tVect(0.0 + 0.6 + 0.35, 1.0, 1.26);
+                dummyCylinder.R = 1.243;
+                dummyCylinder.omega = tVect(0.0, drumSpeed, 0.0);
+                dummyCylinder.initAxes();
+                dummyCylinder.type = EMPTY;
+                dummyCylinder.moving = true;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+                break;
+            }
+            case AVALANCHE:
+            {
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(0.0, 15, 15); //tVect(0.0,14.86,14.86);
+                dummyCylinder.p2 = tVect(1.0, 15, 15);
+                dummyCylinder.R = 14.86;
+                dummyCylinder.omega.reset();
+                dummyCylinder.initAxes();
+                dummyCylinder.type = EMPTY;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+                break;
+            }
+            case NET:
+            {
+                cylinder dummyCylinder;
+                dummyCylinder.index = index;
+                dummyCylinder.p1 = tVect(0.0, 4.0, 4.0);
+                dummyCylinder.p2 = tVect(1.0, 4.0, 4.0);
+                dummyCylinder.R = 4.0;
+                dummyCylinder.omega.reset();
+                dummyCylinder.initAxes();
+                dummyCylinder.type = EMPTY;
+                dummyCylinder.moving = false;
+                dummyCylinder.slip = false;
+                dummyCylinder.limited = false;
+                cylinders.push_back(dummyCylinder);
+                ++index;
+                break;
+            }
+            case INTRUDER:
+            {
+                const double intruderX = 0.02; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+                const double intruderZ = 0.0675;
+                const double intruderd = 16e-3; // diameter of the intruder
+                cylinder intruder;
+                intruder.index = index;
+                intruder.p1 = tVect(intruderX, 0.0, intruderZ);
+                intruder.p2 = tVect(intruderX, 100.0, intruderZ);
+                intruder.R = intruderd / 2.0;
+                intruder.omega = tVect(0.0, 0.0, 0.0);
+                intruder.initAxes();
+                intruder.moving = false;
+                intruder.slip = false;
+                intruder.limited = false;
+                intruder.type = FULL;
+                intruder.translating = true;
+                intruder.trans = tVect(7.5, 0.0, 0.0);
+                cylinders.push_back(intruder);
+                ++index;
+                break;
+            }
+            case TBAR:
+            {
+                const double intruderX = 0.07; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+                const double intruderZ = 0.10; // to be determinated after column collpase (probelm name = none)
+                const double intruderd = 16e-3; // diameter of the intruder
+                //            const double velocityIntruder = -30.0e-3;
+
+                cylinder intruder;
+                intruder.index = index;
+                intruder.p1 = tVect(intruderX, -0.5, intruderZ);
+                intruder.p2 = tVect(intruderX, 0.5, intruderZ);
+                intruder.R = intruderd / 2.0;
+                intruder.omega = tVect(0.0, 0.0, 0.0);
+                intruder.initAxes();
+                intruder.moving = true;
+                intruder.slip = false;
+                intruder.limited = false;
+                intruder.type = FULL;
+                intruder.translating = true;
+                intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
+                cylinders.push_back(intruder);
+                ++index;
+                break;
+            }
+
+            //         case SEGUIN: {
+            //             const double intruderX = 0.00; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
+            //             const double intruderZ = 0.05; // to be determinated after column collpase (probelm name = none)
+            //             const double intruderd = 16e-3; // diameter of the intruder
+            // //            const double velocityIntruder = -30.0e-3;
+            //
+            //             cylinder intruder;
+            //             intruder.index = index;
+            //             intruder.p1 = tVect(intruderX, -0.05, intruderZ);
+            //             intruder.p2 = tVect(intruderX, 0.05, intruderZ);
+            //             intruder.R = intruderd / 2.0;
+            //             intruder.omega = tVect(0.0, 0.0, 0.0);
+            //             intruder.initAxes();
+            //             intruder.moving = true;
+            //             intruder.slip = false;
+            //             intruder.limited = false;
+            //             intruder.type = FULL;
+            //             intruder.translating = true;
+            //             intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
+            //             cylinders.push_back(intruder);
+            //             ++index;
+            //             break;
+            //         }
         }
-        case IERVOLINO_2D:
-        {
-
-            const double reservoirX = 0.8;
-            const double wallSizeX = 0.025;
-            const double erodibleSizeX = 0.51;
-            const double erodibleHeight = 0.02;
-            const double edgeRadius = 0.005;
-
-            cylinder dummyCylinder;
-            dummyCylinder.R = edgeRadius;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.type = FULL;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-
-
-            // erodible part borders
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            break;
+        for (int n = 0; n < cylinders.size(); ++n) {
+            cylinders[n].cylinderShow();
         }
-        case IERVOLINO:
-        {
-
-            const double centerY = demSize[1] / 2.0;
-            const double reservoirX = 0.8;
-            const double wallSizeX = 0.025;
-            const double outletSizeY = 0.3;
-            const double obstacleSizeX = 0.155;
-            const double obstacleSizeY = 0.3;
-            const double erodibleSizeX = 0.51;
-            const double erodibleHeight = 0.02;
-            const double edgeRadius = 0.005;
-
-            // left wall borders
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 1.0);
-            dummyCylinder.R = edgeRadius;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = FULL;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, centerY - outletSizeY / 2.0 - edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            // right wall borders
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, centerY + outletSizeY / 2.0 + edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            // obstacle corners
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY - obstacleSizeY / 2.0 + edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 0.0);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + obstacleSizeX - edgeRadius, centerY + obstacleSizeY / 2.0 - edgeRadius, 1.0);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            // erodible part borders
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX - edgeRadius, 0.0, erodibleHeight - edgeRadius);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX - edgeRadius, 1.0, erodibleHeight - edgeRadius);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, 0.0, erodibleHeight - edgeRadius);
-            dummyCylinder.p2 = tVect(reservoirX + wallSizeX + erodibleSizeX + edgeRadius, 1.0, erodibleHeight - edgeRadius);
-            dummyCylinder.initAxes();
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            break;
-        }
-        case IERVOLINO_CYLINDERTEST:
-        {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(1.5, 0, 1.5);
-            dummyCylinder.p2 = tVect(1.5, 1.0, 1.5);
-            dummyCylinder.R = 1.0;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(1.5, 0, 1.5);
-            dummyCylinder.p2 = tVect(1.5, 1.0, 1.5);
-            dummyCylinder.R = 0.5;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = FULL;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            break;
-
-        }
-        case WILL_SETTLING:
-        {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(0, 0, 0);
-            dummyCylinder.p2 = tVect(0, 0, 1);
-            dummyCylinder.R = 0.108 / 2.0;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-
-            break;
-
-        }
-        case KELVIN:
-        {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(1.2504, 0.4, 0.0);
-            dummyCylinder.p2 = tVect(1.2504, 0.4, 100.0);
-            dummyCylinder.R = 0.400;
-            dummyCylinder.omega = tVect(0.0, 0.0, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = true;
-            dummyCylinder.xMin = 1.250;
-            dummyCylinder.xMax = 1.42535;
-            dummyCylinder.yMin = -10.0;
-            dummyCylinder.yMax = 0.04048;
-            dummyCylinder.zMin = -1.0;
-            dummyCylinder.zMax = 2.0 * demSize[2];
-            cylinders.push_back(dummyCylinder);
-            ++index;
-            break;
-        }
-        case DRUM:
-        {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(0.0 + 0.6 + 0.35, 0.0, 1.26);
-            dummyCylinder.p2 = tVect(0.0 + 0.6 + 0.35, 1.0, 1.26);
-            dummyCylinder.R = 1.243;
-            dummyCylinder.omega = tVect(0.0, drumSpeed, 0.0);
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = true;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-            break;
-        }
-        case AVALANCHE:
-        {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(0.0, 15, 15); //tVect(0.0,14.86,14.86);
-            dummyCylinder.p2 = tVect(1.0, 15, 15);
-            dummyCylinder.R = 14.86;
-            dummyCylinder.omega.reset();
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-            break;
-        }
-        case NET:
-        {
-            cylinder dummyCylinder;
-            dummyCylinder.index = index;
-            dummyCylinder.p1 = tVect(0.0, 4.0, 4.0);
-            dummyCylinder.p2 = tVect(1.0, 4.0, 4.0);
-            dummyCylinder.R = 4.0;
-            dummyCylinder.omega.reset();
-            dummyCylinder.initAxes();
-            dummyCylinder.type = EMPTY;
-            dummyCylinder.moving = false;
-            dummyCylinder.slip = false;
-            dummyCylinder.limited = false;
-            cylinders.push_back(dummyCylinder);
-            ++index;
-            break;
-        }
-        case INTRUDER:
-        {
-            const double intruderX = 0.02; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
-            const double intruderZ = 0.0675;
-            const double intruderd = 16e-3; // diameter of the intruder
-            cylinder intruder;
-            intruder.index = index;
-            intruder.p1 = tVect(intruderX, 0.0, intruderZ);
-            intruder.p2 = tVect(intruderX, 100.0, intruderZ);
-            intruder.R = intruderd / 2.0;
-            intruder.omega = tVect(0.0, 0.0, 0.0);
-            intruder.initAxes();
-            intruder.moving = false;
-            intruder.slip = false;
-            intruder.limited = false;
-            intruder.type = FULL;
-            intruder.translating = true;
-            intruder.trans = tVect(7.5, 0.0, 0.0);
-            cylinders.push_back(intruder);
-            ++index;
-            break;
-        }
-        case TBAR:
-        {
-            const double intruderX = 0.07; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
-            const double intruderZ = 0.10; // to be determinated after column collpase (probelm name = none)
-            const double intruderd = 16e-3; // diameter of the intruder
-//            const double velocityIntruder = -30.0e-3;
-            
-            cylinder intruder;
-            intruder.index = index;
-            intruder.p1 = tVect(intruderX, -0.5, intruderZ);
-            intruder.p2 = tVect(intruderX, 0.5, intruderZ);
-            intruder.R = intruderd / 2.0;
-            intruder.omega = tVect(0.0, 0.0, 0.0);
-            intruder.initAxes();
-            intruder.moving = true;
-            intruder.slip = false;
-            intruder.limited = false;
-            intruder.type = FULL;
-            intruder.translating = true;
-            intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
-            cylinders.push_back(intruder);
-            ++index;
-            break;
-        }
-        
-//         case SEGUIN: {
-//             const double intruderX = 0.00; //0.0675;   // X and Z coordinates of the intruder (in the muddle of the box X and Z)
-//             const double intruderZ = 0.05; // to be determinated after column collpase (probelm name = none)
-//             const double intruderd = 16e-3; // diameter of the intruder
-// //            const double velocityIntruder = -30.0e-3;
-//
-//             cylinder intruder;
-//             intruder.index = index;
-//             intruder.p1 = tVect(intruderX, -0.05, intruderZ);
-//             intruder.p2 = tVect(intruderX, 0.05, intruderZ);
-//             intruder.R = intruderd / 2.0;
-//             intruder.omega = tVect(0.0, 0.0, 0.0);
-//             intruder.initAxes();
-//             intruder.moving = true;
-//             intruder.slip = false;
-//             intruder.limited = false;
-//             intruder.type = FULL;
-//             intruder.translating = true;
-//             intruder.trans = tVect(velocityCylinderX, velocityCylinderZ, velocityCylinderZ);
-//             cylinders.push_back(intruder);
-//             ++index;
-//             break;
-//         }
-    }
-    for (int n = 0; n < cylinders.size(); ++n) {
-        cylinders[n].cylinderShow();
-    }
+    } //
 }
 
 void DEM::initializePbcs(const typeList& externalBoundary, const vecList& boundaryLocation) {
