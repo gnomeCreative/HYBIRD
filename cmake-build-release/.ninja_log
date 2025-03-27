@@ -1,9 +1,0 @@
-# ninja log v5
-193	2101	1729086432879125400	CMakeFiles/hybird.dir/src/utils.cpp.o	b341ef262d0fd291
-161	2152	1729086432930960800	CMakeFiles/hybird.dir/src/node.cpp.o	9d648f7c81788f7e
-31	2493	1729086433261109200	CMakeFiles/hybird.dir/src/elmt.cpp.o	71b6286a8a08019b
-99	6362	1729086437131031500	CMakeFiles/hybird.dir/src/IO.cpp.o	a2355b53306d3918
-62	7722	1729086438486959300	CMakeFiles/hybird.dir/src/hybird.cpp.o	9e2440c5584f6888
-1	8243	1729086439006886600	CMakeFiles/hybird.dir/src/DEM.cpp.o	38a331267b91fca5
-130	8594	1729086439372487800	CMakeFiles/hybird.dir/src/LB.cpp.o	413f12c1afc0f698
-8598	8861	1729086439618324300	bin/Release/hybird.exe	997f3408194fefde
