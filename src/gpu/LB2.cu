@@ -1813,9 +1813,11 @@ void LB2::buildInterfaceList<CUDA>(unsigned int max_len, bool update_device_stru
     // Init index 0 to 0, this will be used as an atomic counter
     CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
     // Launch kernel as grid stride loop
-    int numSMs;
-    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
-    d_buildList << <32 * numSMs, 256 >> > (builderI, &builderI[1], INTERFACE, hd_nodes.type, hd_nodes.count);
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_buildList, 0, hd_nodes.count));
+    d_buildList << <minGridSize, blockSize >> > (builderI, &builderI[1], INTERFACE, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
     // Copy back result to main list
     unsigned int new_interface_count = 0;
@@ -1853,9 +1855,12 @@ void LB2::buildFluidList<CUDA>(unsigned int max_len, bool update_device_struct) 
     // Init index 0 to 0, this will be used as an atomic counter
     CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
     // Launch kernel as grid stride loop
-    int numSMs;
-    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
-    d_buildList << <32 * numSMs, 256 >> > (builderI, &builderI[1], LIQUID, hd_nodes.type, hd_nodes.count);
+    // Launch kernel as grid stride loop
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_buildList, 0, hd_nodes.count));
+    d_buildList<<<minGridSize , blockSize>>>(builderI, &builderI[1], LIQUID, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
     // Copy back result to main list
     unsigned int new_fluid_count = 0;
@@ -1916,9 +1921,11 @@ unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len) {
     // Init index 0 to 0, this will be used as an atomic counter
     CUDA_CALL(cudaMemset(builderI, 0, sizeof(unsigned int)));
     // Launch kernel as grid stride loop
-    int numSMs;
-    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0); // TODO Assumes device 0 in multi device system
-    d_buildDualList<<<32 * numSMs, 256>>>(builderI, &builderI[1], GAS_TO_INTERFACE, FLUID_TO_INTERFACE, hd_nodes.type, hd_nodes.count);
+    int blockSize = 0;  // The launch configurator returned block size
+    int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
+    int gridSize = 0;  // The actual grid size needed, based on input size
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_buildDualList, 0, hd_nodes.count));
+    d_buildDualList<<<minGridSize, blockSize>>>(builderI, &builderI[1], GAS_TO_INTERFACE, FLUID_TO_INTERFACE, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
     // This is a temporary list, so just return the device pointer
     return builderI;
@@ -1939,27 +1946,32 @@ void LB2::updateInterface<CUDA>() {
     int gridSize = 0;  // The actual grid size needed, based on input size
     // Separate kernels, in the same (default) stream, synchronisation is required between each kernel launch
     // filling lists of mutant nodes and changing their type
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findInterfaceMutants, 0, hd_nodes.interfaceCount);
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_findInterfaceMutants, 0, hd_nodes.interfaceCount));
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_findInterfaceMutants<<<gridSize, blockSize>>>(d_nodes);
+    CUDA_CHECK();
     // fixing the interface (always one interface between fluid and gas)
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_find, 0, hd_nodes.interfaceCount);
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_find, 0, hd_nodes.interfaceCount));
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_smoothenInterface_find<<<gridSize, blockSize>>>(d_nodes);
+    CUDA_CHECK();
     unsigned int *d_templist = buildTempNewList<CUDA>(lbmDirec * hd_nodes.interfaceCount);
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_update, 0, lbmDirec * hd_nodes.interfaceCount);
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_smoothenInterface_update, 0, lbmDirec * hd_nodes.interfaceCount));
     gridSize = (lbmDirec * hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_smoothenInterface_update<<<gridSize, blockSize>>>(d_nodes, d_templist, d_templist+1);
+    CUDA_CHECK();
     // updating characteristics of mutant nodes
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, hd_nodes.interfaceCount);
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_updateMutants, 0, hd_nodes.interfaceCount));
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_updateMutants<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
+    CUDA_CHECK();
     // Rebuild interface list
     buildInterfaceList<CUDA>(lbmDirec * hd_nodes.activeCount);
     // remove isolated interface cells (both surrounded by gas and by fluid)
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_removeIsolated, 0, hd_nodes.interfaceCount);
+    CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_removeIsolated, 0, hd_nodes.interfaceCount));
     gridSize = (hd_nodes.interfaceCount + blockSize - 1) / blockSize;
     d_removeIsolated<<<gridSize, blockSize>>>(d_nodes, d_massSurplus);
+    CUDA_CHECK();
     // Rebuild all lists
     buildInterfaceList<CUDA>(hd_nodes.interfaceCount, false);
     buildFluidList<CUDA>(hd_nodes.fluidCount + lbmDirec * hd_nodes.interfaceCount, false);
@@ -2289,6 +2301,7 @@ void LB2::init(Problem &problem, cylinderList& cylinders, wallList& walls, parti
 
     syncParams();
 
+    printf("%u/%u nodes\n", h_nodes.activeCount, h_nodes.count);
     cout << "Done with initialization" << endl;
 }
 
