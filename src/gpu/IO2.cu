@@ -10,23 +10,23 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
 
     //// PLOTTING PHASE  ////////////////////////////////////////////////////////////////
-    //const unsigned int screenExpCounter = (screenExpTime > 0 ? static_cast<unsigned int> (realTime / screenExpTime) + 1 : 0);
-    //if (screenExpCounter > lastScreenExp) {
+    const unsigned int screenExpCounter = (screenExpTime > 0 ? static_cast<unsigned int> (realTime / screenExpTime) + 1 : 0);
+    if (screenExpCounter > lastScreenExp) {
 
-    //    lastScreenExp = screenExpCounter;
+        lastScreenExp = screenExpCounter;
 
-    //    exportFile.open(exportFileName.c_str(), ios::app);
+        exportFile.open(exportFileName.c_str(), ios::app);
 
-    //    // current iteration and real time
-    //    cout << currentTimeStep << " time=" << std::scientific << std::setprecision(2) << realTime << " ";
-    //    exportFile << currentTimeStep << " time=" << std::scientific << std::setprecision(2) << realTime << " ";
+        // current iteration and real time
+        cout << currentTimeStep << " time=" << std::scientific << std::setprecision(2) << realTime << " ";
+        exportFile << currentTimeStep << " time=" << std::scientific << std::setprecision(2) << realTime << " ";
 
-    //    if (dem.elmts.size()) {
-    //        cout << "np=" << dem.actvPartNumber << " ";
-    //        cout << "ns=" << dem.totSprings << " ";
-    //        cout << "nc=" << dem.neighborTable.size() << "/" << dem.nearWallTable.size() << "/" << dem.nearObjectTable.size() << "/" << dem.nearCylinderTable.size() << " ";
-    //    }
-    //    if (lbmSolver) {
+        if (dem.elmts.size()) {
+            cout << "np=" << dem.actvPartNumber << " ";
+            cout << "ns=" << dem.totSprings << " ";
+            cout << "nc=" << dem.neighborTable.size() << "/" << dem.nearWallTable.size() << "/" << dem.nearObjectTable.size() << "/" << dem.nearCylinderTable.size() << " ";
+        }
+        if (lbmSolver) {
 
 
     //        const double deltaLB = std::chrono::duration<double, std::micro>(lb.endLBStep - lb.startLBStep).count();
@@ -54,26 +54,26 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //            //                cout << "t_ri=" << deltaRemoveIsolated << " ";
     //            //                cout << "t_rm=" << deltaRedistributeMass << " ";
     //            //                cout << "n_fs=" << lb.interfaceNodes.size() << " ";
-    //        }
+            }
     //        if (demSolver) {
     //            const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
     //            cout << "t_c=" << deltaCoupling << " ";
     //        }
 
-    //        exportMaxSpeedFluid(lb);
+            //exportMaxSpeedFluid(lb);
     //        exportFreeSurfaceExtent(lb);
     //        exportFluidFlowRate(lb);
     //        exportFluidMass(lb);
     //        exportFluidCenterOfMass(lb);
-    //        switch (PARAMS.fluidMaterial.rheologyModel) {
-    //            case BINGHAM:
-    //            case FRICTIONAL:
-    //            case VOELLMY:
-    //            {
-    //                exportPlasticity(lb);
-    //                break;
-    //            }
-    //        }
+            //switch (PARAMS.fluidMaterial.rheologyModel) {
+            //    case BINGHAM:
+            //    case FRICTIONAL:
+            //    case VOELLMY:
+            //    {
+            //        exportPlasticity(lb);
+            //        break;
+            //    }
+            //}
     //        exportMeanViscosity(lb);
     //    }
 
@@ -185,13 +185,13 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
 
     //    // closing file
-    //    cout << endl;
+        cout << endl;
     //    exportFile << endl;
     //    exportFile.close();
     //    cout.flush();
 
 
-    //}
+    }
 
     // FILE CREATION PHASE  ////////////////////////////////////////////////////////////////
     createFiles(lb, dem);
@@ -1860,302 +1860,301 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     // data file closing
     paraviewFluidFile.close();
 }
-/*
-// print export stuff
 
-void IO2::exportMaxSpeedFluid(const LB2& lb) {
+//// print export stuff
+//
+//void IO2::exportMaxSpeedFluid(const LB2& lb) {
+//
+//    static const double soundSpeed = 1.0 / sqrt(3);
+//    // fluid max velocity
+//    double maxFluidSpeed = 0.0;
+//    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
+//        const node* nodeHere = *it;
+//        maxFluidSpeed = std::max(maxFluidSpeed, nodeHere->u.norm2());
+//    }
+//    maxFluidSpeed = sqrt(maxFluidSpeed);
+//    cout << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
+//    exportFile << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
+//
+//    // printing max speed
+//    maxFluidSpeedFile.open(maxFluidSpeedFileName.c_str(), ios::app);
+//    maxFluidSpeedFile << realTime << " " << maxFluidSpeed * PARAMS.unit.Speed << "\n";
+//    maxFluidSpeedFile.close();
+//}
+//
+//void IO2::exportFreeSurfaceExtent(const LB2& lb) {
+//
+//    // fluid max velocity
+//    unsigned int maxX = 0;
+//    unsigned int maxX_Y = 0;
+//    unsigned int maxX_Z = 0;
+//    unsigned int minX = UINT_MAX;
+//    unsigned int minX_Y = 0;
+//    unsigned int minX_Z = 0;
+//    //
+//    unsigned int maxY = 0;
+//    unsigned int maxY_Z = 0;
+//    unsigned int maxY_X = 0;
+//    unsigned int minY = UINT_MAX;
+//    unsigned int minY_Z = 0;
+//    unsigned int minY_X = 0;
+//    //
+//    unsigned int maxZ = 0;
+//    unsigned int maxZ_X = 0;
+//    unsigned int maxZ_Y = 0;
+//    unsigned int minZ = UINT_MAX;
+//    unsigned int minZ_X = 0;
+//    unsigned int minZ_Y = 0;
+//    for (nodeList::const_iterator it = lb.interfaceNodes.begin(); it != lb.interfaceNodes.end(); ++it) {
+//        const node* nodeHere = *it;
+//        const unsigned int index = nodeHere->coord;
+//        
+//        const double xHere = lb.getPositionX(index);
+//        const double yHere = lb.getPositionY(index);
+//        const double zHere = lb.getPositionZ(index);
+//
+//        // max
+//        if(xHere>maxX) {
+//            maxX=xHere;
+//            maxX_Y=yHere;
+//            maxX_Z=zHere;
+//        }
+//        if(yHere>maxY) {
+//            maxY=yHere;
+//            maxY_Z=zHere;
+//            maxY_X=xHere;
+//        }
+//        if(zHere>maxZ) {
+//            maxZ=zHere;
+//            maxZ_X=xHere;
+//            maxZ_Y=yHere;
+//        }
+//        
+//        //min
+//        if(xHere<minX) {
+//            minX=xHere;
+//            minX_Y=yHere;
+//            minX_Z=zHere;
+//        }
+//        if(yHere<minY) {
+//            minY=yHere;
+//            minY_Z=zHere;
+//            minY_X=xHere;
+//        }
+//        if(zHere<minZ) {
+//            minZ=zHere;
+//            minZ_X=xHere;
+//            minZ_Y=yHere;
+//        }
+//                
+//    }
+//
+//    // printing max speed
+//    freeSurfaceExtentFile.open(freeSurfaceExtentFileName.c_str(), ios::app);
+//    freeSurfaceExtentFile << realTime << " " << maxX * PARAMS.unit.Length << " " << maxX_Y * PARAMS.unit.Length << " " << maxX_Z * PARAMS.unit.Length
+//                                      << " " << minX * PARAMS.unit.Length << " " << minX_Y * PARAMS.unit.Length << " " << minX_Z * PARAMS.unit.Length
+//                                      << " " << maxY * PARAMS.unit.Length << " " << maxY_Z * PARAMS.unit.Length << " " << maxY_X * PARAMS.unit.Length
+//                                      << " " << minY * PARAMS.unit.Length << " " << minY_Z * PARAMS.unit.Length << " " << minY_X * PARAMS.unit.Length
+//                                      << " " << maxZ * PARAMS.unit.Length << " " << maxZ_X * PARAMS.unit.Length << " " << maxZ_Y * PARAMS.unit.Length
+//                                      << " " << minZ * PARAMS.unit.Length << " " << minZ_X * PARAMS.unit.Length << " " << minZ_Y * PARAMS.unit.Length<< "\n";
+//    freeSurfaceExtentFile.close();
+//}
+//
+//void IO2::exportFluidFlowRate(const LB2& lb) {
+//    // fluid flow rate
+//    tVect flowRate(0.0, 0.0, 0.0);
+//    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
+//        const node* nodeHere = *it;
+//        if (!nodeHere->isInsideParticle()) {
+//            flowRate += nodeHere->u * nodeHere->mass;
+//        }
+//    }
+//
+//    const double flowRateX = flowRate.dot(Xp) / double(PARAMS.lbSize[0] - 2);
+//    const double flowRateY = flowRate.dot(Yp) / double(PARAMS.lbSize[1] - 2);
+//    const double flowRateZ = flowRate.dot(Zp) / double(PARAMS.lbSize[2] - 2);
+//
+//    // printing rate
+//    fluidFlowRateFile.open(fluidFlowRateFileName.c_str(), ios::app);
+//    fluidFlowRateFile << realTime << " " << flowRateX * PARAMS.unit.FlowRate << " " << flowRateY * PARAMS.unit.FlowRate << " " << flowRateZ * PARAMS.unit.FlowRate << "\n";
+//    fluidFlowRateFile.close();
+//}
+//
+//void IO2::exportFluidCenterOfMass(const LB2& lb) {
+//
+//    // particle center of mass
+//    const tVect fluidCenter = fluidCenterOfMass(lb) * PARAMS.unit.Length;
+//
+//    // printing particle center of mass
+//    fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
+//    fluidCenterOfMassFile << realTime << " " << fluidCenter.dot(Xp) << " " << fluidCenter.dot(Yp) << " " << fluidCenter.dot(Zp) << "\n";
+//    fluidCenterOfMassFile.close();
+//
+//}
+//
+//void IO2::exportFluidMass(const LB2& lb) {
+//    // total fluid mass
+//    double massTot = totFluidMass(lb);
+//    cout << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
+//    exportFile << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
+//
+//    // printing fluid mass
+//    fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
+//    fluidMassFile << realTime << " " << massTot * PARAMS.unit.Mass << "\n";
+//    fluidMassFile.close();
+//}
+//
+//void IO2::exportPlasticity(const LB2& lb) {
+    //// fluid plasticity state
+    //const double percPlastic = totPlastic(lb);
+    //cout << "Plastic =" << int(percPlastic) << "% ";
+    //exportFile << "Plastic =" << int(percPlastic) << "% ";
+    //// printing plasticity level
+    //plasticityFile.open(plasticityFileName.c_str(), ios::app);
+    //plasticityFile << realTime << " " << percPlastic << "\n";
+    //plasticityFile.close();
 
-    static const double soundSpeed = 1.0 / sqrt(3);
-    // fluid max velocity
-    double maxFluidSpeed = 0.0;
-    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-        const node* nodeHere = *it;
-        maxFluidSpeed = std::max(maxFluidSpeed, nodeHere->u.norm2());
-    }
-    maxFluidSpeed = sqrt(maxFluidSpeed);
-    cout << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
-    exportFile << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
-
-    // printing max speed
-    maxFluidSpeedFile.open(maxFluidSpeedFileName.c_str(), ios::app);
-    maxFluidSpeedFile << realTime << " " << maxFluidSpeed * PARAMS.unit.Speed << "\n";
-    maxFluidSpeedFile.close();
-}
-
-void IO2::exportFreeSurfaceExtent(const LB2& lb) {
-
-    // fluid max velocity
-    unsigned int maxX = 0;
-    unsigned int maxX_Y = 0;
-    unsigned int maxX_Z = 0;
-    unsigned int minX = UINT_MAX;
-    unsigned int minX_Y = 0;
-    unsigned int minX_Z = 0;
-    //
-    unsigned int maxY = 0;
-    unsigned int maxY_Z = 0;
-    unsigned int maxY_X = 0;
-    unsigned int minY = UINT_MAX;
-    unsigned int minY_Z = 0;
-    unsigned int minY_X = 0;
-    //
-    unsigned int maxZ = 0;
-    unsigned int maxZ_X = 0;
-    unsigned int maxZ_Y = 0;
-    unsigned int minZ = UINT_MAX;
-    unsigned int minZ_X = 0;
-    unsigned int minZ_Y = 0;
-    for (nodeList::const_iterator it = lb.interfaceNodes.begin(); it != lb.interfaceNodes.end(); ++it) {
-        const node* nodeHere = *it;
-        const unsigned int index = nodeHere->coord;
-        
-        const double xHere = lb.getPositionX(index);
-        const double yHere = lb.getPositionY(index);
-        const double zHere = lb.getPositionZ(index);
-
-        // max
-        if(xHere>maxX) {
-            maxX=xHere;
-            maxX_Y=yHere;
-            maxX_Z=zHere;
-        }
-        if(yHere>maxY) {
-            maxY=yHere;
-            maxY_Z=zHere;
-            maxY_X=xHere;
-        }
-        if(zHere>maxZ) {
-            maxZ=zHere;
-            maxZ_X=xHere;
-            maxZ_Y=yHere;
-        }
-        
-        //min
-        if(xHere<minX) {
-            minX=xHere;
-            minX_Y=yHere;
-            minX_Z=zHere;
-        }
-        if(yHere<minY) {
-            minY=yHere;
-            minY_Z=zHere;
-            minY_X=xHere;
-        }
-        if(zHere<minZ) {
-            minZ=zHere;
-            minZ_X=xHere;
-            minZ_Y=yHere;
-        }
-                
-    }
-
-    // printing max speed
-    freeSurfaceExtentFile.open(freeSurfaceExtentFileName.c_str(), ios::app);
-    freeSurfaceExtentFile << realTime << " " << maxX * PARAMS.unit.Length << " " << maxX_Y * PARAMS.unit.Length << " " << maxX_Z * PARAMS.unit.Length
-                                      << " " << minX * PARAMS.unit.Length << " " << minX_Y * PARAMS.unit.Length << " " << minX_Z * PARAMS.unit.Length
-                                      << " " << maxY * PARAMS.unit.Length << " " << maxY_Z * PARAMS.unit.Length << " " << maxY_X * PARAMS.unit.Length
-                                      << " " << minY * PARAMS.unit.Length << " " << minY_Z * PARAMS.unit.Length << " " << minY_X * PARAMS.unit.Length
-                                      << " " << maxZ * PARAMS.unit.Length << " " << maxZ_X * PARAMS.unit.Length << " " << maxZ_Y * PARAMS.unit.Length
-                                      << " " << minZ * PARAMS.unit.Length << " " << minZ_X * PARAMS.unit.Length << " " << minZ_Y * PARAMS.unit.Length<< "\n";
-    freeSurfaceExtentFile.close();
-}
-
-void IO2::exportFluidFlowRate(const LB2& lb) {
-    // fluid flow rate
-    tVect flowRate(0.0, 0.0, 0.0);
-    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-        const node* nodeHere = *it;
-        if (!nodeHere->isInsideParticle()) {
-            flowRate += nodeHere->u * nodeHere->mass;
-        }
-    }
-
-    const double flowRateX = flowRate.dot(Xp) / double(PARAMS.lbSize[0] - 2);
-    const double flowRateY = flowRate.dot(Yp) / double(PARAMS.lbSize[1] - 2);
-    const double flowRateZ = flowRate.dot(Zp) / double(PARAMS.lbSize[2] - 2);
-
-    // printing rate
-    fluidFlowRateFile.open(fluidFlowRateFileName.c_str(), ios::app);
-    fluidFlowRateFile << realTime << " " << flowRateX * PARAMS.unit.FlowRate << " " << flowRateY * PARAMS.unit.FlowRate << " " << flowRateZ * PARAMS.unit.FlowRate << "\n";
-    fluidFlowRateFile.close();
-}
-
-void IO2::exportFluidCenterOfMass(const LB2& lb) {
-
-    // particle center of mass
-    const tVect fluidCenter = fluidCenterOfMass(lb) * PARAMS.unit.Length;
-
-    // printing particle center of mass
-    fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
-    fluidCenterOfMassFile << realTime << " " << fluidCenter.dot(Xp) << " " << fluidCenter.dot(Yp) << " " << fluidCenter.dot(Zp) << "\n";
-    fluidCenterOfMassFile.close();
-
-}
-
-void IO2::exportFluidMass(const LB2& lb) {
-    // total fluid mass
-    double massTot = totFluidMass(lb);
-    cout << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
-    exportFile << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
-
-    // printing fluid mass
-    fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
-    fluidMassFile << realTime << " " << massTot * PARAMS.unit.Mass << "\n";
-    fluidMassFile.close();
-}
-
-void IO2::exportPlasticity(const LB2& lb) {
-    // fluid plasticity state
-    const double percPlastic = totPlastic(lb);
-    cout << "Plastic =" << int(percPlastic) << "% ";
-    exportFile << "Plastic =" << int(percPlastic) << "% ";
-    // printing plasticity level
-    plasticityFile.open(plasticityFileName.c_str(), ios::app);
-    plasticityFile << realTime << " " << percPlastic << "\n";
-    plasticityFile.close();
-
-}
-
-void IO2::exportMeanViscosity(const LB2& lb) {
-    // fluid plasticity state
-    const double meanVisc = meanViscosity(lb);
-    cout << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
-    exportFile << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
-}
-
-void IO2::exportShearCell(const LB2& lb, const DEM& dem) {
-    // apparent viscosity from shear cell
-    double appVisc = 0.0;
-    double externalShear = 0.0;
-    double wallStress = 0.0;
-    apparentViscosity(lb, dem.walls, externalShear, wallStress, appVisc);
-    cout << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
-    exportFile << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
-
-    tVect xDirec = tVect(1.0, 0.0, 0.0);
-    cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FHydro.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FHydro.dot(xDirec) << " ";
-    cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
-}
-
-void IO2::exportEnergy(const DEM& dem, const LB2& lb) {
-
-    if (dem.elmts.size()) {
-        cout << "Energy (DEM): ";
-        exportFile << "Energy (DEM): ";
-        cout << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
-        exportFile << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
-        cout << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
-        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
-        cout << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
-        exportFile << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
-    }
-    if (lbmSolver) {
-        cout << "Energy (LBM): ";
-        cout << "eKin = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.kin + lb.fluidImmersedEnergy.kin << " ";
-        exportFile << "eKin = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.kin + lb.fluidImmersedEnergy.kin << " ";
-        cout << "eGrav = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.grav + lb.fluidImmersedEnergy.grav << " ";
-        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.grav + lb.fluidImmersedEnergy.grav << " ";
-        cout << "eTot = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.total + lb.fluidImmersedEnergy.total << " ";
-        exportFile << "eTot = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.total + lb.fluidImmersedEnergy.total << " ";
-    }
-
-    ofstream energyFile;
-    energyFile.open(energyFileName.c_str(), ios::app);
-    // Set energyFile header
-    energyFile << std::scientific << std::setprecision(6) << realTime << " ";
-    energyFile << std::scientific << std::setprecision(10) << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
-    energyFile << std::scientific << std::setprecision(10) << lb.fluidEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidEnergy.grav * PARAMS.unit.Energy << " ";
-    energyFile << std::scientific << std::setprecision(10) << lb.fluidImmersedEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidImmersedEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidImmersedEnergy.grav * PARAMS.unit.Energy << endl;
-    energyFile.close();
-
-}
-
-// data elaboration
-
-double IO2::totPlastic(const LB2& lb) const {
-    // prints the total mass in the free fluid domain
-    unsigned int totPlastic = 0;
-    unsigned int totActive = 0;
-
-    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-        const node* nodeHere = *it;
-        ++totActive;
-        if (nodeHere->visc > 0.95 * PARAMS.fluidMaterial.lbMaxVisc) {
-            ++totPlastic;
-        }
-    }
-    const double perc = 100.0 * double(totPlastic) / double(totActive);
-    return perc;
-}
-
-double IO2::totFluidMass(const LB2& lb) const {
-    // returns the total mass in the free fluid domain
-    double mass = 0.0;
-
-    if (lbmSolver) {
-        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-            const node* nodeHere = *it;
-
-            if (!nodeHere->isInsideParticle()) {
-                mass += nodeHere->mass;
-            }
-        }
-    }
-    return mass;
-}
-
-double IO2::meanViscosity(const LB2& lb) const {
-    // prints the total mass in the free fluid domain
-    double meanVisc = 0.0;
-    unsigned int counter = 0;
-
-    if (lbmSolver) {
-        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-            const node* nodeHere = *it;
-
-            ++counter;
-            meanVisc += nodeHere->visc;
-        }
-        meanVisc = meanVisc / double(counter);
-        return meanVisc;
-    }
-    return 0;
-}
-
-void IO2::apparentViscosity(const LB2& lb, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const {
-    // computes the apparent viscosity of a shear cell, as the ratio between shear at the wall and imposed shear rate
-    // the cell is sheared in direction x and has moving wall in z
-    appVisc = 0.0;
-    tVect xDirec = tVect(1.0, 0.0, 0.0);
-
-    double cellSize = double(PARAMS.lbSize[2] - 2) * PARAMS.unit.Length;
-
-    externalShear = 0.5 * (walls[1].vel.dot(xDirec) - walls[0].vel.dot(xDirec)) / cellSize;
-
-    double plateSize = double(PARAMS.lbSize[0] - 2) * double(PARAMS.lbSize[1] - 2) * PARAMS.unit.Length * PARAMS.unit.Length;
-
-    wallStress = -0.5 * (walls[1].FHydro.dot(xDirec) + walls[1].FParticle.dot(xDirec) - walls[0].FHydro.dot(xDirec) - walls[0].FParticle.dot(xDirec)) / plateSize;
-
-    appVisc = 0.5 * wallStress / externalShear;
-}
-
-tVect IO2::fluidCenterOfMass(const LB2& lb) const {
-    // prints the total mass in the free fluid domain
-    tVect center(0.0, 0.0, 0.0);
-    double totMass(0.0);
-
-    if (lbmSolver) {
-        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-            const node* nodeHere = *it;
-            const unsigned int index = nodeHere->coord;
-            if (!nodeHere->isInsideParticle()) {
-                center += nodeHere->mass * lb.getPosition(index);
-                totMass += nodeHere->mass;
-            }
-        }
-        return center / totMass;
-    } else {
-        return Zero;
-    }
-}
-*/
+//}
+//
+//void IO2::exportMeanViscosity(const LB2& lb) {
+//    // fluid plasticity state
+//    const double meanVisc = meanViscosity(lb);
+//    cout << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
+//    exportFile << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
+//}
+//
+//void IO2::exportShearCell(const LB2& lb, const DEM& dem) {
+//    // apparent viscosity from shear cell
+//    double appVisc = 0.0;
+//    double externalShear = 0.0;
+//    double wallStress = 0.0;
+//    apparentViscosity(lb, dem.walls, externalShear, wallStress, appVisc);
+//    cout << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
+//    exportFile << "App Visc= " << std::scientific << std::setprecision(2) << appVisc << " ";
+//
+//    tVect xDirec = tVect(1.0, 0.0, 0.0);
+//    cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FHydro.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FHydro.dot(xDirec) << " ";
+//    cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
+//}
+//
+//void IO2::exportEnergy(const DEM& dem, const LB2& lb) {
+//
+//    if (dem.elmts.size()) {
+//        cout << "Energy (DEM): ";
+//        exportFile << "Energy (DEM): ";
+//        cout << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
+//        exportFile << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
+//        cout << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
+//        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
+//        cout << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
+//        exportFile << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
+//    }
+//    if (lbmSolver) {
+//        cout << "Energy (LBM): ";
+//        cout << "eKin = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.kin + lb.fluidImmersedEnergy.kin << " ";
+//        exportFile << "eKin = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.kin + lb.fluidImmersedEnergy.kin << " ";
+//        cout << "eGrav = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.grav + lb.fluidImmersedEnergy.grav << " ";
+//        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.grav + lb.fluidImmersedEnergy.grav << " ";
+//        cout << "eTot = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.total + lb.fluidImmersedEnergy.total << " ";
+//        exportFile << "eTot = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.total + lb.fluidImmersedEnergy.total << " ";
+//    }
+//
+//    ofstream energyFile;
+//    energyFile.open(energyFileName.c_str(), ios::app);
+//    // Set energyFile header
+//    energyFile << std::scientific << std::setprecision(6) << realTime << " ";
+//    energyFile << std::scientific << std::setprecision(10) << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
+//    energyFile << std::scientific << std::setprecision(10) << lb.fluidEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidEnergy.grav * PARAMS.unit.Energy << " ";
+//    energyFile << std::scientific << std::setprecision(10) << lb.fluidImmersedEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidImmersedEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidImmersedEnergy.grav * PARAMS.unit.Energy << endl;
+//    energyFile.close();
+//
+//}
+//
+//// data elaboration
+//
+//double IO2::totPlastic(const LB2& lb) const {
+//    // prints the total mass in the free fluid domain
+//    unsigned int totPlastic = 0;
+//    unsigned int totActive = 0;
+//
+//    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
+//        const node* nodeHere = *it;
+//        ++totActive;
+//        if (nodeHere->visc > 0.95 * PARAMS.fluidMaterial.lbMaxVisc) {
+//            ++totPlastic;
+//        }
+//    }
+//    const double perc = 100.0 * double(totPlastic) / double(totActive);
+//    return perc;
+//}
+//
+//double IO2::totFluidMass(const LB2& lb) const {
+//    // returns the total mass in the free fluid domain
+//    double mass = 0.0;
+//
+//    if (lbmSolver) {
+//        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
+//            const node* nodeHere = *it;
+//
+//            if (!nodeHere->isInsideParticle()) {
+//                mass += nodeHere->mass;
+//            }
+//        }
+//    }
+//    return mass;
+//}
+//
+//double IO2::meanViscosity(const LB2& lb) const {
+//    // prints the total mass in the free fluid domain
+//    double meanVisc = 0.0;
+//    unsigned int counter = 0;
+//
+//    if (lbmSolver) {
+//        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
+//            const node* nodeHere = *it;
+//
+//            ++counter;
+//            meanVisc += nodeHere->visc;
+//        }
+//        meanVisc = meanVisc / double(counter);
+//        return meanVisc;
+//    }
+//    return 0;
+//}
+//
+//void IO2::apparentViscosity(const LB2& lb, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const {
+//    // computes the apparent viscosity of a shear cell, as the ratio between shear at the wall and imposed shear rate
+//    // the cell is sheared in direction x and has moving wall in z
+//    appVisc = 0.0;
+//    tVect xDirec = tVect(1.0, 0.0, 0.0);
+//
+//    double cellSize = double(PARAMS.lbSize[2] - 2) * PARAMS.unit.Length;
+//
+//    externalShear = 0.5 * (walls[1].vel.dot(xDirec) - walls[0].vel.dot(xDirec)) / cellSize;
+//
+//    double plateSize = double(PARAMS.lbSize[0] - 2) * double(PARAMS.lbSize[1] - 2) * PARAMS.unit.Length * PARAMS.unit.Length;
+//
+//    wallStress = -0.5 * (walls[1].FHydro.dot(xDirec) + walls[1].FParticle.dot(xDirec) - walls[0].FHydro.dot(xDirec) - walls[0].FParticle.dot(xDirec)) / plateSize;
+//
+//    appVisc = 0.5 * wallStress / externalShear;
+//}
+//
+//tVect IO2::fluidCenterOfMass(const LB2& lb) const {
+//    // prints the total mass in the free fluid domain
+//    tVect center(0.0, 0.0, 0.0);
+//    double totMass(0.0);
+//
+//    if (lbmSolver) {
+//        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
+//            const node* nodeHere = *it;
+//            const unsigned int index = nodeHere->coord;
+//            if (!nodeHere->isInsideParticle()) {
+//                center += nodeHere->mass * lb.getPosition(index);
+//                totMass += nodeHere->mass;
+//            }
+//        }
+//        return center / totMass;
+//    } else {
+//        return Zero;
+//    }
+//}
