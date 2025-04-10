@@ -40,19 +40,21 @@ class Problem {
      * @return True if the node is fluid
      * @note Defined here so that it is inlined as this may be called millions of times during init
      */
-    bool isFluid(const tVect& pos) const {
+    bool isFluid(const tVect& pos, const double& unitLength) const {
+        // scaled position
+        const tVect scaledPos = pos * unitLength;
         // Check basic fluid volumes
         if (std::any_of(fluids_basic.cbegin(), fluids_basic.cend(),
             // Lambda function
-            [&pos](const MinMaxPair& minmax) {
-                return (pos.x >= minmax.min.x && pos.x <= minmax.max.x
-                     && pos.y >= minmax.min.y && pos.y <= minmax.max.y
-                     && pos.z >= minmax.min.z && pos.z <= minmax.max.z);
+            [&pos, &scaledPos](const MinMaxPair& minmax) {
+                return (scaledPos.x >= minmax.min.x && scaledPos.x <= minmax.max.x
+                     && scaledPos.y >= minmax.min.y && scaledPos.y <= minmax.max.y
+                     && scaledPos.z >= minmax.min.z && scaledPos.z <= minmax.max.z);
             })) {
                 return true;
         }
         // Check complex fluid volumes
-        exprtk_pos = pos;
+        exprtk_pos = scaledPos;
         return std::any_of(fluids_complex.cbegin(), fluids_complex.cend(),
             // Lambda function
             [](const exprtk::expression<double>& expr) { return expr.value() > 0; });

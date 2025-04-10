@@ -1364,7 +1364,7 @@ void LB::initializeInterface(Problem& problem, double totParticles) {
         for (unsigned int it = 0; it < totPossibleNodes; ++it) {
             if (nodes.count(it) == 0) {
                 // creating fluid cells
-                if (problem.isFluid(getPosition(it))) {
+                if (problem.isFluid(getPosition(it), unit.Length)) {
                     generateNode(it, LIQUID);
                     ++ct;
                 }
