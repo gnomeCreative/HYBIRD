@@ -1591,7 +1591,7 @@ void IO::exportLagrangianParaviewFluid_binaryv3(const LB& lb, const string& flui
     // start printing all the crap required for Paraview
     // header file opening
     ofstream paraviewFluidFile;
-    paraviewFluidFile.open(fluidFile.c_str());
+    paraviewFluidFile.open(fluidFile.c_str(), std::ios::binary);
     // paraviewFluidFile << std::scientific << std::setprecision(4);
     // writing on header file
 
@@ -1607,8 +1607,10 @@ void IO::exportLagrangianParaviewFluid_binaryv3(const LB& lb, const string& flui
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
     offset += lb.activeNodes.size() * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    offset += lb.activeNodes.size() * sizeof(double) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    if (lb.fluidMaterial.rheologyModel != NEWTONIAN || lb.fluidMaterial.turbulenceOn) {
+        offset += lb.activeNodes.size() * sizeof(double) + sizeof(unsigned int);
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    }
     offset += lb.activeNodes.size() * sizeof(double) + sizeof(unsigned int);
     if (lb.fluidMaterial.rheologyModel == MUI || lb.fluidMaterial.rheologyModel == FRICTIONAL || lb.fluidMaterial.rheologyModel == VOELLMY) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
