@@ -1967,7 +1967,7 @@ void IO::exportEulerianParaviewFluid_binary(const LB& lb, const string& fluidFil
     for (int i = 0; i < lb.totPossibleNodes; ++i) {
         const auto &node = lb.nodes.find(i);
         if (node != lb.nodes.end()) {
-            if (node->second.isInsideParticle()) {
+            if (!node->second.isInsideParticle()) {
                 paraviewFluidFile.write(reinterpret_cast<const char*>(&node->second.type), sizeof(node->second.type));
             } else {
                 const unsigned char t = 1;
@@ -2134,7 +2134,7 @@ void IO::exportEulerianParaviewFluid_binaryv2(const LB& lb, const string& fluidF
             const unsigned char t = 2;
             paraviewFluidFile.write(reinterpret_cast<const char*>(&t), sizeof(unsigned char));
         }
-        if (node.isInsideParticle()) {
+        if (!node.isInsideParticle()) {
             paraviewFluidFile.write(reinterpret_cast<const char*>(&node.type), sizeof(unsigned char));
         } else {
             const unsigned char t = 1;
@@ -2297,7 +2297,7 @@ void IO::exportEulerianParaviewFluid_binaryv3(const LB& lb, const string& fluidF
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     std::fill(uc_buffer, uc_buffer + lb.totPossibleNodes, 2);
     for (const auto &[key, node] : lb.nodes) {
-        uc_buffer[key] = node.isInsideParticle() ? node.type : 1;
+        uc_buffer[key] = node.isInsideParticle() ? 1 : node.type;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Velocity
