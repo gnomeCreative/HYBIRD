@@ -2372,7 +2372,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
     }
 
     //  Streaming
-#pragma omp for ordered reduction(+:extraMass)
+#pragma omp for reduction(+:extraMass)
     // cycling through active nodes
     for (int in = 0; in < activeNodes.size(); ++in) {
 
@@ -2479,7 +2479,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
                             // static pressure is subtracted in order to correctly compute buoyancy for floating objects
                             const tVect BBforce = nodeHere->bounceBackForce(j, staticPres, 0.0, fluidMaterial.earthPressureCoeff, fluidMaterial.lbMaxVisc);
                             // updating force and torque on the object (lattice units). This point is critical since many nodes update the force on the same object (lattice units)
-#pragma omp ordered
+#pragma omp critical (streaming_FHydro)
                             {
                                 walls[solidIndex].FHydro += BBforce;
                             }
@@ -2492,7 +2492,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
                         // static pressure is subtracted in order to correctly compute buoyancy for floating objects
                         const tVect BBforce = nodeHere->bounceBackForce(j, staticPres, 0.0, fluidMaterial.earthPressureCoeff, fluidMaterial.lbMaxVisc);
                         // updating force and torque on the object (lattice units). This point is critical since many nodes update the force on the same object (lattice units)
-#pragma omp ordered
+#pragma omp critical (streaming_FHydro)
                         {
                             walls[solidIndex].FHydro += BBforce;
                         }
@@ -2626,7 +2626,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
                         // static pressure is subtracted in order to correctly compute buoyancy for floating objects
                         const tVect BBforce = nodeHere->bounceBackForce(j, staticPres, BBi, fluidMaterial.earthPressureCoeff, fluidMaterial.lbMaxVisc);
                         // updating force and torque on the object (lattice units). This point is critical since many nodes update the force on the same object (lattice units)
-#pragma omp ordered
+#pragma omp critical (streaming_FHydro)
                         {
                             walls[solidIndex].FHydro += BBforce;
                         }
@@ -2643,7 +2643,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
                         // static pressure is subtracted in order to correctly compute buoyancy for floating objects
                         const tVect BBforce = nodeHere->bounceBackForce(j, staticPres, 0.0, fluidMaterial.earthPressureCoeff, fluidMaterial.lbMaxVisc);
                         // updating force and torque on the object (lattice units). This point is critical since many nodes update the force on the same object (lattice units)
-#pragma omp ordered
+#pragma omp critical (streaming_FHydro)
                         {
                             objects[solidIndex].FHydro += BBforce;
                         }
@@ -2733,7 +2733,7 @@ void LB::streaming(wallList& walls, objectList& objects) {
                     }
                     default:
                     {
-#pragma omp ordered
+#pragma omp critical (streaming_print)
                         {
                             cout << nodeHere->coord << " " << getX(nodeHere->coord) << " " << getY(nodeHere->coord) << " " << getZ(nodeHere->coord) << " " << typeString(nodeHere->type) << " TYPE ERROR:" << j << endl;
                             for (int j = 1; j < lbmDirec; ++j) {
