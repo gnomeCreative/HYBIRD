@@ -1340,7 +1340,12 @@ void DEM::initializeCylinders(const Problem &problem) {
     unsigned int index = 0;
     if (!problem.file.empty()) {  // Problem file was loaded
         // Copy cylinders directly from problem file
-        cylinders.insert(cylinders.end(), problem.cylinders.begin(), problem.cylinders.end());
+        //cylinders.insert(cylinders.end(), problem.cylinders.begin(), problem.cylinders.end());
+        for (size_t i = 0; i < problem.cylinders.size(); ++i) {
+            cylinder t = problem.cylinders[i];
+            t.index = static_cast<unsigned int>(cylinders.size());
+            cylinders.push_back(t);
+        }
     } else {
         switch (problemName) {
             case HK_LARGE:
