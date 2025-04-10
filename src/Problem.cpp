@@ -225,7 +225,11 @@ Problem Problem::loadFile(const std::string& filePath) {
         } else {
             // They didn't provide it as a list, parse anyway
             p.walls.push_back(readWall(problem["walls"]));
-        }        
+        }
+        // Correct indices
+        for (size_t i = 0; i < p.walls.size(); ++i) {
+            p.walls[i].index = static_cast<unsigned int>(i);
+        }
     }
     // Cylinders
     if (problem["cylinders"]) {
@@ -236,6 +240,10 @@ Problem Problem::loadFile(const std::string& filePath) {
         } else {
             // They didn't provide it as a list, parse anyway
             p.cylinders.push_back(readCylinder(problem["cylinders"]));
+        }
+        // Correct indices
+        for (size_t i = 0; i < p.cylinders.size(); ++i) {
+            p.cylinders[i].index = static_cast<unsigned int>(i);
         }
     }
     return p;
