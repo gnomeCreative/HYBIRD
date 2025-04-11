@@ -173,7 +173,10 @@ cylinder readCylinder(const YAML::Node& cylinder_node) {
 }
 
 
-Problem Problem::loadFile(const std::string& filePath) {
+void Problem::loadFile(const std::string& filePath) {
+    if (is_loaded) {
+        throw std::runtime_error("Problem::loadFile() called twice on same object.");
+    }
     YAML::Node problem;
     try {
         problem = YAML::LoadFile(filePath);
@@ -183,17 +186,16 @@ Problem Problem::loadFile(const std::string& filePath) {
         std::cout << err.str();
         throw std::runtime_error(err.str().c_str());
     }
-    Problem p;
-    p.file = filePath;
+    this->file = filePath;
     // Name
     if (problem["name"]) {
-        p.name = problem["name"].as<std::string>();
+        this->name = problem["name"].as<std::string>();
     }
     // Cuboid fluid volumes
     if (problem["fluids_basic"]) {
         if (problem["fluids_basic"].IsSequence()) {
             for (const auto &fluid : problem["fluids_basic"]) {
-                p.fluids_basic.push_back(readBasicFluid(fluid));
+                this->fluids_basic.push_back(readBasicFluid(fluid));
             }
         } else {
             // They didn't provide it as a list, parse anyway
@@ -206,37 +208,53 @@ Problem Problem::loadFile(const std::string& filePath) {
         if (problem["fluids_complex"].IsSequence()) {
             for (const auto &fluid : problem["fluids_complex"]) {
                 const std::string t = fluid.as<std::string>();
-                p.fluids_complex_str.push_back(t);
-                p.fluids_complex.push_back(parse_expression(parser, p.symbol_table, t));
+                this->fluids_complex_str.push_back(t);
+                this->fluids_complex.emplace_back(parse_expression(parser, this->symbol_table, t));
             }
         } else {
             // They didn't provide it as a list, parse anyway
             const std::string t = problem["fluids_complex"].as<std::string>();
-            p.fluids_complex_str.push_back(t);
-            p.fluids_complex.push_back(parse_expression(parser, p.symbol_table, t));
+            this->fluids_complex_str.push_back(t);
+            this->fluids_complex.emplace_back(parse_expression(parser, this->symbol_table, t));
         }        
     }
     // Walls
     if (problem["walls"]) {
         if (problem["walls"].IsSequence()) {
             for (const auto &wall : problem["walls"]) {
-                p.walls.push_back(readWall(wall));
+                this->walls.push_back(readWall(wall));
+            }
+            // Correct the indices
+            for (size_t i = 0; i < this->fluids_basic.size(); ++i) {
+                this->walls[i].index = i;
             }
         } else {
             // They didn't provide it as a list, parse anyway
-            p.walls.push_back(readWall(problem["walls"]));
-        }        
+            this->walls.push_back(readWall(problem["walls"]));
+        }
+        // Correct indices
+        for (size_t i = 0; i < this->walls.size(); ++i) {
+            this->walls[i].index = static_cast<unsigned int>(i);
+        }
     }
     // Cylinders
     if (problem["cylinders"]) {
         if (problem["cylinders"].IsSequence()) {
             for (const auto& cylinder : problem["cylinders"]) {
-                p.cylinders.push_back(readCylinder(cylinder));
+                this->cylinders.push_back(readCylinder(cylinder));
+            }
+            // Correct the indices
+            for (size_t i = 0; i < this->fluids_basic.size(); ++i) {
+                this->cylinders[i].index = i;
             }
         } else {
             // They didn't provide it as a list, parse anyway
-            p.cylinders.push_back(readCylinder(problem["cylinders"]));
+            this->cylinders.push_back(readCylinder(problem["cylinders"]));
+        }
+        // Correct indices
+        for (size_t i = 0; i < this->cylinders.size(); ++i) {
+            this->cylinders[i].index = static_cast<unsigned int>(i);
         }
     }
-    return p;
+    is_loaded = true;
 }

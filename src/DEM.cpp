@@ -593,8 +593,12 @@ void DEM::initializeWalls(const Problem &problem, const typeList& externalBounda
 
     // additional walls
     if (!problem.file.empty()) {  // Problem file was loaded
-        // Copy additional walls directly from problem file
-        walls.insert(walls.end(), problem.walls.begin(), problem.walls.end());
+        // Copy additional walls directly from problem file, and correct their indices
+        for (size_t i = 0; i < problem.walls.size(); ++i) {
+            wall t = problem.walls[i];
+            t.index = static_cast<unsigned int>(walls.size());
+            walls.push_back(t);
+        }
     } else {
         switch (problemName) {
         case HK_LARGE:
