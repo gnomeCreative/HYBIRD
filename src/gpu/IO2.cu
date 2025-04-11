@@ -55,10 +55,10 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //            //                cout << "t_rm=" << deltaRedistributeMass << " ";
     //            //                cout << "n_fs=" << lb.interfaceNodes.size() << " ";
             }
-    //        if (demSolver) {
-    //            const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
-    //            cout << "t_c=" << deltaCoupling << " ";
-    //        }
+            if (demSolver) {
+                const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
+                cout << "t_c=" << deltaCoupling << " ";
+            }
 
             exportMaxSpeedFluid(lb);
     //        exportFreeSurfaceExtent(lb);
@@ -78,7 +78,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //    }
 
         if (dem.elmts.size()) {
-            //exportParticleFlowRate(dem);
+            exportParticleFlowRate(dem);
             exportMaxSpeedParticles(dem);
             exportForces(dem);
             exportParticleCenterOfMass(dem);
@@ -86,16 +86,16 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
             exportParticleOverlap(dem);
         }
 
-    //    if (dem.walls.size() > 0) {
-    //        exportWallForce(dem);
-    //    }
+        if (dem.walls.size() > 0) {
+            exportWallForce(dem);
+        }
     //    //
-    //    // update energies
-    //    totalKineticEnergy = 0.0;
-    //    energyExit = false;
-    //    if (dem.elmts.size()) {
-    //        dem.updateEnergy(totalKineticEnergy);
-    //    }
+        // update energies
+        totalKineticEnergy = 0.0;
+        energyExit = false;
+        if (dem.elmts.size()) {
+            dem.updateEnergy(totalKineticEnergy);
+        }
     //    if (lbmSolver) {
     //        lb.updateEnergy(totalKineticEnergy);
     //    }
@@ -186,9 +186,9 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
     //    // closing file
         cout << endl;
-    //    exportFile << endl;
-    //    exportFile.close();
-    //    cout.flush();
+        exportFile << endl;
+        exportFile.close();
+        cout.flush();
 
 
     }
