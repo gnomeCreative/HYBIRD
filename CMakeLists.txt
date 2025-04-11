@@ -180,6 +180,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Stricter warnings
     target_compile_options(hybird PRIVATE "$<$<COMPILE_LANGUAGE:C,CXX>:/W4>")
+    # Suppress the Visual Studio specific min/max macros, that break std::min/max
+    target_compile_definitions(hybird PRIVATE NOMINMAX)
 endif()
 
 # Static stdlib (required by Intel VTune)
