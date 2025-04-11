@@ -25,7 +25,7 @@ class IO2 : public IO {
     // void exportEulerianParaviewFluid(LB2& lb, const string& fluidFile);
     // void exportEulerianParaviewFluid_binary(LB2& lb, const string& fluidFile);
     // void exportEulerianParaviewFluid_binaryv2(LB2& lb, const string& fluidFile);
-    void exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile);
+    void exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile); //
 
     // Lagrangian fluid paraview file
     void exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile);
