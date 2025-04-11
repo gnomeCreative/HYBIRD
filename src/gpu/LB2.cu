@@ -2599,7 +2599,7 @@ void LB2::initializeInterface(const Problem &problem) {
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             if (h_nodes.type[it] == GAS) {
                 // creating fluid cells
-                if (problem.isFluid(h_PARAMS.getPosition(it))) {
+                if (problem.isFluid(h_PARAMS.getPosition(it) * h_PARAMS.unit.Length)) {
                     generateNode(it, LIQUID);
                     ++ct;
                 }
