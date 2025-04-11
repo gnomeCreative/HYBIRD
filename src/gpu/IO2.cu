@@ -60,7 +60,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //            cout << "t_c=" << deltaCoupling << " ";
     //        }
 
-            //exportMaxSpeedFluid(lb);
+            exportMaxSpeedFluid(lb);
     //        exportFreeSurfaceExtent(lb);
     //        exportFluidFlowRate(lb);
     //        exportFluidMass(lb);
@@ -1102,8 +1102,10 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
     offset += nodes.activeCount * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
-    offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
-    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
+        offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
+        paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
+    }
     offset += nodes.activeCount * sizeof(double) + sizeof(unsigned int);
     if (PARAMS.fluidMaterial.rheologyModel == MUI || PARAMS.fluidMaterial.rheologyModel == FRICTIONAL || PARAMS.fluidMaterial.rheologyModel == VOELLMY) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"friction\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
@@ -1863,24 +1865,26 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
 
 //// print export stuff
 //
-//void IO2::exportMaxSpeedFluid(const LB2& lb) {
-//
-//    static const double soundSpeed = 1.0 / sqrt(3);
-//    // fluid max velocity
-//    double maxFluidSpeed = 0.0;
-//    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-//        const node* nodeHere = *it;
-//        maxFluidSpeed = std::max(maxFluidSpeed, nodeHere->u.norm2());
-//    }
-//    maxFluidSpeed = sqrt(maxFluidSpeed);
-//    cout << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
-//    exportFile << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
-//
-//    // printing max speed
-//    maxFluidSpeedFile.open(maxFluidSpeedFileName.c_str(), ios::app);
-//    maxFluidSpeedFile << realTime << " " << maxFluidSpeed * PARAMS.unit.Speed << "\n";
-//    maxFluidSpeedFile.close();
-//}
+void IO2::exportMaxSpeedFluid(LB2& lb) {
+
+    static const double soundSpeed = 1.0 / sqrt(3);
+    // fluid max velocity
+    double maxFluidSpeed = 0.0;
+
+    const Node2 nodes = lb.getNodes();
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
+        maxFluidSpeed = std::max(maxFluidSpeed, nodes.u[nodes.activeI[i]].norm2());        
+    }
+
+    maxFluidSpeed = sqrt(maxFluidSpeed);
+    cout << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
+    exportFile << "MaxFSpeed= " << std::scientific << std::setprecision(2) << maxFluidSpeed * PARAMS.unit.Speed << "(Ma=" << std::scientific << std::setprecision(2) << maxFluidSpeed / soundSpeed << ") ";
+
+    // printing max speed
+    maxFluidSpeedFile.open(maxFluidSpeedFileName.c_str(), ios::app);
+    maxFluidSpeedFile << realTime << " " << maxFluidSpeed * PARAMS.unit.Speed << "\n";
+    maxFluidSpeedFile.close();
+}
 //
 //void IO2::exportFreeSurfaceExtent(const LB2& lb) {
 //
