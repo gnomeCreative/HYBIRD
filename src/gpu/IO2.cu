@@ -77,14 +77,14 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //        exportMeanViscosity(lb);
     //    }
 
-    //    if (dem.elmts.size()) {
-    //        exportParticleFlowRate(dem);
-    //        exportMaxSpeedParticles(dem);
-    //        exportForces(dem);
-    //        exportParticleCenterOfMass(dem);
-    //        exportParticleCoordination(dem);
-    //        exportParticleOverlap(dem);
-    //    }
+        if (dem.elmts.size()) {
+            //exportParticleFlowRate(dem);
+            exportMaxSpeedParticles(dem);
+            exportForces(dem);
+            exportParticleCenterOfMass(dem);
+            exportParticleCoordination(dem);
+            exportParticleOverlap(dem);
+        }
 
     //    if (dem.walls.size() > 0) {
     //        exportWallForce(dem);

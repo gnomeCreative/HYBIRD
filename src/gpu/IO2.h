@@ -32,6 +32,8 @@ class IO2 : public IO {
     void exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile);
 
     void exportMaxSpeedFluid(LB2& lb);
+
+    //void exportParticleFlowRate(DEM& dem);
 };
 
 #endif /* IO_H */
