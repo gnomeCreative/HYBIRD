@@ -198,7 +198,7 @@ void parseConfigFile(IO& io, DEM& dem, LB& lb, Problem& problem, GetPot& configF
     string problemFileString;
     PARSE_CLASS_MEMBER(configFile, problemFileString, "problemFile", "");
     if (!problemFileString.empty()) {
-        problem = Problem::loadFile(problemFileString);
+        problem.loadFile(problemFileString);
     }
 
     // GETTING SIMULATION PARAMETERS  /////////

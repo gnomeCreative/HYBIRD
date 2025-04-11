@@ -29,11 +29,18 @@ class Problem {
      */
     Problem();
     /**
-     * Attempt to load the specified .yml problem file and return it as a Problem object
+     * These objects are uncopyable
+     * Copying breaks the linkages within the symbol table
+     * @note It should be possible to write a manual copy constructor to rebuild complex fluids on copy
+     */
+    Problem(const Problem&) = delete;
+    /**
+     * Attempt to load the specified .yml problem file into the current problem
+     * This method may only be called once
      * @param filePath Path to .yml containing problem
      * @note Static "factory" because constructors are not supposed to throw exceptions (e.g. if file not exist)
      */
-    static Problem loadFile(const std::string &filePath);
+    void loadFile(const std::string &filePath);
 
     /**
      * @param pos Coordinate to test
@@ -57,11 +64,12 @@ class Problem {
         exprtk_pos = scaledPos;
         return std::any_of(fluids_complex.cbegin(), fluids_complex.cend(),
             // Lambda function
-            [](const exprtk::expression<double>& expr) { return expr.value() > 0; });
+            [](const exprtk::expression<double>& expr) {return expr.value() > 0; });
     }
 private:
     mutable tVect exprtk_pos;
     exprtk::symbol_table<double> symbol_table;
+    bool is_loaded = false;
 };
 
 #endif // PROBLEM_H
