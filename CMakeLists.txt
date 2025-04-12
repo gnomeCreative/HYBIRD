@@ -61,6 +61,8 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/gpu/Particle2.h
     ${PROJECT_SOURCE_DIR}/src/gpu/ValidationIO.h
     ${PROJECT_SOURCE_DIR}/src/gpu/Wall2.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/LBOpenMP.h
+    ${PROJECT_SOURCE_DIR}/src/gpu/LBCommon.h
     )
     
 # Define source files
@@ -81,6 +83,8 @@ set(HYBIRD_SRC
     ${PROJECT_SOURCE_DIR}/src/gpu/LB2.cu
     ${PROJECT_SOURCE_DIR}/src/gpu/LBParams.cu
     ${PROJECT_SOURCE_DIR}/src/gpu/Node2.cu
+    # V3 merged CPU+GPU codebase, WIP
+    ${PROJECT_SOURCE_DIR}/src/gpu/LBOpenMP.cpp
     )
 
 # Define the target we wish to build

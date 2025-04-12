@@ -527,12 +527,8 @@ inline void Node2::store<CPU>() {
 #ifdef USE_CUDA
 template <>
 inline void Node2::store<CUDA>() {
-#ifdef __CUDA_ARCH__
-    // memcpy(fs, f, sizeof(double) * lbmDirec * count);  // This won't work, would need to be lbmDirec per thread
-#else
     // Saving in streaming support variables f->fs
     cudaMemcpy(fs, f, sizeof(double) * lbmDirec * count, cudaMemcpyDeviceToDevice);
-#endif
 }
 #endif
 __host__ __device__ __forceinline__ void Node2::reconstruct(const unsigned int index) {
