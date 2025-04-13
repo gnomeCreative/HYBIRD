@@ -1130,13 +1130,64 @@ void LBOpenMP::updateInterface() {
         common_removeIsolated(in_i, &h_nodes, &h_massSurplus);
     }
     // Rebuild all lists
-    buildInterfaceList(h_nodes.interfaceCount);
-    buildFluidList(h_nodes.fluidCount + lbmDirec * h_nodes.interfaceCount);
-    buildActiveList();
+    buildAllLists(h_nodes.interfaceCount, h_nodes.fluidCount + lbmDirec * h_nodes.interfaceCount);
     // distributing surplus to interface cells
     this->redistributeMass(h_massSurplus);
 #ifdef DEBUG
     // computeSurfaceNormal()
 #endif
-    // @todo Rebuild all lists
+}
+void LBOpenMP::buildInterfaceList(const unsigned int& _max_len) {
+    const unsigned int max_len = min(_max_len, h_nodes.count);
+    std::vector<unsigned int> t_interfaceList;
+    t_interfaceList.reserve(max_len);
+    for (unsigned int i = 0; i < count; ++i) {
+        if (h_nodes.type[i] == INTERFACE) {
+            t_interfaceList.push_back(i);
+        }
+    }
+    if (h_nodes.interfaceAlloc < t_interfaceList.size()) {
+        free(h_nodes.interfaceI);
+        h_nodes.interfaceI = static_cast<unsigned int *>(malloc(t_interfaceList.size() * sizeof(unsigned int)));
+    }
+    h_nodes.interfaceCount = static_cast<unsigned int>(t_interfaceList.size());
+    memcpy(h_nodes.interfaceI, t_interfaceList.data(), t_interfaceList.size() * sizeof(unsigned int));
+}
+void LBOpenMP::buildAllLists(const unsigned int& _max_interface_len, const unsigned int& _max_fluid_len) {
+    const unsigned int max_interface_len = min(_max_interface_len, h_nodes.count);
+    const unsigned int max_fluid_len = min(_max_fluid_len, h_nodes.count);
+    const unsigned int max_len = min(_max_interface_len + _max_fluid_len, h_nodes.count);
+    std::vector<unsigned int> t_interfaceList;
+    t_interfaceList.reserve(max_interface_len);
+    std::vector<unsigned int> t_fluidList;
+    t_fluidList.reserve(max_fluid_len);
+    std::vector<unsigned int> t_activeList;
+    t_activeList.reserve(max_len);
+    for (unsigned int i = 0; i < count; ++i) {
+        if (h_nodes.type[i] == LIQUID) {
+            t_fluidList.push_back(i);
+            t_activeList.push_back(i);
+        } else if (h_nodes.type[i] == INTERFACE) {
+            t_interfaceList.push_back(i);
+            t_activeList.push_back(i);
+        }
+    }
+    if (h_nodes.interfaceAlloc < t_interfaceList.size()) {
+        free(h_nodes.interfaceI);
+        h_nodes.interfaceI = static_cast<unsigned int*>(malloc(t_interfaceList.size() * sizeof(unsigned int)));
+    }
+    if (h_nodes.fluidAlloc < t_fluidList.size()) {
+        free(h_nodes.fluidI);
+        h_nodes.fluidI = static_cast<unsigned int*>(malloc(t_fluidList.size() * sizeof(unsigned int)));
+    }
+    if (h_nodes.activeAlloc < t_activeList.size()) {
+        free(h_nodes.activeI);
+        h_nodes.activeI = static_cast<unsigned int*>(malloc(t_activeList.size() * sizeof(unsigned int)));
+    }
+    h_nodes.interfaceCount = static_cast<unsigned int>(t_interfaceList.size());
+    h_nodes.fluidCount = static_cast<unsigned int>(t_fluidList.size());
+    h_nodes.activeCount = static_cast<unsigned int>(t_activeList.size());
+    memcpy(h_nodes.interfaceI, t_interfaceList.data(), t_interfaceList.size() * sizeof(unsigned int));
+    memcpy(h_nodes.fluidI, t_fluidList.data(), t_fluidList.size() * sizeof(unsigned int));
+    memcpy(h_nodes.activeI, t_activeList.data(), t_activeList.size() * sizeof(unsigned int))
 }

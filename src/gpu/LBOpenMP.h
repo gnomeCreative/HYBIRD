@@ -201,6 +201,18 @@ class LBOpenMP {
     void redistributeMass(const double& massSurplus);
     void updateMass();
     void updateInterface();
+    /**
+     * Rebuild h_nodes.interfaceI
+     * @todo Profile and see if it's worth optimising this
+     * @todo Could optimise to save memory realloc
+     */
+    void buildInterfaceList(const unsigned int &max_len);
+    /**
+     * Rebuild h_nodes.activeI, h_nodes.interfaceI & h_nodes.fluidI
+     * @todo Profile and see if it's worth optimising this
+     * @todo Could optimise to save memory realloc
+     */
+    void buildAllLists(const unsigned int& max_interface_len, const unsigned int& max_fluid_len);
 
  protected:
     // The actual node storage
