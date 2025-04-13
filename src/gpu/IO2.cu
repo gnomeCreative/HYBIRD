@@ -1,12 +1,12 @@
 
 #include "IO2.h"
-#include "gpu/LB2.h"
+#include "gpu/LBOpenMP.h"
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-void IO2::outputStep(LB2& lb, DEM& dem) {
+void IO2::outputStep(LBOpenMP& lb, DEM& dem) {
 
 
     //// PLOTTING PHASE  ////////////////////////////////////////////////////////////////
@@ -213,7 +213,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
 // paraview files
 
-void IO2::createFiles(LB2& lb, const DEM& dem) {
+void IO2::createFiles(LBOpenMP& lb, const DEM& dem) {
     // write vtk at regular interval defined with the input file
 
     if (lbmSolver) {
@@ -941,7 +941,7 @@ void IO2::exportRecycleFluid(const LB2& lb, const string& fluidRecycleFile) {
     recycleFluidFile.close();
 }
 */
-void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
+void IO2::exportLagrangianParaviewFluid(LBOpenMP& lb, const string& fluidFile) {
 
     const Node2 nodes = lb.getNodes();
     const int one = 1;
@@ -1075,7 +1075,7 @@ void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
     paraviewFluidFile.close();
 }
 
-void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile) {
+void IO2::exportLagrangianParaviewFluid_binaryv3(LBOpenMP& lb, const string& fluidFile) {
     /**
      * This function is a rewrite of exportLagrangianParaviewFluid() that writes to a binary vtkhdf5 format
      * It is intended to provide much faster fluid export performance
@@ -1722,7 +1722,7 @@ void IO2::exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFil
 //    paraviewFluidFile.close();
 //}
 
-void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile) {
+void IO2::exportEulerianParaviewFluid_binaryv3(LBOpenMP& lb, const string& fluidFile) {
     /**
      * This function is a rewrite of exportEulerianParaviewFluid() that writes to a binary vtkhdf5 format
      * It is intended to provide much faster fluid export performance
@@ -1865,7 +1865,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
 
 //// print export stuff
 //
-void IO2::exportMaxSpeedFluid(LB2& lb) {
+void IO2::exportMaxSpeedFluid(LBOpenMP& lb) {
 
     static const double soundSpeed = 1.0 / sqrt(3);
     // fluid max velocity

@@ -16,6 +16,7 @@
 #include "Problem.h"
 #include "gpu/IO2.h"
 #include "gpu/LB2.h"
+#include "gpu/LBOpenMP.h"
 #include "gpu/LBParams.h"
 #include "gpu/ValidationIO.h"
 
@@ -528,7 +529,7 @@ int main(int argc, char** argv) {
     dem.demTimeStep = 0;
 
     // Allocate the LB runner
-    LB2 lb;
+    LBOpenMP lb;
     lb.setParams(lb_p, lb_ip);
 
     if (io.lbmSolver) {
@@ -538,47 +539,57 @@ int main(int argc, char** argv) {
     // initial output
     // vio.output(lb);
     io.outputStep(lb, dem);
+    // Init OMP here, but go straight to single thread
+    // This creates a single team of OMP threads
+    // omp_set_nested() then enables that team to be re-used
+    // for all parallel blocks during the simulation
+    omp_set_nested(1);
+#pragma omp parallel
+    {
+#pragma omp single
+    {
+        // CYCLE /////////////////////////////
+        // integrate in time
+        while (true) {
+            if (io.realTime != 0.0 && io.realTime > io.maxTime) {
+                exit_code = SUCCESS;
+            }// exit normally if the maximum simulation time has been reached
+            else if (io.maximumTimeSteps && io.currentTimeStep >= io.maximumTimeSteps) {
+                exit_code = SUCCESS;
+            } else if (io.energyExit) {
+                exit_code = SUCCESS;
+            } else {
+                // advance one step in time
+                io.realTime += h_PARAMS.unit.Time;
+                ++io.currentTimeStep;
+                ++h_PARAMS.time;
+                // lb.syncParams(); // Update time on device // @todo v3 Required for GPU
 
-    // CYCLE /////////////////////////////
-    // integrate in time
-    while (true) {
-        if (io.realTime != 0.0 && io.realTime > io.maxTime) {
-            exit_code = SUCCESS;
-        }// exit normally if the maximum simulation time has been reached
-        else if (io.maximumTimeSteps && io.currentTimeStep >= io.maximumTimeSteps) {
-            exit_code = SUCCESS;
-        } else if (io.energyExit) {
-            exit_code = SUCCESS;
-        } else {
-            // advance one step in time
-            io.realTime += h_PARAMS.unit.Time;
-            ++io.currentTimeStep;
-            ++h_PARAMS.time;
-            lb.syncParams(); // Update time on device
+                dem.evolveBoundaries();
+                //    dem.evolveObj();
+                if (io.demSolver) {
 
-            dem.evolveBoundaries();
-            //    dem.evolveObj();
-            if (io.demSolver) {
+                    dem.discreteElementStep();
+                }
 
-                dem.discreteElementStep();
+                if (io.lbmSolver) {
+                    // core of the code, performs time steps
+                    lb.step(dem, io.demSolver);
+                }
+                // vio.output(lb);
+                io.outputStep(lb, dem);
+
+                //            // exit abnormally if a serious problem has occurred
+                //            if (io.problem) {
+                //                exit_code = ERR;
+                //            }
             }
 
-            if (io.lbmSolver) {
-                // core of the code, performs time steps
-                lb.step(dem, io.demSolver);
+            if (exit_code > UNFINISHED) {
+                break;
             }
-            // vio.output(lb);
-            io.outputStep(lb, dem);
-
-            //            // exit abnormally if a serious problem has occurred
-            //            if (io.problem) {
-            //                exit_code = ERR;
-            //            }
         }
-
-        if (exit_code > UNFINISHED) {
-            break;
-        }
+    }
     }
 
     const auto chrono_end = std::chrono::steady_clock::now();

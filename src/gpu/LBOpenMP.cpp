@@ -774,7 +774,7 @@ void LBOpenMP::syncDEMIn(const elmtList& elmts, const particleList& particles, c
     syncObjectsIn(objects);
     // @todo is cylinder missing?
 }
-void LBOpenMP::syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects) {
+void LBOpenMP::syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects) const {
     // Sync DEM data from structure of arrays format (and device memory)
     // @todo which of this sync is redundant?
     syncElementsOut(elmts);
@@ -948,6 +948,61 @@ void LBOpenMP::syncObjectsIn(const objectList &objects) {
         // h_objects.FHydro[i] = objects[i].FHydro; // Zero'd before use in streaming()
     }
 }
+void LBOpenMP::syncElementsOut(elmtList &elements) const {
+    // Assumes memory is already allocated
+    // Repackage device particle data from structure of arrays to array of structures 
+    for (unsigned int i = 0; i < h_elements.count; ++i) {
+        elements[i].x1 = h_elements.x1[i];
+        elements[i].wGlobal = h_elements.wGlobal[i];
+        elements[i].FHydro = h_elements.FHydro[i];
+        elements[i].MHydro = h_elements.MHydro[i];
+        elements[i].fluidVolume = h_elements.fluidVolume[i];
+    }
+}
+void LBOpenMP::syncParticlesOut(particleList &particles) const {
+    // Assumes memory is already allocated
+    // Repackage device particle data from structure of arrays to array of structures 
+    for (unsigned int i = 0; i < h_particles.count; ++i) {
+        particles[i].clusterIndex = h_particles.clusterIndex[i];
+        particles[i].r = h_particles.r[i];
+        particles[i].x0 = h_particles.x0[i];
+        particles[i].radiusVec = h_particles.radiusVec[i];
+    }
+}
+void LBOpenMP::syncCylindersOut(cylinderList &cylinders) const {
+    // Assumes memory is already allocated
+    // Repackage device particle data from structure of arrays to array of structures 
+    for (unsigned int i = 0; i < h_cylinders.count; ++i) {
+        cylinders[i].p1 = h_cylinders.p1[i];
+        cylinders[i].p2 = h_cylinders.p2[i];
+        cylinders[i].R = h_cylinders.R[i];
+        cylinders[i].naxes = h_cylinders.naxes[i];
+        cylinders[i].omega = h_cylinders.omega[i];
+        cylinders[i].moving = h_cylinders.moving[i];
+    }
+}
+void LBOpenMP::syncWallsOut(wallList &walls) const {
+    // Assumes memory is already allocated
+    // Repackage device particle data from structure of arrays to array of structures 
+    for (unsigned int i = 0; i < h_walls.count; ++i) {
+        walls[i].n = h_walls.n[i];
+        walls[i].p = h_walls.p[i];
+        walls[i].rotCenter = h_walls.rotCenter[i];
+        walls[i].omega = h_walls.omega[i];
+        walls[i].vel = h_walls.vel[i];
+        walls[i].FHydro = h_walls.FHydro[i];
+    }
+}
+void LBOpenMP::syncObjectsOut(objectList &objects) const {
+    // Assumes memory is already allocated
+    // Repackage device particle data from structure of arrays to array of structures 
+    for (unsigned int i = 0; i < h_objects.count; ++i) {
+        objects[i].r = h_objects.r[i];
+        objects[i].x0 = h_objects.x0[i];
+        objects[i].x1 = h_objects.x1[i];
+        objects[i].FHydro = h_objects.FHydro[i];
+    }
+}
 
 //
 // latticeBoltzmannCouplingStep() subroutines
@@ -1104,12 +1159,9 @@ void LBOpenMP::updateInterface() {
     }
     // Build temporary list of new/interface/new_gas nodes
     // Returns a buffer, where first element is length of the list
-    unsigned int* templist = buildTempNewList(lbmDirec * h_nodes.interfaceCount);
-    const unsigned int len_templist = templist[0];
-    ++templist;
-    for (unsigned int i = 0; i < len_templist; ++i) {
+    const std::vector<unsigned int> tempList = buildTempNewList(lbmDirec * h_nodes.interfaceCount);
+    for (const unsigned int &in_i : tempList) {
         // Convert index to interface node index
-        const unsigned int in_i = templist[i];
         // fixing the interface (always one interface between fluid and gas)
         common_smoothenInterface_update(in_i, &h_nodes);
     }
@@ -1137,6 +1189,17 @@ void LBOpenMP::updateInterface() {
     // computeSurfaceNormal()
 #endif
 }
+std::vector<unsigned int> LBOpenMP::buildTempNewList(const unsigned int& _max_len) {
+    const unsigned int max_len = min(_max_len, h_nodes.count);
+    std::vector<unsigned int> t_list;
+    t_list.reserve(max_len);
+    for (unsigned int i = 0; i < count; ++i) {
+        if (h_nodes.type[i] == GAS_TO_INTERFACE || h_nodes.type[i] == FLUID_TO_INTERFACE) {
+            t_list.push_back(i);
+        }
+    }
+    return t_list;
+}
 void LBOpenMP::buildInterfaceList(const unsigned int& _max_len) {
     const unsigned int max_len = min(_max_len, h_nodes.count);
     std::vector<unsigned int> t_interfaceList;
@@ -1148,7 +1211,7 @@ void LBOpenMP::buildInterfaceList(const unsigned int& _max_len) {
     }
     if (h_nodes.interfaceAlloc < t_interfaceList.size()) {
         free(h_nodes.interfaceI);
-        h_nodes.interfaceI = static_cast<unsigned int *>(malloc(t_interfaceList.size() * sizeof(unsigned int)));
+        h_nodes.interfaceI = static_cast<unsigned int*>(malloc(t_interfaceList.size() * sizeof(unsigned int)));
     }
     h_nodes.interfaceCount = static_cast<unsigned int>(t_interfaceList.size());
     memcpy(h_nodes.interfaceI, t_interfaceList.data(), t_interfaceList.size() * sizeof(unsigned int));

@@ -34,6 +34,8 @@ class LBOpenMP {
      */
     void step(DEM& dem, bool io_demSolver);
 
+    Node2& getNodes() { return h_nodes; }
+
  private:
     //
     // Init chain
@@ -71,7 +73,7 @@ class LBOpenMP {
      * @param objects Objects that are not walls, e.g. cylinders??
      * @note Could directly use h_ structures in future, enabling removal of legacy code
      */
-    void syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects);
+    void syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects) const;
     /**
      * @brief Sync DEM elements list to h_elements
      * @return true if h_elements.componentsData has grown (this may be redundant)
@@ -102,27 +104,27 @@ class LBOpenMP {
      * @brief Sync DEM elements list from h_elements
      * @note Could directly use h_elements in future, enabling removal of legacy code
      */
-    void syncElementsOut(elmtList& elements);
+    void syncElementsOut(elmtList& elements) const;
     /**
      * @brief Sync DEM particle list from h_particles
      * @note Could directly use h_particles in future, enabling removal of legacy code
      */
-    void syncParticlesOut(particleList& particles);
+    void syncParticlesOut(particleList& particles) const;
     /**
      * @brief Sync DEM cylinder list from h_cylinders
      * @note Could directly use h_cylinders in future, enabling removal of legacy code
      */
-    void syncCylindersOut(cylinderList& cylinders);
+    void syncCylindersOut(cylinderList& cylinders) const;
     /**
      * @brief Sync DEM wall list from h_walls
      * @note Could directly use h_walls in future, enabling removal of legacy code
      */
-    void syncWallsOut(wallList& walls);
+    void syncWallsOut(wallList& walls) const;
     /**
      * @brief Sync DEM object list from h_objects
      * @note Could directly use h_objects in future, enabling removal of legacy code
      */
-    void syncObjectsOut(objectList& objects);
+    void syncObjectsOut(objectList& objects) const;
 
     ///
     /// Step stages
@@ -202,17 +204,23 @@ class LBOpenMP {
     void updateMass();
     void updateInterface();
     /**
+     * Build a temporary list of h_nodes.interfaceI
+     * @todo Profile and see if it's worth optimising this
+     * @todo Could optimise to save memory realloc
+     */
+    std::vector<unsigned int> buildTempNewList(const unsigned int &_max_len);
+    /**
      * Rebuild h_nodes.interfaceI
      * @todo Profile and see if it's worth optimising this
      * @todo Could optimise to save memory realloc
      */
-    void buildInterfaceList(const unsigned int &max_len);
+    void buildInterfaceList(const unsigned int &_max_len);
     /**
      * Rebuild h_nodes.activeI, h_nodes.interfaceI & h_nodes.fluidI
      * @todo Profile and see if it's worth optimising this
      * @todo Could optimise to save memory realloc
      */
-    void buildAllLists(const unsigned int& max_interface_len, const unsigned int& max_fluid_len);
+    void buildAllLists(const unsigned int &_max_interface_len, const unsigned int &_max_fluid_len);
 
  protected:
     // The actual node storage
