@@ -89,23 +89,23 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
         if (dem.walls.size() > 0) {
             exportWallForce(dem);
         }
-    //    //
+        
         // update energies
         totalKineticEnergy = 0.0;
         energyExit = false;
         if (dem.elmts.size()) {
             dem.updateEnergy(totalKineticEnergy);
         }
-    //    if (lbmSolver) {
-    //        lb.updateEnergy(totalKineticEnergy);
-    //    }
+        //if (lbmSolver) {
+        //    lb.updateEnergy(totalKineticEnergy);
+        //}
     //    exportEnergy(dem, lb);
     //    if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
     //        energyExit = true;
     //    }
-    //    if (dem.objects.size()) {
-    //        exportForceObstacle(dem.objects);
-    //    }
+        if (dem.objects.size()) {
+            exportForceObstacle(dem.objects);
+        }
     //    switch (problemName) {
     //        case SHEARCELL:
     //        {
