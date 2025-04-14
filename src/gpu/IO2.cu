@@ -64,7 +64,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
             exportFreeSurfaceExtent(lb);
             exportFluidFlowRate(lb);
             exportFluidMass(lb);
-    //        exportFluidCenterOfMass(lb);
+            exportFluidCenterOfMass(lb);
             //switch (PARAMS.fluidMaterial.rheologyModel) {
             //    case BINGHAM:
             //    case FRICTIONAL:
@@ -1990,19 +1990,44 @@ void IO2::exportFluidFlowRate(LB2& lb) {
     fluidFlowRateFile << realTime << " " << flowRateX * PARAMS.unit.FlowRate << " " << flowRateY * PARAMS.unit.FlowRate << " " << flowRateZ * PARAMS.unit.FlowRate << "\n";
     fluidFlowRateFile.close();
 }
-//
-//void IO2::exportFluidCenterOfMass(const LB2& lb) {
-//
-//    // particle center of mass
-//    const tVect fluidCenter = fluidCenterOfMass(lb) * PARAMS.unit.Length;
-//
-//    // printing particle center of mass
-//    fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
-//    fluidCenterOfMassFile << realTime << " " << fluidCenter.dot(Xp) << " " << fluidCenter.dot(Yp) << " " << fluidCenter.dot(Zp) << "\n";
-//    fluidCenterOfMassFile.close();
-//
-//}
-//
+
+void IO2::exportFluidCenterOfMass(LB2& lb) {
+
+    // particle center of mass
+    //const tVect fluidCenter = fluidCenterOfMass(lb) * PARAMS.unit.Length;
+
+    // compute the center of mass
+    const Node2& nodes = lb.getNodes();
+    tVect center(0.0, 0.0, 0.0);
+    double totMass = 0.0;
+
+    for (unsigned int it = 0; it < nodes.activeCount; ++it) {
+        const unsigned int index = nodes.activeI[it];
+        if (!nodes.p[index]) {
+            const double mass = nodes.mass[index];
+            const tVect pos = nodes.getPosition(index);
+            center += mass * pos;
+            totMass += mass;
+        }
+    }
+
+    tVect fluidCenter = Zero;
+    if (totMass > 0.0) {
+        fluidCenter = center / totMass;
+    }
+
+    fluidCenter *= PARAMS.unit.Length;
+
+    // printing particle center of mass
+    fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
+    fluidCenterOfMassFile << realTime << " " 
+                          << fluidCenter.dot(Xp) << " " 
+                          << fluidCenter.dot(Yp) << " " 
+                          << fluidCenter.dot(Zp) << std::endl;
+    fluidCenterOfMassFile.close();
+
+}
+
 void IO2::exportFluidMass(LB2& lb) {
 
     const Node2& nodes = lb.getNodes();
