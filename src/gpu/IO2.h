@@ -33,7 +33,8 @@ class IO2 : public IO {
 
     void exportMaxSpeedFluid(LB2& lb);
     void exportFreeSurfaceExtent(LB2& lb);
-    //void exportParticleFlowRate(DEM& dem);
+    void exportFluidFlowRate(LB2& lb);
+
 };
 
 #endif /* IO_H */
