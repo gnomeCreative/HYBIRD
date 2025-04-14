@@ -38,6 +38,8 @@ class IO2 : public IO {
     void exportFluidMass(LB2& lb);
     void exportFluidCenterOfMass(LB2& lb);
 
+    void exportPlasticity(LB2& lb);
+
 };
 
 #endif /* IO_H */

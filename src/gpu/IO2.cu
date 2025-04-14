@@ -65,17 +65,17 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
             exportFluidFlowRate(lb);
             exportFluidMass(lb);
             exportFluidCenterOfMass(lb);
-            //switch (PARAMS.fluidMaterial.rheologyModel) {
-            //    case BINGHAM:
-            //    case FRICTIONAL:
-            //    case VOELLMY:
-            //    {
-            //        exportPlasticity(lb);
-            //        break;
-            //    }
+            switch (PARAMS.fluidMaterial.rheologyModel) {
+                case BINGHAM:
+                case FRICTIONAL:
+                case VOELLMY:
+                {
+                    exportPlasticity(lb);
+                    break;
+                }
             //}
     //        exportMeanViscosity(lb);
-    //    }
+        }
 
         if (dem.elmts.size()) {
             exportParticleFlowRate(dem);
@@ -2052,18 +2052,34 @@ void IO2::exportFluidMass(LB2& lb) {
     fluidMassFile << realTime << " " << massTot * PARAMS.unit.Mass << std::endl;
     fluidMassFile.close();
 }
-//
-//void IO2::exportPlasticity(const LB2& lb) {
-    //// fluid plasticity state
-    //const double percPlastic = totPlastic(lb);
-    //cout << "Plastic =" << int(percPlastic) << "% ";
-    //exportFile << "Plastic =" << int(percPlastic) << "% ";
-    //// printing plasticity level
-    //plasticityFile.open(plasticityFileName.c_str(), ios::app);
-    //plasticityFile << realTime << " " << percPlastic << "\n";
-    //plasticityFile.close();
 
-//}
+void IO2::exportPlasticity(LB2& lb) {
+    const Node2& nodes = lb.getNodes();
+
+    // prints the total mass in the free fluid domain
+    unsigned int totPlastic = 0;
+    unsigned int totActive = 0;
+
+    for (unsigned int it = 0; it < nodes.activeCount; ++it) {
+        const unsigned int index = nodes.activeI[it];
+        ++totActive;
+        
+        if (nodes.visc[index] > 0.95 * PARAMS.maxVisc) {
+            ++totPlastic;
+        }
+    }
+    const double percPlastic = 100.0 * double(totPlastic) / double(totActive);
+
+
+    // fluid plasticity state
+    cout << "Plastic =" << int(percPlastic) << "% ";
+    exportFile << "Plastic =" << int(percPlastic) << "% ";
+    // printing plasticity level
+    plasticityFile.open(plasticityFileName.c_str(), ios::app);
+    plasticityFile << realTime << " " << percPlastic << std::endl;
+    plasticityFile.close();
+
+}
 //
 //void IO2::exportMeanViscosity(const LB2& lb) {
 //    // fluid plasticity state
