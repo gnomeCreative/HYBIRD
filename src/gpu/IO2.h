@@ -39,6 +39,7 @@ class IO2 : public IO {
     void exportFluidCenterOfMass(LB2& lb);
 
     void exportPlasticity(LB2& lb);
+    void exportMeanViscosity(LB2& lb);
 
 };
 

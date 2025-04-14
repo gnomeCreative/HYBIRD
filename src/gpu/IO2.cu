@@ -54,7 +54,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //            //                cout << "t_ri=" << deltaRemoveIsolated << " ";
     //            //                cout << "t_rm=" << deltaRedistributeMass << " ";
     //            //                cout << "n_fs=" << lb.interfaceNodes.size() << " ";
-            }
+            //}
             //if (demSolver) {
             //    const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
             //    cout << "t_c=" << deltaCoupling << " ";
@@ -73,8 +73,8 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
                     exportPlasticity(lb);
                     break;
                 }
-            //}
-    //        exportMeanViscosity(lb);
+            }
+            exportMeanViscosity(lb);
         }
 
         if (dem.elmts.size()) {
@@ -2080,13 +2080,30 @@ void IO2::exportPlasticity(LB2& lb) {
     plasticityFile.close();
 
 }
-//
-//void IO2::exportMeanViscosity(const LB2& lb) {
-//    // fluid plasticity state
-//    const double meanVisc = meanViscosity(lb);
-//    cout << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
-//    exportFile << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
-//}
+
+void IO2::exportMeanViscosity(LB2& lb) {
+
+    const Node2& nodes = lb.getNodes();
+
+    // prints the total mass in the free fluid domain
+    double meanVisc = 0.0;
+    unsigned int counter = 0;
+
+    if (lbmSolver) {
+        for (unsigned int it=0; it < nodes.activeCount; ++it) {
+            const unsigned int index = nodes.activeI[it];
+
+            ++counter;
+            meanVisc += nodes.visc[index];
+        }
+        meanVisc = meanVisc / double(counter);
+    }
+
+
+    // fluid plasticity state
+    cout << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
+    exportFile << "MeanVisc =" << std::scientific << std::setprecision(2) << meanVisc * PARAMS.unit.DynVisc << " ";
+}
 //
 //void IO2::exportShearCell(const LB2& lb, const DEM& dem) {
 //    // apparent viscosity from shear cell
