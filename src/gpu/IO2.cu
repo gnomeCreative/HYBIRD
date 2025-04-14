@@ -55,13 +55,13 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //            //                cout << "t_rm=" << deltaRedistributeMass << " ";
     //            //                cout << "n_fs=" << lb.interfaceNodes.size() << " ";
             }
-            if (demSolver) {
-                const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
-                cout << "t_c=" << deltaCoupling << " ";
-            }
+            //if (demSolver) {
+            //    const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
+            //    cout << "t_c=" << deltaCoupling << " ";
+            //}
 
             exportMaxSpeedFluid(lb);
-    //        exportFreeSurfaceExtent(lb);
+            exportFreeSurfaceExtent(lb);
     //        exportFluidFlowRate(lb);
     //        exportFluidMass(lb);
     //        exportFluidCenterOfMass(lb);
@@ -1886,83 +1886,87 @@ void IO2::exportMaxSpeedFluid(LB2& lb) {
     maxFluidSpeedFile.close();
 }
 //
-//void IO2::exportFreeSurfaceExtent(const LB2& lb) {
-//
-//    // fluid max velocity
-//    unsigned int maxX = 0;
-//    unsigned int maxX_Y = 0;
-//    unsigned int maxX_Z = 0;
-//    unsigned int minX = UINT_MAX;
-//    unsigned int minX_Y = 0;
-//    unsigned int minX_Z = 0;
-//    //
-//    unsigned int maxY = 0;
-//    unsigned int maxY_Z = 0;
-//    unsigned int maxY_X = 0;
-//    unsigned int minY = UINT_MAX;
-//    unsigned int minY_Z = 0;
-//    unsigned int minY_X = 0;
-//    //
-//    unsigned int maxZ = 0;
-//    unsigned int maxZ_X = 0;
-//    unsigned int maxZ_Y = 0;
-//    unsigned int minZ = UINT_MAX;
-//    unsigned int minZ_X = 0;
-//    unsigned int minZ_Y = 0;
-//    for (nodeList::const_iterator it = lb.interfaceNodes.begin(); it != lb.interfaceNodes.end(); ++it) {
-//        const node* nodeHere = *it;
-//        const unsigned int index = nodeHere->coord;
-//        
-//        const double xHere = lb.getPositionX(index);
-//        const double yHere = lb.getPositionY(index);
-//        const double zHere = lb.getPositionZ(index);
-//
-//        // max
-//        if(xHere>maxX) {
-//            maxX=xHere;
-//            maxX_Y=yHere;
-//            maxX_Z=zHere;
-//        }
-//        if(yHere>maxY) {
-//            maxY=yHere;
-//            maxY_Z=zHere;
-//            maxY_X=xHere;
-//        }
-//        if(zHere>maxZ) {
-//            maxZ=zHere;
-//            maxZ_X=xHere;
-//            maxZ_Y=yHere;
-//        }
-//        
-//        //min
-//        if(xHere<minX) {
-//            minX=xHere;
-//            minX_Y=yHere;
-//            minX_Z=zHere;
-//        }
-//        if(yHere<minY) {
-//            minY=yHere;
-//            minY_Z=zHere;
-//            minY_X=xHere;
-//        }
-//        if(zHere<minZ) {
-//            minZ=zHere;
-//            minZ_X=xHere;
-//            minZ_Y=yHere;
-//        }
-//                
-//    }
-//
-//    // printing max speed
-//    freeSurfaceExtentFile.open(freeSurfaceExtentFileName.c_str(), ios::app);
-//    freeSurfaceExtentFile << realTime << " " << maxX * PARAMS.unit.Length << " " << maxX_Y * PARAMS.unit.Length << " " << maxX_Z * PARAMS.unit.Length
-//                                      << " " << minX * PARAMS.unit.Length << " " << minX_Y * PARAMS.unit.Length << " " << minX_Z * PARAMS.unit.Length
-//                                      << " " << maxY * PARAMS.unit.Length << " " << maxY_Z * PARAMS.unit.Length << " " << maxY_X * PARAMS.unit.Length
-//                                      << " " << minY * PARAMS.unit.Length << " " << minY_Z * PARAMS.unit.Length << " " << minY_X * PARAMS.unit.Length
-//                                      << " " << maxZ * PARAMS.unit.Length << " " << maxZ_X * PARAMS.unit.Length << " " << maxZ_Y * PARAMS.unit.Length
-//                                      << " " << minZ * PARAMS.unit.Length << " " << minZ_X * PARAMS.unit.Length << " " << minZ_Y * PARAMS.unit.Length<< "\n";
-//    freeSurfaceExtentFile.close();
-//}
+void IO2::exportFreeSurfaceExtent(LB2& lb) {
+
+    // fluid max velocity
+    unsigned int maxX = 0;
+    unsigned int maxX_Y = 0;
+    unsigned int maxX_Z = 0;
+    unsigned int minX = UINT_MAX;
+    unsigned int minX_Y = 0;
+    unsigned int minX_Z = 0;
+    //
+    unsigned int maxY = 0;
+    unsigned int maxY_Z = 0;
+    unsigned int maxY_X = 0;
+    unsigned int minY = UINT_MAX;
+    unsigned int minY_Z = 0;
+    unsigned int minY_X = 0;
+    //
+    unsigned int maxZ = 0;
+    unsigned int maxZ_X = 0;
+    unsigned int maxZ_Y = 0;
+    unsigned int minZ = UINT_MAX;
+    unsigned int minZ_X = 0;
+    unsigned int minZ_Y = 0;
+
+    // cointaners of the nodes
+    const Node2& nodes = lb.getNodes();
+
+    for (unsigned int it = 0; it < nodes.interfaceCount; ++it) {
+
+        const unsigned int index = nodes.interfaceI[it];
+
+        const double xHere = nodes.getPosition(index).x;
+        const double yHere = nodes.getPosition(index).y;
+        const double zHere = nodes.getPosition(index).z;
+
+        // max
+        if(xHere>maxX) {
+            maxX=xHere;
+            maxX_Y=yHere;
+            maxX_Z=zHere;
+        }
+        if(yHere>maxY) {
+            maxY=yHere;
+            maxY_Z=zHere;
+            maxY_X=xHere;
+        }
+        if(zHere>maxZ) {
+            maxZ=zHere;
+            maxZ_X=xHere;
+            maxZ_Y=yHere;
+        }
+        
+        //min
+        if(xHere<minX) {
+            minX=xHere;
+            minX_Y=yHere;
+            minX_Z=zHere;
+        }
+        if(yHere<minY) {
+            minY=yHere;
+            minY_Z=zHere;
+            minY_X=xHere;
+        }
+        if(zHere<minZ) {
+            minZ=zHere;
+            minZ_X=xHere;
+            minZ_Y=yHere;
+        }
+                
+    }
+
+    // printing max speed
+    freeSurfaceExtentFile.open(freeSurfaceExtentFileName.c_str(), ios::app);
+    freeSurfaceExtentFile << realTime << " " << maxX * PARAMS.unit.Length << " " << maxX_Y * PARAMS.unit.Length << " " << maxX_Z * PARAMS.unit.Length
+                                      << " " << minX * PARAMS.unit.Length << " " << minX_Y * PARAMS.unit.Length << " " << minX_Z * PARAMS.unit.Length
+                                      << " " << maxY * PARAMS.unit.Length << " " << maxY_Z * PARAMS.unit.Length << " " << maxY_X * PARAMS.unit.Length
+                                      << " " << minY * PARAMS.unit.Length << " " << minY_Z * PARAMS.unit.Length << " " << minY_X * PARAMS.unit.Length
+                                      << " " << maxZ * PARAMS.unit.Length << " " << maxZ_X * PARAMS.unit.Length << " " << maxZ_Y * PARAMS.unit.Length
+                                      << " " << minZ * PARAMS.unit.Length << " " << minZ_X * PARAMS.unit.Length << " " << minZ_Y * PARAMS.unit.Length<< "\n";
+    freeSurfaceExtentFile.close();
+}
 //
 //void IO2::exportFluidFlowRate(const LB2& lb) {
 //    // fluid flow rate
