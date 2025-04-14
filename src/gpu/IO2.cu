@@ -63,7 +63,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
             exportMaxSpeedFluid(lb);
             exportFreeSurfaceExtent(lb);
             exportFluidFlowRate(lb);
-    //        exportFluidMass(lb);
+            exportFluidMass(lb);
     //        exportFluidCenterOfMass(lb);
             //switch (PARAMS.fluidMaterial.rheologyModel) {
             //    case BINGHAM:
@@ -2003,17 +2003,30 @@ void IO2::exportFluidFlowRate(LB2& lb) {
 //
 //}
 //
-//void IO2::exportFluidMass(const LB2& lb) {
-//    // total fluid mass
-//    double massTot = totFluidMass(lb);
-//    cout << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
-//    exportFile << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
-//
-//    // printing fluid mass
-//    fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
-//    fluidMassFile << realTime << " " << massTot * PARAMS.unit.Mass << "\n";
-//    fluidMassFile.close();
-//}
+void IO2::exportFluidMass(LB2& lb) {
+
+    const Node2& nodes = lb.getNodes();
+
+    // total fluid mass
+    double massTot = 0.0;
+    for (unsigned int it = 0; it < nodes.activeCount; ++it) {
+        const unsigned int index = nodes.activeI[it];
+        if (!nodes.p[index]) { // not inside a particle
+            massTot += nodes.mass[index];
+        }
+    }
+
+    std::cout << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume 
+              << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
+
+    exportFile << "Volume=" << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Volume 
+               << "; Mass = " << std::scientific << std::setprecision(2) << massTot * PARAMS.unit.Mass << " ";
+
+    // printing fluid mass
+    fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
+    fluidMassFile << realTime << " " << massTot * PARAMS.unit.Mass << std::endl;
+    fluidMassFile.close();
+}
 //
 //void IO2::exportPlasticity(const LB2& lb) {
     //// fluid plasticity state
