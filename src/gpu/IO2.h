@@ -36,6 +36,7 @@ class IO2 : public IO {
     void exportFreeSurfaceExtent(LB2& lb);
     void exportFluidFlowRate(LB2& lb);
     void exportFluidMass(LB2& lb);
+    void exportFluidCenterOfMass(LB2& lb);
 
 };
 
