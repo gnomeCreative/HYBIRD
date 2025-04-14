@@ -62,7 +62,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
             exportMaxSpeedFluid(lb);
             exportFreeSurfaceExtent(lb);
-    //        exportFluidFlowRate(lb);
+            exportFluidFlowRate(lb);
     //        exportFluidMass(lb);
     //        exportFluidCenterOfMass(lb);
             //switch (PARAMS.fluidMaterial.rheologyModel) {
@@ -1967,26 +1967,29 @@ void IO2::exportFreeSurfaceExtent(LB2& lb) {
                                       << " " << minZ * PARAMS.unit.Length << " " << minZ_X * PARAMS.unit.Length << " " << minZ_Y * PARAMS.unit.Length<< "\n";
     freeSurfaceExtentFile.close();
 }
-//
-//void IO2::exportFluidFlowRate(const LB2& lb) {
-//    // fluid flow rate
-//    tVect flowRate(0.0, 0.0, 0.0);
-//    for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-//        const node* nodeHere = *it;
-//        if (!nodeHere->isInsideParticle()) {
-//            flowRate += nodeHere->u * nodeHere->mass;
-//        }
-//    }
-//
-//    const double flowRateX = flowRate.dot(Xp) / double(PARAMS.lbSize[0] - 2);
-//    const double flowRateY = flowRate.dot(Yp) / double(PARAMS.lbSize[1] - 2);
-//    const double flowRateZ = flowRate.dot(Zp) / double(PARAMS.lbSize[2] - 2);
-//
-//    // printing rate
-//    fluidFlowRateFile.open(fluidFlowRateFileName.c_str(), ios::app);
-//    fluidFlowRateFile << realTime << " " << flowRateX * PARAMS.unit.FlowRate << " " << flowRateY * PARAMS.unit.FlowRate << " " << flowRateZ * PARAMS.unit.FlowRate << "\n";
-//    fluidFlowRateFile.close();
-//}
+
+void IO2::exportFluidFlowRate(LB2& lb) {
+
+    const Node2& nodes = lb.getNodes();
+
+    // fluid flow rate
+    tVect flowRate(0.0, 0.0, 0.0);
+    for (unsigned int it = 0; it < nodes.activeCount; ++it) {
+        const unsigned int index = nodes.activeI[it];
+        if (!nodes.p[index]) { // if not inside a particle
+            flowRate += nodes.u[index] * nodes.mass[index];
+        }
+    }
+
+    const double flowRateX = flowRate.dot(Xp) / double(PARAMS.lbSize[0] - 2);
+    const double flowRateY = flowRate.dot(Yp) / double(PARAMS.lbSize[1] - 2);
+    const double flowRateZ = flowRate.dot(Zp) / double(PARAMS.lbSize[2] - 2);
+
+    // printing rate
+    fluidFlowRateFile.open(fluidFlowRateFileName.c_str(), ios::app);
+    fluidFlowRateFile << realTime << " " << flowRateX * PARAMS.unit.FlowRate << " " << flowRateY * PARAMS.unit.FlowRate << " " << flowRateZ * PARAMS.unit.FlowRate << "\n";
+    fluidFlowRateFile.close();
+}
 //
 //void IO2::exportFluidCenterOfMass(const LB2& lb) {
 //
