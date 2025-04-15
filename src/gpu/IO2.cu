@@ -100,9 +100,9 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
             lb.updateEnergy(totalKineticEnergy);
         }
         exportEnergy(dem, lb);
-        //if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
-        //    energyExit = true;
-        //}
+        if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
+            energyExit = true;
+        }
         if (dem.objects.size()) {
             exportForceObstacle(dem.objects);
         }
