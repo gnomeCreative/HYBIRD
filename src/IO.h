@@ -68,6 +68,8 @@ public:
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
     unsIntList singleObjects;
+    // file for storing indices of single elements to export
+    unsIntList singleElements;
     // FOR HK_SMALL AND HK_LARGE
     // file for storing beginning and end of observation windows
     doubleList flowLevelBegin, flowLevelEnd;
@@ -166,6 +168,10 @@ protected:
     // single-object data file
     string singleObjectDirectory;
     void exportSingleObjects(const objectList& objects);
+
+    // single-elements data file
+    string singleElementDirectory;
+    void exportSingleElements(const elmtList& elmts);
     
     // max speed files
     string maxFluidSpeedFileName, maxParticleSpeedFileName;
