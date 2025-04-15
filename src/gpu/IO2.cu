@@ -171,9 +171,9 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
     //    }
 
-        //if (singleObjects.size() > 0) {
-        //    exportSingleObjects(dem.objects);
-        //}
+        if (singleObjects.size() > 0) {
+            exportSingleObjects(dem.objects);
+        }
 
         if (objectGroupBegin.size() > 0) {
             exportGroupForce(dem.objects);
