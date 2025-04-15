@@ -27,6 +27,10 @@ class LB2 {
     };
     public:
 
+        const energy& getFluidEnergy() const { return fluidEnergy; }
+        const energy& getFluidImmersedEnergy() const { return fluidImmersedEnergy; }
+
+
     // @todo how do we init params from config?
     LB2() = default;
 
