@@ -2927,3 +2927,80 @@ void LB2::syncParams() {
     CUDA_CALL(cudaMemcpyToSymbol(d_PARAMS, &h_PARAMS, sizeof(LBParams)));
 #endif
 }
+
+void LB2::updateEnergy(double& totalKineticEnergy) {
+    // Resetting energy
+    fluidEnergy.reset();
+    fluidImmersedEnergy.reset();
+
+    // Extract node data
+    const Node2& nodes = getNodes();
+
+    double tKin = 0.0, tpKin = 0.0;
+    double mass = 0.0, massp = 0.0;
+
+    // Loop over all nodes
+    for (unsigned int index = 0; index < nodes.activeCount; ++index) {
+        if (!nodes.isInsideParticle(index)) continue;
+
+        const double m = nodes.mass[index];
+        const double vel2 = nodes.u[index].norm2();
+
+        if (nodes.isInsideParticle(index)) {
+            tpKin += 0.5 * m * vel2;
+            massp += m;
+        }
+        else {
+            tKin += 0.5 * m * vel2;
+            mass += m;
+        }
+    }
+
+
+    fluidEnergy.rotKin = 0.0;
+    fluidEnergy.trKin = tKin;
+    fluidEnergy.mass = mass;
+
+    fluidImmersedEnergy.rotKin = 0.0;
+    fluidImmersedEnergy.trKin = tpKin;
+    fluidImmersedEnergy.mass = massp;
+
+    // Compute gravitational potential energy
+    wall zeroWall;
+    double g = 0.0, gp = 0.0;
+    const double gravityNorm = PARAMS.lbF.norm();
+
+    if (gravityNorm != 0.0) {
+        zeroWall.n = -1.0 * PARAMS.lbF / gravityNorm;
+        zeroWall.p = tVect(0.0, 0.0, 0.0);
+
+        if (zeroWall.n.dot(Xp) < 0) zeroWall.p += tVect(double(PARAMS.lbSize[0]), 0.0, 0.0);
+        if (zeroWall.n.dot(Yp) < 0) zeroWall.p += tVect(0.0, double(PARAMS.lbSize[1]), 0.0);
+        if (zeroWall.n.dot(Zp) < 0) zeroWall.p += tVect(0.0, 0.0, double(PARAMS.lbSize[2]));
+
+        for (int index = 0; index < nodes.activeCount; ++index) {
+            if (!nodes.isActive(index)) continue;
+
+            const double m = nodes.mass[index];
+            const tVect pos = tVect(nodes.getPosition(index).x, nodes.getPosition(index).y, nodes.getPosition(index).z);
+            const double h = zeroWall.dist(pos);
+
+            if (nodes.isInsideParticle(index)) {
+                gp += m * h * gravityNorm;
+            }
+            else {
+                g += m * h * gravityNorm;
+            }
+        }
+    }
+
+    fluidEnergy.grav = g;
+    fluidImmersedEnergy.grav = gp;
+
+    // Total energy
+    fluidEnergy.updateTotal();
+    fluidImmersedEnergy.updateTotal();
+
+    totalKineticEnergy += fluidEnergy.trKin + fluidImmersedEnergy.trKin;
+
+}

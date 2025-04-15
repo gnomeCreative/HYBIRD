@@ -96,13 +96,13 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
         if (dem.elmts.size()) {
             dem.updateEnergy(totalKineticEnergy);
         }
-        //if (lbmSolver) {
-        //    lb.updateEnergy(totalKineticEnergy);
+        if (lbmSolver) {
+            lb.updateEnergy(totalKineticEnergy);
+        }
+        //exportEnergy(dem, lb);
+        //if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
+        //    energyExit = true;
         //}
-    //    exportEnergy(dem, lb);
-    //    if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
-    //        energyExit = true;
-    //    }
         if (dem.objects.size()) {
             exportForceObstacle(dem.objects);
         }
