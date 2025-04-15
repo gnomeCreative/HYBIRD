@@ -99,7 +99,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
         if (lbmSolver) {
             lb.updateEnergy(totalKineticEnergy);
         }
-        //exportEnergy(dem, lb);
+        exportEnergy(dem, lb);
         //if (totalKineticEnergy < energyStopThreshold && PARAMS.time > minimumIterations) {
         //    energyExit = true;
         //}
@@ -2119,38 +2119,48 @@ void IO2::exportMeanViscosity(LB2& lb) {
 //    cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
 //}
 //
-//void IO2::exportEnergy(const DEM& dem, const LB2& lb) {
-//
-//    if (dem.elmts.size()) {
-//        cout << "Energy (DEM): ";
-//        exportFile << "Energy (DEM): ";
-//        cout << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
-//        exportFile << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
-//        cout << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
-//        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
-//        cout << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
-//        exportFile << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
-//    }
-//    if (lbmSolver) {
-//        cout << "Energy (LBM): ";
-//        cout << "eKin = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.kin + lb.fluidImmersedEnergy.kin << " ";
-//        exportFile << "eKin = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.kin + lb.fluidImmersedEnergy.kin << " ";
-//        cout << "eGrav = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.grav + lb.fluidImmersedEnergy.grav << " ";
-//        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.grav + lb.fluidImmersedEnergy.grav << " ";
-//        cout << "eTot = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.total + lb.fluidImmersedEnergy.total << " ";
-//        exportFile << "eTot = " << std::scientific << std::setprecision(2) << lb.fluidEnergy.total + lb.fluidImmersedEnergy.total << " ";
-//    }
-//
-//    ofstream energyFile;
-//    energyFile.open(energyFileName.c_str(), ios::app);
-//    // Set energyFile header
-//    energyFile << std::scientific << std::setprecision(6) << realTime << " ";
-//    energyFile << std::scientific << std::setprecision(10) << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
-//    energyFile << std::scientific << std::setprecision(10) << lb.fluidEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidEnergy.grav * PARAMS.unit.Energy << " ";
-//    energyFile << std::scientific << std::setprecision(10) << lb.fluidImmersedEnergy.mass * PARAMS.unit.Mass << " " << lb.fluidImmersedEnergy.trKin * PARAMS.unit.Energy << " " << lb.fluidImmersedEnergy.grav * PARAMS.unit.Energy << endl;
-//    energyFile.close();
-//
-//}
+void IO2::exportEnergy(DEM& dem, LB2& lb) {
+
+    if (dem.elmts.size()) {
+        cout << "Energy (DEM): ";
+        exportFile << "Energy (DEM): ";
+        cout << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
+        exportFile << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
+        cout << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
+        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
+        cout << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
+        exportFile << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
+    }
+    if (lbmSolver) {
+        const energy& fluidE = lb.getFluidEnergy();
+        const energy& fluidImmersedE = lb.getFluidImmersedEnergy();
+
+        cout << "Energy (LBM): ";
+        cout << "eKin = " << std::scientific << std::setprecision(2) << fluidE.kin + fluidImmersedE.kin << " ";
+        exportFile << "eKin = " << std::scientific << std::setprecision(2) << fluidE.kin + fluidImmersedE.kin << " ";
+        cout << "eGrav = " << std::scientific << std::setprecision(2) << fluidE.grav + fluidImmersedE.grav << " ";
+        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << fluidE.grav + fluidImmersedE.grav << " ";
+        cout << "eTot = " << std::scientific << std::setprecision(2) << fluidE.total + fluidImmersedE.total << " ";
+        exportFile << "eTot = " << std::scientific << std::setprecision(2) << fluidE.total + fluidImmersedE.total << " ";
+    }
+
+    ofstream energyFile;
+    energyFile.open(energyFileName.c_str(), ios::app);
+
+    const energy& fluidE = lb.getFluidEnergy();
+    const energy& fluidImmersedE = lb.getFluidImmersedEnergy();
+
+    energyFile << std::scientific << std::setprecision(6) << realTime << " ";
+    energyFile << std::scientific << std::setprecision(10)
+        << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
+    energyFile << std::scientific << std::setprecision(10)
+        << fluidE.mass * PARAMS.unit.Mass << " " << fluidE.trKin * PARAMS.unit.Energy << " " << fluidE.grav * PARAMS.unit.Energy << " ";
+    energyFile << std::scientific << std::setprecision(10)
+        << fluidImmersedE.mass * PARAMS.unit.Mass << " " << fluidImmersedE.trKin * PARAMS.unit.Energy << " " << fluidImmersedE.grav * PARAMS.unit.Energy << endl;
+
+    energyFile.close();
+
+}
 //
 //// data elaboration
 //
