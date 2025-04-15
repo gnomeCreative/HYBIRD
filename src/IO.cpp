@@ -363,6 +363,10 @@ void IO::outputStep(LB& lb, DEM& dem) {
             exportSingleObjects(dem.objects);
         }
 
+        if (singleElements.size() > 0) {
+            exportSingleElements(dem.elmts);
+        }
+
         if (objectGroupBegin.size() > 0) {
             exportGroupForce(dem.objects);
         }
@@ -656,6 +660,54 @@ void IO::exportSingleObjects(const objectList& objects) {
         }
     }
 
+
+}
+
+void IO::exportSingleElements(const elmtList& elmts) {
+    // export specific element from the particle.dat file
+
+    for (int i = 0; i < singleElements.size(); i++) {
+        // cycle through all the elemnts to be tracked
+        const unsigned int indexHere = singleElements[i];
+        // get the position of the tracked element
+        const double xNow = elmts[indexHere].x0.x;
+        const double yNow = elmts[indexHere].x0.y;
+        const double zNow = elmts[indexHere].x0.z;
+        // get the forces (particle and hydro) of the tracked element
+        const tVect forceHydro = elmts[indexHere].FHydro;
+        const tVect forcePart = elmts[indexHere].FParticle;
+        double FParticleX = forcePart.dot(Xp);
+        double FParticleY = forcePart.dot(Yp);
+        double FParticleZ = forcePart.dot(Zp);
+        double FHydroX = forceHydro.dot(Xp);
+        double FHydroY = forceHydro.dot(Yp);
+        double FHydroZ = forceHydro.dot(Zp);
+
+        // write the results in a .dat file
+        string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + ".dat";
+        ofstream singleElementFile;
+        singleElementFile.open(singleObjectFileName.c_str(), ios::app);
+        singleElementFile << std::scientific << std::setprecision(6); // Set scientific format and precision
+
+        if (realTime <= 1e-10) {
+            singleElementFile <<
+                "realTime" << " " << "x" << " " << "y" << " " << "z" << " " <<
+                "FParticleX" << " " << "FParticleY" << " " << "FParticleZ" << " " <<
+                "FHydroX" << " " << "FHydroY" << " " << "FHydroZ" << "\n" <<
+                realTime << " " <<
+                xNow << " " << yNow << " " << zNow << " " <<
+                FParticleX << " " << FParticleY << " " << FParticleZ << " " <<
+                FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
+        }
+        else {
+            singleElementFile <<
+                realTime << " " <<
+                xNow << " " << yNow << " " << zNow << " " <<
+                FParticleX << " " << FParticleY << " " << FParticleZ << " " <<
+                FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
+            singleElementFile.close();
+        }
+    }
 
 }
 
