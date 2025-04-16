@@ -268,8 +268,10 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     ASSERT(io.objectExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.cylinderExpTime, "cylinderExpTime", 0.0);
     ASSERT(io.cylinderExpTime >= 0);
+
     // single objects
     unsigned int totSingleObjects = configFile.vector_variable_size("singleObjects");
+    std::cout << totSingleObjects;
     if (commandLine.vector_variable_size("-singleObjects") > 0)
         totSingleObjects = commandLine.vector_variable_size("-singleObjects");
     cout << "Single objects (" << totSingleObjects << "): ";
@@ -282,6 +284,10 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     }
     cout << endl;
     ASSERT(io.singleObjects.size() == totSingleObjects);
+    std::cout << io.singleObjects.size() << std::endl;
+    for (int index = 0; index < totSingleObjects; index++) {
+        std::cout << io.singleObjects[index] << std::endl;
+    }
 
     //tracking elements
     unsigned int totSingleElements = configFile.vector_variable_size("singleElements");
@@ -297,6 +303,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     }
     cout << endl;
     ASSERT(io.singleElements.size() == totSingleElements);
+    std::cout << io.singleElements.size() << std::endl;
 
 
     // flow level sensors
