@@ -1875,7 +1875,7 @@ void IO2::exportMaxSpeedFluid(LB2& lb) {
     // fluid max velocity
     double maxFluidSpeed = 0.0;
 
-    const Node2 nodes = lb.getNodes();
+    const Node2& nodes = lb.getNodes();
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         maxFluidSpeed = std::max(maxFluidSpeed, nodes.u[nodes.activeI[i]].norm2());        
     }
