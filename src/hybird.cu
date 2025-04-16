@@ -283,6 +283,21 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     cout << endl;
     ASSERT(io.singleObjects.size() == totSingleObjects);
 
+    //tracking elements
+    unsigned int totSingleElements = configFile.vector_variable_size("singleElements");
+    if (commandLine.vector_variable_size("-singleElements") > 0)
+        totSingleElements = commandLine.vector_variable_size("-singleElements");
+    cout << "Single elements (" << totSingleElements << "): ";
+    for (int index = 0; index < totSingleElements; index++) {
+        int singleElementHere = 0;
+        PARSE_CLASS_MEMBER_VEC(configFile, singleElementHere, "singleElements", index, 0);
+        ASSERT(singleElementHere >= 0);
+        cout << singleElementHere << " ";
+        io.singleElements.push_back(singleElementHere);
+    }
+    cout << endl;
+    ASSERT(io.singleElements.size() == totSingleElements);
+
 
     // flow level sensors
     unsigned int totFlowLevelBegin = configFile.vector_variable_size("flowLevelSensorBegin");
