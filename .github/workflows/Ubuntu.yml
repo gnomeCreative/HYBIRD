@@ -45,8 +45,8 @@ jobs:
           - compiler: gcc-11
             os: ubuntu-22.04
             cuda: "12.0"
-          - compiler: gcc-8
-            os: ubuntu-20.04
+          - compiler: gcc-9
+            os: ubuntu-22.04
             cuda: "12.0"
         config:
           - name: "Release"
@@ -70,11 +70,11 @@ jobs:
             config:
               name: "OpenMP-OFF"
           - cxx:
-              compiler: gcc-8
+              compiler: gcc-9
             config:
               name: "Debug"
           - cxx:
-              compiler: gcc-8
+              compiler: gcc-9
             config:
               name: "OpenMP-OFF"
 
