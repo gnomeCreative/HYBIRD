@@ -172,10 +172,14 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //    }
 
         if (singleObjects.size() > 0) {
+            std::cout << endl;
+            std::cout << "in the singleObjects" << std::endl;
             exportSingleObjects(dem.objects);
         }
 
         if (singleElements.size() > 0) {
+            std::cout << endl;
+            std::cout << "in the singleElements" << std::endl;
             exportSingleElements(dem.elmts);
         }
 
@@ -1875,7 +1879,7 @@ void IO2::exportMaxSpeedFluid(LB2& lb) {
     // fluid max velocity
     double maxFluidSpeed = 0.0;
 
-    const Node2& nodes = lb.getNodes();
+    const Node2 nodes = lb.getNodes();
     for (unsigned int i = 0; i < nodes.activeCount; ++i) {
         maxFluidSpeed = std::max(maxFluidSpeed, nodes.u[nodes.activeI[i]].norm2());        
     }
