@@ -866,7 +866,7 @@ GetPot::_read_in_stream(std::istream& istr)
     // copy the "foo" part of "R(foo)" into the regular expression field
     // you can then copy an input file into the test string field
     const std::regex section_pattern(R"(^[\[]([\w]+)[\]][^\n]*)");
-    const std::regex keyval_pattern(R"(^([\w]+)[\s]*=[\s]*([^\s#]+)[^\n]*)");
+    const std::regex keyval_pattern(R"(^([\w]+)[\s]*=[\s]*([^#]+)[\s]*[^\n]*)");
 
     std::string current_section; // inits to empty string
 
@@ -880,11 +880,22 @@ GetPot::_read_in_stream(std::istream& istr)
             }
         } else if (std::regex_match(line, matches, keyval_pattern)) {
             if (matches.size() == 3) {
+                std::string val = matches[2].str();
+                {// Trim white space and/or quotes
+                    const size_t val_start = val.find_first_not_of(" \t");
+                    const size_t val_end = val.find_last_not_of(" \t\r");
+                    if (val_start != std::string::npos) {
+                        val = val.substr(val_start, val_end - val_start + 1);
+                    }
+                    if (val[0] == '\'' && val[val.size()-1] == '\'') {
+                        val = val.substr(1, val.size()-2);
+                    }
+                }
                 // Add "key=val" to arglist
-                arglist.push_back(matches[1].str() + "=" + matches[2].str());
+                arglist.push_back(matches[1].str() + "=" + val);
                 if (!current_section.empty()) {
                     // Add a second "[section]key=val" to arglist
-                    arglist.push_back(current_section + matches[1].str() + "=" + matches[2].str());
+                    arglist.push_back(current_section + matches[1].str() + "=" + val);
                 }
             } else {
                 fprintf(stderr, "Error parsing input file, reading line '%s' as keyval\n", line.c_str());
