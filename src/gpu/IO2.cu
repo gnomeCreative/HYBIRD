@@ -172,14 +172,10 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //    }
 
         if (singleObjects.size() > 0) {
-            std::cout << endl;
-            std::cout << "in the singleObjects" << std::endl;
             exportSingleObjects(dem.objects);
         }
 
         if (singleElements.size() > 0) {
-            std::cout << endl;
-            std::cout << "in the singleElements" << std::endl;
             exportSingleElements(dem.elmts);
         }
 
