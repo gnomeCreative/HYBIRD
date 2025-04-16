@@ -28,6 +28,13 @@ void IO::initialize() {
         cout << "Work directory created = " << singleObjectDirectory << ". Result: " << a << "\n";
     }
 
+    if (singleElements.size() > 0) {
+        // create directory
+        singleElementDirectory = workDirectory + "/singleElementData";
+        int a = filesystem::create_directories(singleElementDirectory);
+        cout << "Work directory created = " << singleElementDirectory << ". Result: " << a << "\n";
+    }
+
     //  initialising energy file
     energyFileName = workDirectory + "/energy.dat";
     //  initializing object force files
