@@ -515,7 +515,7 @@ void DEM::evolveBoundaries() {
 
 void DEM::compositeProperties() {
 
-    vecList prototype1, prototype2, prototype3, prototype4;
+    vecList prototype1, prototype2, prototype3, prototype4, prototype5;
 
 
     // prototypes for shapes
