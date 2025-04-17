@@ -547,7 +547,7 @@ void DEM::compositeProperties() {
     prototype5.resize(5);
     prototype5[0] = tVect(0.0, 0.0, 0.0);
     prototype5[1] = tVect(0.0, 1.0, 0.0);
-    prototype5[2] = tVect(0.00, 2.0, 0.0);
+    prototype5[2] = tVect(0.0, 2.0, 0.0);
     prototype5[3] = tVect(0.0, 3.0, 0.0);
     prototype5[4] = tVect(0.0, 4.0, 0.0);
     prototypes[5] = prototype5;
