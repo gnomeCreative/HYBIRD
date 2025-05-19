@@ -466,6 +466,16 @@ void LB::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
     rotationCenter = tVect(rotationCenterX, rotationCenterY, rotationCenterZ);
     rotationCenter /= unit.Length;
 
+    // tilting of the domain around an hinge (TU Delft titlting table)
+    double tiltingX, tiltingY, tiltingZ;
+    PARSE_CLASS_MEMBER(configFile, tiltingX, "tiltingX", 0.0);
+    PARSE_CLASS_MEMBER(configFile, tiltingY, "tiltingY", 0.0);
+    PARSE_CLASS_MEMBER(configFile, tiltingZ, "tiltingZ", 0.0);
+    ASSERT(tiltingX >= 0.0);
+    ASSERT(tiltingY >= 0.0);
+    ASSERT(tiltingZ >= 0.0);
+
+
 
     boundary.resize(6);
 
