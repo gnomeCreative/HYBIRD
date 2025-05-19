@@ -2152,7 +2152,7 @@ void IO2::exportEnergy(DEM& dem, LB2& lb) {
     energyFile.open(energyFileName.c_str(), ios::app);
 
     const energy& fluidE = lb.getFluidEnergy();
-    const energy& fluidImmersedE = lb.getFluidImmersedEnergy();
+    const energy& fluidImmersedE = lb.getFluidImmersedEnergy();//
 
     energyFile << std::scientific << std::setprecision(6) << realTime << " ";
     energyFile << std::scientific << std::setprecision(10)
