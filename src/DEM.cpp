@@ -215,9 +215,7 @@ void DEM::discreteElementInit(const Problem &problem, const std::array<types, 6>
     // acceleration field
     demF = externalAccel;
 
-    // roation of the reference frame
-    demRotCenter = externalRotationCenter;
-    demRot = externalRotation;
+    
 
     // initializing particles
     const double partDensity = sphereMat.density;
@@ -335,6 +333,17 @@ void DEM::discreteElementInit(const Problem &problem, const std::array<types, 6>
             << ", object-particle friction = " << sphereMat.frictionCoefObj << endl;
     cout << "Rolling coefficient = " << sphereMat.rollingCoefPart << endl;
     cout << "Numerical viscosity =" << numVisc << endl;
+
+    // roation of the reference frame
+    demRotCenter = externalRotationCenter;
+    demRot = externalRotation;
+
+    cout << "Rotation speed (DEM) =";
+    demRot.show();
+    cout << ";" << endl;
+    cout << "Rotation center (DEM) =";
+    demRotCenter.show();
+    cout << ";" << endl;
 
 }
 
