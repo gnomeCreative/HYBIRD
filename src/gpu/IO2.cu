@@ -54,7 +54,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //            //                cout << "t_ri=" << deltaRemoveIsolated << " ";
     //            //                cout << "t_rm=" << deltaRedistributeMass << " ";
     //            //                cout << "n_fs=" << lb.interfaceNodes.size() << " ";
-            }
+    //        }
     //        if (demSolver) {
     //            const double deltaCoupling = std::chrono::duration<double, std::micro>(lb.endCouplingStep - lb.startCouplingStep).count();
     //            cout << "t_c=" << deltaCoupling << " ";
@@ -75,27 +75,27 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
             //    }
             //}
     //        exportMeanViscosity(lb);
-    //    }
+        }
 
-    //    if (dem.elmts.size()) {
-    //        exportParticleFlowRate(dem);
-    //        exportMaxSpeedParticles(dem);
-    //        exportForces(dem);
-    //        exportParticleCenterOfMass(dem);
-    //        exportParticleCoordination(dem);
-    //        exportParticleOverlap(dem);
-    //    }
+        if (dem.elmts.size()) {
+            exportParticleFlowRate(dem);
+            exportMaxSpeedParticles(dem);
+            exportForces(dem);
+            exportParticleCenterOfMass(dem);
+            exportParticleCoordination(dem);
+            exportParticleOverlap(dem);
+        }
 
-    //    if (dem.walls.size() > 0) {
-    //        exportWallForce(dem);
-    //    }
-    //    //
-    //    // update energies
-    //    totalKineticEnergy = 0.0;
-    //    energyExit = false;
-    //    if (dem.elmts.size()) {
-    //        dem.updateEnergy(totalKineticEnergy);
-    //    }
+        if (dem.walls.size() > 0) {
+            exportWallForce(dem);
+        }
+        //
+        // update energies
+        totalKineticEnergy = 0.0;
+        energyExit = false;
+        if (dem.elmts.size()) {
+            dem.updateEnergy(totalKineticEnergy);
+        }
     //    if (lbmSolver) {
     //        lb.updateEnergy(totalKineticEnergy);
     //    }

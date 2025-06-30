@@ -511,7 +511,10 @@ int main(int argc, char** argv) {
 
     // initializing lattice
     lb_p.latticeDefinition();
-    lb_p.LBShow();
+
+    if (io.lbmSolver) {
+        lb_p.LBShow();
+    }
 
     // initializing DEM parameters
     const tVect externalForce = lb_p.lbF * lb_p.unit.Accel;
