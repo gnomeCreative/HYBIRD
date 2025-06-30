@@ -127,10 +127,6 @@ struct LBParams {
     double maxShearRate = 0.0;  // t
     unsigned int viscSteps = 0;  // t
     unsigned int shearRateSteps = 0;  // t
-    // NET, BARRIER: avalanches (net-like)
-    double avalanchePosit = 0.0;  // t
-    // HK_LARGE: Usman
-    double largeFlumeFlowLevel = 0.0;  // t
     // HOURGLASS (mirrors in DEM)
     double hourglassOutletHeight = 0.0;  // t
     // HEAP: continuum heap (mirrors in DEM)

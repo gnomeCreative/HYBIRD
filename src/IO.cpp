@@ -40,11 +40,6 @@ void IO::initialize() {
             hongKongForceFileName = workDirectory + "/hongKongForce.dat";
             break;
         }
-        case HEAP:
-        {
-            heapFileName = workDirectory + "/heapHeight.dat";
-            break;
-        }
         case INCLINEFLOW:
         {
             inclineFlowFileName = workDirectory + "/inclineFlow.dat";
@@ -53,19 +48,6 @@ void IO::initialize() {
         case TRIAXIAL:
         {
             triaxialFileName = workDirectory + "/triaxial.dat";
-            break;
-        }
-        case HK_SMALL:
-        case HK_LARGE:
-        case KELVIN:
-        {
-            frontFileName = workDirectory + "/flowFront.dat";
-            break;
-        }
-        case MANGENEY:
-        {
-            frontFileName = workDirectory + "/flowFront.dat";
-            topFileName = workDirectory + "/flowTop.dat";
             break;
         }
     }
@@ -321,31 +303,11 @@ void IO::outputStep(LB& lb, DEM& dem) {
                 exportInclineFlow(lb);
                 break;
             }
-            case HEAP:
-            {
-                exportHeapHeight(lb);
-                break;
-            }
             case TRIAXIAL:
             {
                 exportTriaxial(dem);
                 break;
             }
-            case MANGENEY:
-            {
-                exportFront(lb);
-                exportTop(lb);
-                break;
-            }
-            case HK_LARGE:
-            case HK_SMALL:
-            case KELVIN:
-            {
-                exportFront(lb);
-                break;
-            }
-
-
         }
 
         if (lbmSolver && fluid2DExpTime > 0) {
@@ -366,11 +328,6 @@ void IO::outputStep(LB& lb, DEM& dem) {
         if (objectGroupBegin.size() > 0) {
             exportGroupForce(dem.objects);
         }
-
-        if (flowLevelBegin.size() > 0) {
-            exportFlowLevel(lb);
-        }
-
 
         // closing file
         cout << endl;
@@ -594,15 +551,6 @@ void IO::create2DFile(const LB& lb, const string& planarFile) {
     double xScaling = -1.0 * lb.translateTopographyX;
     double yScaling = -1.0 * lb.translateTopographyY;
     double zScaling = -1.0 * lb.translateTopographyZ;
-    switch (problemName) {
-        case STAVA:
-        {
-            xScaling = 691859.0;
-            yScaling = 5128805.0;
-            zScaling = 860.0;
-            break;
-        }
-    }
 
     ofstream fluid2DFile;
     fluid2DFile.open(planarFile.c_str());
@@ -657,52 +605,6 @@ void IO::exportSingleObjects(const objectList& objects) {
     }
 
 
-}
-
-void IO::exportFlowLevel(const LB& lb) {
-
-    doubleList volumeCount;
-    volumeCount.resize(flowLevelBegin.size());
-    for (int i = 0; i < flowLevelBegin.size(); i++) {
-        volumeCount[i] = 0.0;
-    }
-
-    if (lbmSolver) {
-        for (nodeList::const_iterator it = lb.activeNodes.begin(); it != lb.activeNodes.end(); ++it) {
-            const node* nodeHere = *it;
-            const double xCoordHere = lb.getPositionX(nodeHere->coord) * lb.unit.Length;
-            for (int i = 0; i < flowLevelBegin.size(); i++) {
-                const double beginHere = flowLevelBegin[i];
-                const double endHere = flowLevelEnd[i];
-                if (xCoordHere <= endHere && xCoordHere >= beginHere) {
-                    //cout<<lb.getPositionX(nodeHere->coord)*lb.unit.Length<<endl;
-                    volumeCount[i] += nodeHere->mass;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < flowLevelBegin.size(); i++) {
-        // compute window length in lattice units (to round to exact window measurement in )
-        const unsigned int latticeBegin = ceil(flowLevelBegin[i] / lb.unit.Length);
-        const unsigned int latticeEnd = floor(flowLevelEnd[i] / lb.unit.Length);
-        const unsigned int latticewindowSpan = latticeEnd - latticeBegin + 1;
-        ASSERT(latticewindowSpan >= 1);
-
-        const double windowSpan = double(latticewindowSpan) * lb.unit.Length;
-
-        const double windowDepth = double(lb.lbSize[2] - 2) * lb.unit.Length;
-
-        const double flowVolume = volumeCount[i] * lb.unit.Volume;
-
-        const double flowLevelHere = flowVolume / (windowDepth * windowSpan);
-
-        string flowLevelFileName = workDirectory + "/flowLevel_" + std::to_string(i) + ".dat";
-        ofstream flowLevelFile;
-        flowLevelFile.open(flowLevelFileName.c_str(), ios::app);
-        flowLevelFile << realTime << " " << flowLevelHere << "\n";
-        flowLevelFile.close();
-    }
 }
 
 void IO::exportGroupForce(const objectList& objects) {
@@ -3190,39 +3092,6 @@ void IO::exportHongKongFlow(DEM& dem) {
     hongKongFlowFile.close();
 
 
-}
-
-void IO::exportFront(const LB& lb) {
-
-    const double flowFront = lb.maxHeight(0) * lb.unit.Length;
-
-    ofstream frontFile;
-    frontFile.open(frontFileName.c_str(), ios::app);
-    //hongKongFlowFile << "time percPlastic\n";
-    frontFile << realTime << " " << flowFront << endl;
-    frontFile.close();
-}
-
-void IO::exportTop(const LB& lb) {
-
-    const double flowTop = lb.maxHeight(1) * lb.unit.Length;
-
-    ofstream topFile;
-    topFile.open(topFileName.c_str(), ios::app);
-    //hongKongFlowFile << "time percPlastic\n";
-    topFile << realTime << " " << flowTop << endl;
-    topFile.close();
-}
-
-void IO::exportHeapHeight(const LB& lb) {
-
-    const double heapHeight = lb.maxHeight(2) * lb.unit.Length;
-
-    ofstream heapFile;
-    heapFile.open(heapFileName.c_str(), ios::app);
-    //hongKongFlowFile << "time percPlastic\n";
-    heapFile << realTime << " " << heapHeight << endl;
-    heapFile.close();
 }
 
 void IO::exportInclineFlow(const LB& lb) {

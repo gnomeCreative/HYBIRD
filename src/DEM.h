@@ -123,18 +123,11 @@ public:
     // stuff for hong kong
     double hongkongSlitSize;
     bool hongkongSmoothWall;
-    // stuff for hourglass
-    double hourglassOutletSize;
-    double hourglassOutletHeight;
-    // stuff for continuum heap
-    double heapBaseLevel;
     // stuff for triaxial tests
     double triIsopressure;
     double triBeginX,triBeginY,triBeginZ;
     double triDefSpeed;
     double pressureX,pressureY,pressureZ;
-     // stuff for Usman
-    bool depositArea;
 public:
 
     DEM() {
@@ -178,8 +171,6 @@ public:
         criticalRatio = 0.1;
         multiStep = 1;
         numVisc = 0.0;
-        // stuff for Usman
-        depositArea=false;
     }
     void discreteElementStep();
     void discreteElementGet(GetPot& config_file, GetPot& command_line);
