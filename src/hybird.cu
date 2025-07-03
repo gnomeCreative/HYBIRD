@@ -185,10 +185,8 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
     PARSE_CLASS_MEMBER(configFile, dem.demInitialRepeat, "demInitialRepeat", 0.0);
-    ASSERT(dem.demInitialRepeat > 0);
     // LB iteration without coupling (for initial stability) - > time is frozen here
     PARSE_CLASS_MEMBER(configFile, lb.lbmInitialRepeat, "lbmInitialRepeat", 0);
-    ASSERT(lb.lbmInitialRepeat > 0);
     // maximum time variable value
     PARSE_CLASS_MEMBER(configFile, io.maxTime, "maxTime", 0.0);
     ASSERT(io.maxTime >= 0);
