@@ -3197,12 +3197,10 @@ void IO::exportHongKongBarrier(DEM& dem) {
     }
 
     // adding wall forces
-    if (dem.hongkongSmoothWall) {
-        forcesPartLeft += dem.walls[6].FParticle;
-        forcesHydroLeft += dem.walls[6].FHydro;
-        forcesPartRight += dem.walls[7].FParticle;
-        forcesHydroRight += dem.walls[7].FHydro;
-    }
+    forcesPartLeft += dem.walls[6].FParticle;
+    forcesHydroLeft += dem.walls[6].FHydro;
+    forcesPartRight += dem.walls[7].FParticle;
+    forcesHydroRight += dem.walls[7].FHydro;
 
     ofstream hongKongForceFile;
     hongKongForceFile.open(hongKongForceFileName.c_str(), ios::app);

@@ -709,53 +709,7 @@ void DEM::initializeWalls(const Problem &problem, const std::array<types, 6> &ex
 
             break;
         }
-        case HONGKONG:
-        {
-            const double width = 0.2;
-
-            if (hongkongSlitSize < 0.9 * width && hongkongSmoothWall) {
-                const double edgeRadius = 0.005;
-                const double xBarrierPosition = 1.4;
-                const double yBarrierSize = (width - hongkongSlitSize) / 2.0;
-                const double barrierLeftWing = yBarrierSize;
-                const double barrierRightWing = yBarrierSize + hongkongSlitSize;
-
-                wall dummyWall;
-                dummyWall.p = tVect(xBarrierPosition - edgeRadius * 0.95, 0.0, 0.0);
-                dummyWall.n = tVect(-1.0, 0.0, 0.0);
-                dummyWall.index = index;
-                dummyWall.moving = false;
-                dummyWall.rotCenter.reset();
-                dummyWall.omega.reset();
-                dummyWall.vel.reset();
-                dummyWall.translating = false;
-                dummyWall.limited = true;
-                dummyWall.yMin = -100.0;
-                dummyWall.yMax = barrierLeftWing - edgeRadius;
-                ++index;
-                walls.push_back(dummyWall);
-
-                dummyWall.yMin = barrierRightWing + edgeRadius;
-                dummyWall.yMax = 100.0;
-                ++index;
-                walls.push_back(dummyWall);
-
-                dummyWall.p = tVect(xBarrierPosition + edgeRadius * 0.95, 0.0, 0.0);
-                dummyWall.n = tVect(1.0, 0.0, 0.0);
-                dummyWall.yMin = -100.0;
-                dummyWall.yMax = barrierLeftWing - edgeRadius;
-                ++index;
-                walls.push_back(dummyWall);
-
-                dummyWall.yMin = barrierRightWing + edgeRadius;
-                dummyWall.yMax = 100.0;
-                ++index;
-                walls.push_back(dummyWall);
-            }
-
-            break;
-        }
-        case TRIAXIAL:
+         case TRIAXIAL:
         {
 
             wall dummyWall;

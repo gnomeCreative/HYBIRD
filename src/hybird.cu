@@ -184,7 +184,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
-    PARSE_CLASS_MEMBER(configFile, dem.demInitialRepeat, "demInitialRepeat", 0.0);
+    PARSE_CLASS_MEMBER(configFile, dem.demInitialRepeat, "demInitialRepeat", 0);
     // LB iteration without coupling (for initial stability) - > time is frozen here
     PARSE_CLASS_MEMBER(configFile, lb.lbmInitialRepeat, "lbmInitialRepeat", 0);
     // maximum time variable value
@@ -313,12 +313,6 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
             PARSE_CLASS_MEMBER(configFile, lb.viscSteps, "viscSteps", 0.0);
             PARSE_CLASS_MEMBER(configFile, lb.maxShearRate, "maxShearRate", 0.0);
             PARSE_CLASS_MEMBER(configFile, lb.shearRateSteps, "shearRateSteps", 0.0);
-            break;
-        }
-        case HONGKONG:
-        {
-            PARSE_CLASS_MEMBER(configFile, dem.hongkongSmoothWall, "hongkongSmoothWall", 0);
-            PARSE_CLASS_MEMBER(configFile, dem.hongkongSlitSize, "hongkongSlitSize", 0.0);
             break;
         }
         case TRIAXIAL:

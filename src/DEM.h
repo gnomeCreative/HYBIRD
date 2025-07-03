@@ -120,9 +120,6 @@ public:
     // PROBLEM-SPECIFIC
     // stuff for drum
     double drumSpeed;
-    // stuff for hong kong
-    double hongkongSlitSize;
-    bool hongkongSmoothWall;
     // stuff for triaxial tests
     double triIsopressure;
     double triBeginX,triBeginY,triBeginZ;
