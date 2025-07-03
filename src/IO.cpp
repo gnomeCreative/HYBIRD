@@ -2896,7 +2896,6 @@ void IO::exportKmPartObstacle(const DEM& dem) {
         double zInt = 0.0;
         double zInf = 0.0;
         double enKinM = 0.0;
-        double numPartInt;
         unsIntList numPartList;
         numPartList.clear();
 
@@ -2904,6 +2903,7 @@ void IO::exportKmPartObstacle(const DEM& dem) {
         for (int m = 0; m < 10; ++m) {
             zInf = zInt;
             zInt += subdZ;
+            unsigned int numPartInt=0;
             for (int n = 0; n < dem.elmts.size(); ++n) {
                 if ((dem.elmts[n].x0.dot(Xp) < xObMax) && (dem.elmts[n].x0.dot(Xp) > xObMin)) {
                     if ((dem.elmts[n].x0.dot(Yp) < yObMax) && (dem.elmts[n].x0.dot(Yp) > yObMin)) {
@@ -2917,7 +2917,7 @@ void IO::exportKmPartObstacle(const DEM& dem) {
                     }
                 }
             }
-            enKinM = enKinM / numPartInt;
+            enKinM = enKinM / double(numPartInt);
             enKinZ.push_back(enKinM);
             numPartList.push_back(numPartInt);
             numPartInt = 0;
