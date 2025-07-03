@@ -64,7 +64,7 @@ class LBOpenMP {
      * @param objects Objects that are not walls, e.g. cylinders??
      * @note Could directly load to h_ structures in future, enabling removal of legacy code
      */
-    void syncDEMIn(const elmtList& elmts, const particleList& particles, const wallList& walls, const objectList& objects);
+    void syncDEMIn(const elmtList& elmts, const particleList& particles, const wallList& walls, const objectList& objects, const cylinderList& cylinders);
     /**
      * @brief Sync DEM data to structure from arrays format (and device memory)
      * @param elmts Objects, such as walls within the DEM

@@ -96,7 +96,7 @@ void LBOpenMP::init(Problem& problem, cylinderList& cylinders, wallList& walls, 
 void LBOpenMP::step(DEM& dem, bool io_demSolver) {
     //@todo v3 All methods here virtual for CUDA sub class?
     if (io_demSolver) {
-        this->syncDEMIn(dem.elmts, dem.particles, dem.walls, dem.objects);
+        this->syncDEMIn(dem.elmts, dem.particles, dem.walls, dem.objects, dem.cylinders);
         this->latticeBoltzmannCouplingStep(dem.newNeighborList);
     }
 
@@ -766,13 +766,13 @@ void LBOpenMP::initializeLists() {
 //
 // Data ingress/egress from/to legacy structures
 //
-void LBOpenMP::syncDEMIn(const elmtList& elmts, const particleList& particles, const wallList& walls, const objectList& objects) {
+void LBOpenMP::syncDEMIn(const elmtList& elmts, const particleList& particles, const wallList& walls, const objectList& objects, const cylinderList& cylinders) {
     // Sync DEM data to structure of arrays format (and device memory)
     syncElementsIn(elmts);
     syncParticlesIn(particles);
     syncWallsIn(walls);
     syncObjectsIn(objects);
-    // @todo is cylinder missing?
+    syncCylindersIn(cylinders);
 }
 void LBOpenMP::syncDEMOut(elmtList& elmts, particleList& particles, wallList& walls, objectList& objects) const {
     // Sync DEM data from structure of arrays format (and device memory)
