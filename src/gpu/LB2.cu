@@ -1815,7 +1815,7 @@ void LB2::buildInterfaceList<CUDA>(unsigned int max_len, bool update_device_stru
     // Launch kernel as grid stride loop
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
-    int gridSize = 0;  // The actual grid size needed, based on input size
+    //int gridSize = 0;  // The actual grid size needed, based on input size -> COMMENTED AS NEVER USED
     CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_buildList, 0, hd_nodes.count));
     d_buildList << <minGridSize, blockSize >> > (builderI, &builderI[1], INTERFACE, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
@@ -1858,7 +1858,7 @@ void LB2::buildFluidList<CUDA>(unsigned int max_len, bool update_device_struct) 
     // Launch kernel as grid stride loop
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
-    int gridSize = 0;  // The actual grid size needed, based on input size
+    //int gridSize = 0;  // The actual grid size needed, based on input size -> COMMENTED AS NEVER USED
     CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_buildList, 0, hd_nodes.count));
     d_buildList<<<minGridSize , blockSize>>>(builderI, &builderI[1], LIQUID, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
@@ -1923,7 +1923,7 @@ unsigned int *LB2::buildTempNewList<CUDA>(unsigned int max_len) {
     // Launch kernel as grid stride loop
     int blockSize = 0;  // The launch configurator returned block size
     int minGridSize = 0;  // The minimum grid size needed to achieve the maximum occupancy for a full device launch
-    int gridSize = 0;  // The actual grid size needed, based on input size
+    // int gridSize = 0;  // The actual grid size needed, based on input size -> COMMENTED AS NEVER USED
     CUDA_CALL(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, d_buildDualList, 0, hd_nodes.count));
     d_buildDualList<<<minGridSize, blockSize>>>(builderI, &builderI[1], GAS_TO_INTERFACE, FLUID_TO_INTERFACE, hd_nodes.type, hd_nodes.count);
     CUDA_CHECK();
@@ -2050,11 +2050,6 @@ void LB2::latticeBoltzmannFreeSurfaceStep() {
     } else if (PARAMS.increaseVolume) {
         if (PARAMS.time < PARAMS.deltaTime) {
             this->redistributeMass<IMPL>(PARAMS.deltaVolume / PARAMS.deltaTime);
-        }
-    } else {
-        if (problemName == DRUM ||
-            problemName == STAVA) {
-            this->enforceMassConservation<IMPL>();
         }
     }
 
@@ -2288,8 +2283,6 @@ void LB2::init(Problem &problem, cylinderList& cylinders, wallList& walls, parti
     } else {
         if (problemName == DRUM) {
             h_PARAMS.totalMass = h_PARAMS.fluidMass / h_PARAMS.unit.Mass;
-        } else if(problemName == STAVA) {
-            h_PARAMS.totalMass = 200000.0 / h_PARAMS.unit.Volume;
         } else {
             h_PARAMS.totalMass = inside_mass;
         }
@@ -2609,37 +2602,15 @@ void LB2::initializeInterface(const Problem &problem) {
     } else {
         switch (problemName) {
         case SHEARCELL:
-        case AVALANCHE:
         case DRUM:
-        case NET:
-        case BARRIER:
-        case ZHOU:
         case OPENBARRIER:
         case HONGKONG:
         case STVINCENT:
-        case STAVA:
-        case NIGRO:
-        case CAROLINE:
-        case DAMBREAK:
-        case GRAY_DAMBREAK:
-        case GRAY_DAMBREAK_2D:
         case INCLINEFLOW:
-        case HOURGLASS:
-        case IERVOLINO:
-        case IERVOLINO_2D:
-        case IERVOLINO_CYLINDERTEST:
-        case HEAP:
         case TRIAXIAL:
-        case JOP:
         case WILL:
         case WILL_SETTLING:
-        case MANGENEY:
-        case GRAY:
         case ESERCITAZIONE:
-        case FILIPPO_SILOS:
-        case HK_SMALL:
-        case HK_LARGE:
-        case KELVIN:
         case SHEARCELL2023:
         case INTRUDER:
         case OBJMOVING:

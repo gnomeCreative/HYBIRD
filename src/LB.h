@@ -154,8 +154,6 @@ public:
     unsigned int shearRateSteps = 0;
     // stuff for drum
     double fluidMass = 0.0;
-    // stuff for avalanches (net-like)
-    double avalanchePosit = 0.0;
     // stuff for hourglass (mirrors in DEM)
     double hourglassOutletHeight = 0.0;
     // stuff for continuum heap (mirrors in DEM)

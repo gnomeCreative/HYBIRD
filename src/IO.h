@@ -68,13 +68,9 @@ public:
     double fluidRecycleExpTime, partRecycleExpTime, outputExpTime;
     // file for storing indices of single objects to export
     unsIntList singleObjects;
-    // FOR HK_SMALL AND HK_LARGE
-    // file for storing beginning and end of observation windows
-    doubleList flowLevelBegin, flowLevelEnd;
     // file for storing beginning and end of observation windows
     unsIntList objectGroupBegin, objectGroupEnd;
     // general functions
-    // 
     double energyStopThreshold;
     bool energyStop;
     double totalKineticEnergy;
@@ -268,24 +264,11 @@ protected:
     void exportHongKongFlow(DEM& dem);
     void exportHongKongBarrier(DEM& dem);
     double getSurface(doubleList& surfaceParticles);
-    
-    // USMAN /////
-    void exportFlowLevel(const LB& lb);
-    string frontFileName;
-    void exportFront(const LB& lb);
-    
-    // MANGENEY /////
-    string topFileName;
-    void exportTop(const LB& lb);
-    
+          
     // INCLINE FLOW /////
     string inclineFlowFileName;
     void exportInclineFlow(const LB& lb);
     
-    // HEAP /////
-    string heapFileName;
-    void exportHeapHeight(const LB& lb);
-
     // TRIAXIAL /////
     string triaxialFileName;
     void exportTriaxial(DEM& dem);

@@ -271,14 +271,14 @@ void IO2::createFiles(LB2& lb, const DEM& dem) {
                 }
             }
 
-            //const unsigned int partRecycleExpCounter = (partRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / partRecycleExpTime) + 1 : 0);
-            //if (partRecycleExpCounter > lastPartRecycleExp) {
-            //    lastPartRecycleExp = partRecycleExpCounter;
-            //    char filePathBuffer [1024];
-            //    sprintf(filePathBuffer, partRecycleFileFormat.c_str(), currentTimeStep);
-            //    // requires the pbcShift, contained in the neighbourList function
-            //    exportRecycleParticles(dem.elmts, dem.pbcs, filePathBuffer);
-            //}
+            const unsigned int partRecycleExpCounter = (partRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / partRecycleExpTime) + 1 : 0);
+            if (partRecycleExpCounter > lastPartRecycleExp) {
+                lastPartRecycleExp = partRecycleExpCounter;
+                char filePathBuffer [1024];
+                sprintf(filePathBuffer, partRecycleFileFormat.c_str(), currentTimeStep);
+                // requires the pbcShift, contained in the neighbourList function
+                exportRecycleParticles(dem.elmts, dem.pbcs, filePathBuffer);
+            }
     }
     //if (dem.objects.size() > 0) {
 

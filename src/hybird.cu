@@ -165,35 +165,13 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     if (problemNameString == "DRUM") problemName = DRUM;
     else if (problemNameString == "SHEARCELL") problemName = SHEARCELL;
     else if (problemNameString == "NONE") problemName = NONE;
-    else if (problemNameString == "AVALANCHE") problemName = AVALANCHE;
-    else if (problemNameString == "NET") problemName = NET;
-    else if (problemNameString == "ZHOU") problemName = ZHOU;
-    else if (problemNameString == "BARRIER") problemName = BARRIER;
     else if (problemNameString == "OPENBARRIER") problemName = OPENBARRIER;
     else if (problemNameString == "HONGKONG") problemName = HONGKONG;
     else if (problemNameString == "ESERCITAZIONE") problemName = ESERCITAZIONE;
-    else if (problemNameString == "FILIPPO_SILOS") problemName = FILIPPO_SILOS;
     else if (problemNameString == "STVINCENT") problemName = STVINCENT;
-    else if (problemNameString == "STAVA") problemName = STAVA;
-    else if (problemNameString == "NIGRO") problemName = NIGRO;
-    else if (problemNameString == "DAMBREAK") problemName = DAMBREAK;
-    else if (problemNameString == "GRAY_DAMBREAK") problemName = GRAY_DAMBREAK;
-    else if (problemNameString == "GRAY_DAMBREAK_2D") problemName = GRAY_DAMBREAK_2D;
-    else if (problemNameString == "CAROLINE") problemName = CAROLINE;
     else if (problemNameString == "INCLINEFLOW") problemName = INCLINEFLOW;
-    else if (problemNameString == "JOP") problemName = JOP;
-    else if (problemNameString == "MANGENEY") problemName = MANGENEY;
     else if (problemNameString == "WILL") problemName = WILL;
     else if (problemNameString == "WILL_SETTLING") problemName = WILL_SETTLING;
-    else if (problemNameString == "HK_SMALL") problemName = HK_SMALL;
-    else if (problemNameString == "HK_LARGE") problemName = HK_LARGE;
-    else if (problemNameString == "KELVIN") problemName = KELVIN;
-    else if (problemNameString == "GRAY") problemName = GRAY;
-    else if (problemNameString == "HOURGLASS") problemName = HOURGLASS;
-    else if (problemNameString == "IERVOLINO") problemName = IERVOLINO;
-    else if (problemNameString == "IERVOLINO_2D") problemName = IERVOLINO_2D;
-    else if (problemNameString == "IERVOLINO_CYLINDERTEST") problemName = IERVOLINO_CYLINDERTEST;
-    else if (problemNameString == "HEAP") problemName = HEAP;
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
     else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
     else if (problemNameString == "INTRUDER") problemName = INTRUDER;
@@ -206,11 +184,9 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
 
     // GETTING SIMULATION PARAMETERS  /////////
     // DEM initial iterations
-    PARSE_CLASS_MEMBER(configFile, dem.demInitialRepeat, "demInitialRepeat", 0.0);
-    ASSERT(dem.demInitialRepeat >= 0);
+    PARSE_CLASS_MEMBER(configFile, dem.demInitialRepeat, "demInitialRepeat", 0);
     // LB iteration without coupling (for initial stability) - > time is frozen here
     PARSE_CLASS_MEMBER(configFile, lb.lbmInitialRepeat, "lbmInitialRepeat", 0);
-    ASSERT(lb.lbmInitialRepeat >= 0);
     // maximum time variable value
     PARSE_CLASS_MEMBER(configFile, io.maxTime, "maxTime", 0.0);
     ASSERT(io.maxTime >= 0);
@@ -220,13 +196,9 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
 
     // for time integration and output
     PARSE_CLASS_MEMBER(configFile, io.maximumTimeSteps, "maximumTimeSteps", 0);
-    ASSERT(io.maximumTimeSteps >= 0);
     PARSE_CLASS_MEMBER(configFile, io.screenExpTime, "screenExpTime", 0.0);
-    ASSERT(io.screenExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.fluidExpTime, "fluidExpTime", 0.0);
-    ASSERT(io.fluidExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.fluidLagrangianExpTime, "fluidLagrangianExpTime", 0.0);
-    ASSERT(io.fluidLagrangianExpTime >= 0);
     if (io.fluidLagrangianExpTime > 0.0) {
         string fluidLagrangianFormatString;
         PARSE_CLASS_MEMBER(configFile, fluidLagrangianFormatString, "fluidLagrangianFormat", "BINARY");
@@ -245,9 +217,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
          }
     }
     PARSE_CLASS_MEMBER(configFile, io.fluid2DExpTime, "fluid2DExpTime", 0.0);
-    ASSERT(io.fluid2DExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partExpTime, "partExpTime", 0.0);
-    ASSERT(io.partExpTime >= 0);
     if (io.partExpTime > 0.0) {
         string partExpFormatString;
         PARSE_CLASS_MEMBER(configFile, partExpFormatString, "partExpFormat", "BINARY");
@@ -261,13 +231,10 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
         }
     }
     PARSE_CLASS_MEMBER(configFile, io.fluidRecycleExpTime, "fluidRecycleExpTime", 0.0);
-    ASSERT(io.fluidRecycleExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.partRecycleExpTime, "partRecycleExpTime", 0.0);
-    ASSERT(io.partRecycleExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.objectExpTime, "objectExpTime", 0.0);
-    ASSERT(io.objectExpTime >= 0);
     PARSE_CLASS_MEMBER(configFile, io.cylinderExpTime, "cylinderExpTime", 0.0);
-    ASSERT(io.cylinderExpTime >= 0);
+
     // single objects
     unsigned int totSingleObjects = configFile.vector_variable_size("singleObjects");
     if (commandLine.vector_variable_size("-singleObjects") > 0)
@@ -276,40 +243,11 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     for (int index = 0; index < totSingleObjects; index++) {
         int singleObjectHere = 0;
         PARSE_CLASS_MEMBER_VEC(configFile, singleObjectHere, "singleObjects", index, 0);
-        ASSERT(singleObjectHere >= 0);
         cout << singleObjectHere << " ";
         io.singleObjects.push_back(singleObjectHere);
     }
     cout << endl;
     ASSERT(io.singleObjects.size() == totSingleObjects);
-
-
-    // flow level sensors
-    unsigned int totFlowLevelBegin = configFile.vector_variable_size("flowLevelSensorBegin");
-    unsigned int totFlowLevelEnd = configFile.vector_variable_size("flowLevelSensorEnd");
-    if (commandLine.vector_variable_size("-flowLevelSensorBegin") > 0)
-        totFlowLevelBegin = commandLine.vector_variable_size("-flowLevelSensorBegin");
-    if (commandLine.vector_variable_size("-flowLevelSensorEnd") > 0)
-        totFlowLevelEnd = commandLine.vector_variable_size("-flowLevelSensorEnd");
-    ASSERT(totFlowLevelBegin == totFlowLevelEnd);
-    const int totFlowLevel = totFlowLevelBegin;
-    cout << "Number of flow level files (" << totFlowLevel << "): ";
-    for (int index = 0; index < totFlowLevel; index++) {
-        double flowLevelBeginHere = 0.0;
-        double flowLevelEndHere = 0.0;
-        PARSE_CLASS_MEMBER_VEC(configFile, flowLevelBeginHere, "flowLevelSensorBegin", index, 0.0);
-        PARSE_CLASS_MEMBER_VEC(configFile, flowLevelEndHere, "flowLevelSensorEnd", index, 0.0);
-        cout << "[" << flowLevelBeginHere << ", " << flowLevelEndHere << "] ";
-        ASSERT(flowLevelBeginHere >= 0.0);
-        ASSERT(flowLevelEndHere >= 0.0);
-        ASSERT(flowLevelEndHere > flowLevelBeginHere);
-        io.flowLevelBegin.push_back(flowLevelBeginHere);
-        io.flowLevelEnd.push_back(flowLevelEndHere);
-    }
-    cout << endl;
-    ASSERT(io.flowLevelBegin.size() == totFlowLevel);
-    ASSERT(io.flowLevelEnd.size() == totFlowLevel);
-
 
     // object groups
     unsigned int totObjectGroupBegin = configFile.vector_variable_size("objectGroupBegin");
@@ -323,13 +261,11 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     if (totObjectGroups) {
         cout << "Object groups (" << totObjectGroups << "): ";
         for (int index = 0; index < totObjectGroups; index++) {
-            unsigned int objectGroupBeginHere = 0.0;
-            unsigned int objectGroupEndHere = 0.0;
+            unsigned int objectGroupBeginHere = 0;
+            unsigned int objectGroupEndHere = 0;
             PARSE_CLASS_MEMBER_VEC(configFile, objectGroupBeginHere, "objectGroupBegin", index, 0);
             PARSE_CLASS_MEMBER_VEC(configFile, objectGroupEndHere, "objectGroupEnd", index, 0);
             cout << "[" << objectGroupBeginHere << ", " << objectGroupEndHere << "] ";
-            ASSERT(objectGroupBeginHere >= 0);
-            ASSERT(objectGroupEndHere >= 0);
             ASSERT(objectGroupEndHere > objectGroupBeginHere);
             io.objectGroupBegin.push_back(objectGroupBeginHere);
             io.objectGroupEnd.push_back(objectGroupEndHere);
@@ -379,37 +315,6 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
             PARSE_CLASS_MEMBER(configFile, lb.shearRateSteps, "shearRateSteps", 0.0);
             break;
         }
-        case NET:
-        case BARRIER:
-        {
-            PARSE_CLASS_MEMBER(configFile, lb.avalanchePosit, "avalanchePosit", 0.0);
-            break;
-        }
-        case HONGKONG:
-        {
-            PARSE_CLASS_MEMBER(configFile, dem.hongkongSmoothWall, "hongkongSmoothWall", 0);
-            PARSE_CLASS_MEMBER(configFile, dem.hongkongSlitSize, "hongkongSlitSize", 0.0);
-            break;
-        }
-        case HK_LARGE:
-        {
-            PARSE_CLASS_MEMBER(configFile, lb.largeFlumeFlowLevel, "largeFlumeFlowLevel", 0.0);
-            PARSE_CLASS_MEMBER(configFile, dem.depositArea, "depositArea", false);
-            break;
-        }
-        case HOURGLASS:
-        {
-            PARSE_CLASS_MEMBER(configFile, dem.hourglassOutletSize, "hourglassOutletSize", 0.0);
-            PARSE_CLASS_MEMBER(configFile, dem.hourglassOutletHeight, "hourglassOutletHeight", 0.0);
-            lb.hourglassOutletHeight = dem.hourglassOutletHeight;
-            break;
-        }
-        case HEAP:
-        {
-            PARSE_CLASS_MEMBER(configFile, dem.heapBaseLevel, "heapBaseLevel", 0.0);
-            lb.heapBaseLevel = dem.heapBaseLevel;
-            break;
-        }
         case TRIAXIAL:
         {
             PARSE_CLASS_MEMBER(configFile, dem.triIsopressure, "triIsopressure", 0.0);
@@ -446,18 +351,6 @@ void printUfo(GetPot& command_line, GetPot& configFile) {
 
 int main(int argc, char** argv) {
     const auto chrono_start = std::chrono::steady_clock::now();
-    // Checking number of processes involved
-#ifdef USE_OPENMP
-    //omp_set_num_threads(8);
-    #pragma omp parallel
-    {
-        #pragma omp single
-        cout << "Program starts with " << omp_get_num_threads() << " threads.\n";
-    }
-#else
-    cout << "Program built without OpenMP support.\n";
-#endif
-
     // DECLARATION OF VARIABLES - Input-Output ///////////////
     IO2 io;
 
@@ -467,6 +360,9 @@ int main(int argc, char** argv) {
     // DECLARATION OF VARIABLES - LB ///////////////
     LBParams lb_p;
     LBInitParams lb_ip;
+
+    // Checking number of processes involved
+    dem.exportThreadNumber();
 
     // print some info for restorability
     time_t t = time(0); // get time now

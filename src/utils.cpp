@@ -35,6 +35,13 @@ void wall::wallShow() const {
         rotCenter.show();
         cout<<"\n";
     }
+    if (limited) {
+        cout << "Limted wall with ";
+        cout << "limits in X: ("<<xMin<<","<<xMax<<"), ";
+        cout << "limits in Y: (" << yMin << "," << yMax << "), ";
+        cout << "limits in Z: (" << zMin << "," << zMax << "), ";
+        cout << "\n";
+    }
 }
 
 tVect wall::getSpeed(tVect pt) const {
