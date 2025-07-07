@@ -351,18 +351,6 @@ void printUfo(GetPot& command_line, GetPot& configFile) {
 
 int main(int argc, char** argv) {
     const auto chrono_start = std::chrono::steady_clock::now();
-    // Checking number of processes involved
-#ifdef USE_OPENMP
-    //omp_set_num_threads(8);
-    #pragma omp parallel
-    {
-        #pragma omp single
-        cout << "Program starts with " << omp_get_num_threads() << " threads.\n";
-    }
-#else
-    cout << "Program built without OpenMP support.\n";
-#endif
-
     // DECLARATION OF VARIABLES - Input-Output ///////////////
     IO2 io;
 
@@ -372,6 +360,9 @@ int main(int argc, char** argv) {
     // DECLARATION OF VARIABLES - LB ///////////////
     LBParams lb_p;
     LBInitParams lb_ip;
+
+    // Checking number of processes involved
+    dem.exportThreadNumber();
 
     // print some info for restorability
     time_t t = time(0); // get time now

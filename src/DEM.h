@@ -169,6 +169,7 @@ public:
         multiStep = 1;
         numVisc = 0.0;
     }
+    void exportThreadNumber();
     void discreteElementStep();
     void discreteElementGet(GetPot& config_file, GetPot& command_line);
     void discreteElementInit(const Problem& problem, const std::array<types, 6> &externalBoundary, const std::array<double, 3> &externalSize, const std::array<tVect, 6> &externalBoundaryLocation,

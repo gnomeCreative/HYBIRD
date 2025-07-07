@@ -5,6 +5,7 @@
 #include <array>
 
 #include "Problem.h"
+#include <omp.h>
 
 #define USE_MATH_DEFINES
 
@@ -375,6 +376,20 @@ void DEM::determineTimeStep(const double& externalTimeStep) {
         deltat = externalTimeStep;
         multiStep = 1;
     }
+}
+
+void DEM::exportThreadNumber() {
+#ifdef USE_OPENMP
+    //omp_set_num_threads(8);
+#pragma omp parallel
+    {
+#pragma omp single
+        cout << "Program starts with " << omp_get_num_threads() << " threads.\n";
+    }
+#else
+    cout << "Program built without OpenMP support.\n";
+#endif
+
 }
 
 void DEM::discreteElementStep() {
