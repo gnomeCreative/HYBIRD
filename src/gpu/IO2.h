@@ -31,7 +31,19 @@ class IO2 : public IO {
     void exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile);
     void exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile);
 
+    // fluid export functions (.dat files)
     void exportMaxSpeedFluid(LB2& lb);
+    void exportFreeSurfaceExtent(LB2& lb);
+    void exportFluidFlowRate(LB2& lb);
+    void exportFluidMass(LB2& lb);
+    void exportFluidCenterOfMass(LB2& lb);
+
+    // viscosity and plasticity
+    void exportPlasticity(LB2& lb);
+    void exportMeanViscosity(LB2& lb);
+
+    void exportEnergy(DEM& dem, LB2& lb);
+
 };
 
 #endif /* IO_H */

@@ -237,6 +237,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
 
     // single objects
     unsigned int totSingleObjects = configFile.vector_variable_size("singleObjects");
+    std::cout << totSingleObjects;
     if (commandLine.vector_variable_size("-singleObjects") > 0)
         totSingleObjects = commandLine.vector_variable_size("-singleObjects");
     cout << "Single objects (" << totSingleObjects << "): ";
@@ -248,6 +249,27 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     }
     cout << endl;
     ASSERT(io.singleObjects.size() == totSingleObjects);
+    std::cout << io.singleObjects.size() << std::endl;
+    for (int index = 0; index < totSingleObjects; index++) {
+        std::cout << io.singleObjects[index] << std::endl;
+    }
+
+    }
+        cout << singleElementHere << " ";
+        io.singleElements.push_back(singleElementHere);
+    //tracking elements
+    unsigned int totSingleElements = configFile.vector_variable_size("singleElements");
+    if (commandLine.vector_variable_size("-singleElements") > 0)
+        totSingleElements = commandLine.vector_variable_size("-singleElements");
+    cout << "Single elements (" << totSingleElements << "): ";
+    for (int index = 0; index < totSingleElements; index++) {
+        int singleElementHere = 0;
+        PARSE_CLASS_MEMBER_VEC(configFile, singleElementHere, "singleElements", index, 0);
+        ASSERT(singleElementHere >= 0);
+    cout << endl;
+    ASSERT(io.singleElements.size() == totSingleElements);
+    std::cout << io.singleElements.size() << std::endl;
+
 
     // object groups
     unsigned int totObjectGroupBegin = configFile.vector_variable_size("objectGroupBegin");

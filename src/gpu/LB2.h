@@ -27,6 +27,10 @@ class LB2 {
     };
     public:
 
+        const energy& getFluidEnergy() const { return fluidEnergy; }
+        const energy& getFluidImmersedEnergy() const { return fluidImmersedEnergy; }
+
+
     // @todo how do we init params from config?
     LB2() = default;
 
@@ -43,6 +47,9 @@ class LB2 {
     void generateNode(unsigned int coord, types typeHere);
     void initializeWalls();
     void initializeLists();
+
+    // energy
+    void updateEnergy(double& totalKineticEnergy);
 
     template<int impl>
     void buildInterfaceList(unsigned int max_len = std::numeric_limits<unsigned int>::max(), bool update_device_struct = true);
@@ -266,6 +273,10 @@ class LB2 {
     Wall2 h_walls, hd_walls, *d_walls = nullptr;
     Cylinder2 h_cylinders, hd_cylinders, * d_cylinders = nullptr;
     Object2 h_objects, hd_objects, *d_objects = nullptr;
+
+    // energy
+    energy fluidEnergy;            ///< Total kinetic energy of all fluid nodes
+    energy fluidImmersedEnergy;    ///< Total kinetic energy of immersed fluid nodes
     
     LBInitParams init_params; // Host only parameters used during initialisation
     // topography container

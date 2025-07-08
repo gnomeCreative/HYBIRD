@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
     exprtk
     GIT_REPOSITORY https://github.com/ArashPartow/exprtk.git
-    GIT_TAG a4b17d543f072d2e3ba564e4bc5c3a0d2b05c338  # Specific commit for stability
+    GIT_TAG 0.0.3  # Specific commit for stability 0.0.3 9910dc988d472d17ecf309c1c9c3e38430bd9c0f
 )
 
 # Make ExprTk available
