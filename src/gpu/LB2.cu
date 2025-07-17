@@ -2608,9 +2608,9 @@ void LB2::initializeInterface(const Problem& problem) {
 	}
 	else {
 		cout << "Initializing fluid domain from configuration file:" << endl;
-		cout << "X=(" << double(max(h_PARAMS.domain[0], h_PARAMS.freeSurfaceBorders[0])) * h_PARAMS.unit.Length << ", " << double(min(h_PARAMS.domain[1], h_PARAMS.freeSurfaceBorders[1])) * h_PARAMS.unit.Length << ")" << endl;
-		cout << "Y=(" << double(max(h_PARAMS.domain[2], h_PARAMS.freeSurfaceBorders[2])) * h_PARAMS.unit.Length << ", " << double(min(h_PARAMS.domain[3], h_PARAMS.freeSurfaceBorders[3])) * h_PARAMS.unit.Length << ")" << endl;
-		cout << "Z=(" << double(max(h_PARAMS.domain[4], h_PARAMS.freeSurfaceBorders[4])) * h_PARAMS.unit.Length << ", " << double(min(h_PARAMS.domain[5], h_PARAMS.freeSurfaceBorders[5])) * h_PARAMS.unit.Length << ")" << endl;
+		cout << "X=(" << double(max(0, h_PARAMS.freeSurfaceBorders[0])) * h_PARAMS.unit.Length << ", " << double(min(int(h_PARAMS.lbSize[0]), h_PARAMS.freeSurfaceBorders[1])) * h_PARAMS.unit.Length << ")" << endl;
+		cout << "Y=(" << double(max(0, h_PARAMS.freeSurfaceBorders[2])) * h_PARAMS.unit.Length << ", " << double(min(int(h_PARAMS.lbSize[1]), h_PARAMS.freeSurfaceBorders[3])) * h_PARAMS.unit.Length << ")" << endl;
+		cout << "Z=(" << double(max(0, h_PARAMS.freeSurfaceBorders[4])) * h_PARAMS.unit.Length << ", " << double(min(int(h_PARAMS.lbSize[2]), h_PARAMS.freeSurfaceBorders[5])) * h_PARAMS.unit.Length << ")" << endl;
 		for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
 			if (h_nodes.type[it] == GAS) {
 				// creating fluid cells
