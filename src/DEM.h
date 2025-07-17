@@ -39,6 +39,7 @@ private:
     double nebrRange;
     double nebrShell;
     double cellWidth[3];
+	double gravityAngle;/////////////////////////////////////
     unsigned int nCells[3];
     // neighbor tables
     intList cellTable;
@@ -136,6 +137,7 @@ public:
         demSize.resize(3);
         demSize[0] = demSize[1] = demSize[2] = 1.0;
         demTime = 0.0;
+	gravityAngle = 0.0;///////////////////////
         deltat = 1.0;
         demF.reset();
         demRot.reset();

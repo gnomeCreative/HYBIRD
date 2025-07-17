@@ -417,17 +417,39 @@ void DEM::discreteElementStep() {
         //        cout<<"1.3 ("<<demIter<<") "<<"a="<<activeElmts[214]<<endl;
         // particles generation
         updateParticlesPredicted();
-
         // force evaluation
         evaluateForces();
-
         // corrector step
         corrector();
-
         // particles re-generation
         updateParticlesCorrected();
 
     }
+    //////////Gravity tilt update ===
+    const double g = 9.806;
+    const double degToRad = M_PI / 180.0;
+    const double maxTilt = 22.0 * degToRad;
+    double currentTilt = maxTilt;
+
+    if (demTime < 10.0) {
+        currentTilt = maxTilt * (demTime / 10.0);
+    }
+
+    demF.x = -g * sin(currentTilt);
+    demF.y = 0.0;
+    demF.z = -g * cos(currentTilt);
+
+    ////////////////print status ===
+    static double lastPrintTime = -1.0;
+    const double printInterval = 0.01;
+
+    if (demTime - lastPrintTime >= printInterval) {
+        std::cout << "[t = " << demTime << " s] Tilt = "
+                  << (currentTilt * 180.0 / M_PI) << " deg & "
+                  << "Gravity: X = " << demF.x << ", Z = " << demF.z << std::endl;
+        lastPrintTime = demTime;
+    }
+
 
 }
 
