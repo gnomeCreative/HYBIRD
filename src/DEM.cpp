@@ -779,6 +779,9 @@ void DEM::initializeCylinders(const Problem &problem) {
     if (!problem.file.empty()) {  // Problem file was loaded
         // Copy cylinders directly from problem file
         cylinders.insert(cylinders.end(), problem.cylinders.begin(), problem.cylinders.end());
+        for (int ic = 0; ic < cylinders.size(); ++ic) {
+            cylinders[ic].initAxes();
+        }
     } else {
         switch (problemName) {
         case WILL_SETTLING:

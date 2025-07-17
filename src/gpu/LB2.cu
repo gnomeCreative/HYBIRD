@@ -2479,12 +2479,19 @@ void LB2::initializeObjectBoundaries(const objectList& objects) {
 void LB2::initializeCylinderBoundaries(const cylinderList& cylinders) {
     // SOLID CYLINDERS ////////////////////////
     for (int ic = 0; ic < cylinders.size(); ++ic) {
+        
         const tVect convertedCylinderp1 = cylinders[ic].p1 / h_PARAMS.unit.Length;
         const tVect naxesHere = cylinders[ic].naxes;
         const double convertedRadius = cylinders[ic].R / h_PARAMS.unit.Length;
         const unsigned int indexHere = cylinders[ic].index;
         const bool slipHere = cylinders[ic].slip;
         const bool movingHere = cylinders[ic].moving;
+
+        cout << "Initializing cylinder number " << ic << " with radius " << cylinders[ic].R <<
+            " and axis (" << naxesHere.dot(Xp) << ", " << naxesHere.dot(Yp) << ", " << naxesHere.dot(Zp) << "), ";
+
+        // counter for created solid nodes
+        unsigned int counter = 0;
         // @todo This was previously OpenMP parallel, but could be race condition in generateNode?
         for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
             // creating solid cells
@@ -2505,6 +2512,7 @@ void LB2::initializeCylinderBoundaries(const cylinderList& cylinders) {
                 // Node is inside a cylinder
                 // tentatively static
                 generateNode(it, STAT_WALL);
+                counter++;
                 // setting solidIndex
                 h_nodes.solidIndex[it] = indexHere;  // TODO indexHere is redundant, use ic?
                 // setting type: 5-6=slip, 7-8=no-slip
@@ -2525,6 +2533,7 @@ void LB2::initializeCylinderBoundaries(const cylinderList& cylinders) {
                 }
             }
         }
+        cout << "tot solid nodes created: " << counter << endl;
     }
 }
 void LB2::initializeTopography() {
