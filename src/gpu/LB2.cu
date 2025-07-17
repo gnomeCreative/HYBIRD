@@ -617,6 +617,7 @@ double LB2::initializeParticleBoundaries<CUDA>() {
     // Round up to accommodate required threads
     gridSize = (hd_nodes.activeCount + blockSize - 1) / blockSize;
     d_initializeParticleBoundaries << <gridSize, blockSize >> > (d_nodes, d_particles, d_return);
+    cout << "gridsize: " << gridSize << ", blocksize " << blockSize << endl;
     CUDA_CHECK();
 
     // Copy back return value
@@ -2579,26 +2580,26 @@ void LB2::initializeInterface(const Problem &problem) {
                 }
             }
         }
-    } else if(!problem.file.empty()) { // Problem file was loaded
-        cout << "Initializing from problem file:" << endl;
-        for (const auto &f : problem.fluids_basic) {
-            cout << "BOX=min(" << f.min.x << ", " << f.min.y << ", " << f.min.z << ")" << endl;
-            cout << "    max(" << f.max.x << ", " << f.max.y << ", " << f.max.z << ")" << endl;
-        }
-        for (const auto& f : problem.fluids_complex_str) {
-            cout << "EXPRESSION=if (" << f <<") > 0" << endl;
-        }
-        unsigned int ct = 0;
-        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-            if (h_nodes.type[it] == GAS) {
-                // creating fluid cells
-                if (problem.isFluid(h_PARAMS.getPosition(it) * h_PARAMS.unit.Length)) {
-                    generateNode(it, LIQUID);
-                    ++ct;
+    } else if (!problem.file.empty() && (!problem.fluids_basic.empty() || !problem.fluids_complex_str.empty())) { // Problem file was loaded
+            cout << "Initializing from problem file:" << endl;
+            for (const auto& f : problem.fluids_basic) {
+                cout << "BOX=min(" << f.min.x << ", " << f.min.y << ", " << f.min.z << ")" << endl;
+                cout << "    max(" << f.max.x << ", " << f.max.y << ", " << f.max.z << ")" << endl;
+            }
+            for (const auto& f : problem.fluids_complex_str) {
+                cout << "EXPRESSION=if (" << f << ") > 0" << endl;
+            }
+            unsigned int ct = 0;
+            for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+                if (h_nodes.type[it] == GAS) {
+                    // creating fluid cells
+                    if (problem.isFluid(h_PARAMS.getPosition(it) * h_PARAMS.unit.Length)) {
+                        generateNode(it, LIQUID);
+                        ++ct;
+                    }
                 }
             }
-        }
-        cout << ct << " of " << h_PARAMS.totPossibleNodes << " nodes were init as liquid." << endl;
+            cout << ct << " of " << h_PARAMS.totPossibleNodes << " nodes were init as liquid." << endl;
     } else {
         switch (problemName) {
         case SHEARCELL:
