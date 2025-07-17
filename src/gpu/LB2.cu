@@ -2564,86 +2564,72 @@ void LB2::initializeTopography() {
         }
     }
 }
-void LB2::initializeInterface(const Problem &problem) {
-    // TODO old problem switch is no longer supported!
-    // creates an interface electing interface cells from active cells
-    if (h_PARAMS.lbTopographySurface) {
-        // Formerly setTopographySurface()
-        // @todo This was previously OpenMP parallel, critical section around generateNode()
-        for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-            if (h_nodes.type[it] == GAS) {
-                // control is done in real coordinates
-                const tVect nodePosition = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
-                const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
-                if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
-                    generateNode(it, LIQUID);
-                }
-            }
-        }
-    } else if (!problem.file.empty() && (!problem.fluids_basic.empty() || !problem.fluids_complex_str.empty())) { // Problem file was loaded
-            cout << "Initializing from problem file:" << endl;
-            for (const auto& f : problem.fluids_basic) {
-                cout << "BOX=min(" << f.min.x << ", " << f.min.y << ", " << f.min.z << ")" << endl;
-                cout << "    max(" << f.max.x << ", " << f.max.y << ", " << f.max.z << ")" << endl;
-            }
-            for (const auto& f : problem.fluids_complex_str) {
-                cout << "EXPRESSION=if (" << f << ") > 0" << endl;
-            }
-            unsigned int ct = 0;
-            for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-                if (h_nodes.type[it] == GAS) {
-                    // creating fluid cells
-                    if (problem.isFluid(h_PARAMS.getPosition(it) * h_PARAMS.unit.Length)) {
-                        generateNode(it, LIQUID);
-                        ++ct;
-                    }
-                }
-            }
-            cout << ct << " of " << h_PARAMS.totPossibleNodes << " nodes were init as liquid." << endl;
-    } else {
-        switch (problemName) {
-        case SHEARCELL:
-        case DRUM:
-        case OPENBARRIER:
-        case HONGKONG:
-        case STVINCENT:
-        case INCLINEFLOW:
-        case TRIAXIAL:
-        case WILL:
-        case WILL_SETTLING:
-        case ESERCITAZIONE:
-        case SHEARCELL2023:
-        case INTRUDER:
-        case OBJMOVING:
-            cerr << "Error: problem '" << problemName << "' is not supported by LB2::initializeInterface()" << endl;
-            cerr << "config file should be upgraded to use a problem file free surface definition" << endl;
-            std::abort();
-        case NONE:
-        default:
-            {
-                cout << "Initializing from problem file:" << endl;
-                cout << "X=(" << double(h_PARAMS.freeSurfaceBorders[0]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[1]) * h_PARAMS.unit.Length << ")" << endl;
-                cout << "Y=(" << double(h_PARAMS.freeSurfaceBorders[2]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[3]) * h_PARAMS.unit.Length << ")" << endl;
-                cout << "Z=(" << double(h_PARAMS.freeSurfaceBorders[4]) * h_PARAMS.unit.Length << ", " << double(h_PARAMS.freeSurfaceBorders[5]) * h_PARAMS.unit.Length << ")" << endl;
-                for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
-                    if (h_nodes.type[it] == GAS) {
-                        // creating fluid cells
-                        const tVect pos = h_PARAMS.getPosition(it);
-                        if ((pos.x > h_PARAMS.freeSurfaceBorders[0]) &&
-                            (pos.x < h_PARAMS.freeSurfaceBorders[1]) &&
-                            (pos.y > h_PARAMS.freeSurfaceBorders[2]) &&
-                            (pos.y < h_PARAMS.freeSurfaceBorders[3]) &&
-                            (pos.z > h_PARAMS.freeSurfaceBorders[4]) &&
-                            (pos.z < h_PARAMS.freeSurfaceBorders[5])) {
-                            generateNode(it, LIQUID);
-                        }
-                    }
-                }
-            }
-            break;
-        }
-    }
+void LB2::initializeInterface(const Problem& problem) {
+	// TODO old problem switch is no longer supported!
+	// creates an interface electing interface cells from active cells
+
+	// container for number of fluid nodes
+	unsigned int ct = 0;
+
+	if (h_PARAMS.lbTopographySurface) {
+		// Formerly setTopographySurface()
+		// @todo This was previously OpenMP parallel, critical section around generateNode()
+
+		for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+			if (h_nodes.type[it] == GAS) {
+				// control is done in real coordinates
+				const tVect nodePosition = h_PARAMS.getPosition(it) * h_PARAMS.unit.Length;
+				const double surfaceIsoparameterHere = lbTop.surfaceIsoparameter(nodePosition);
+				if (surfaceIsoparameterHere > 0.0 && surfaceIsoparameterHere <= 1.0) {// setting solidIndex
+					generateNode(it, LIQUID);
+					++ct;
+				}
+			}
+		}
+	}
+	else if (!problem.file.empty() && (!problem.fluids_basic.empty() || !problem.fluids_complex_str.empty())) { // Problem file was loaded
+		cout << "Initializing fluid domain from problem file:" << endl;
+		for (const auto& f : problem.fluids_basic) {
+			cout << "BOX=min(" << f.min.x << ", " << f.min.y << ", " << f.min.z << ")" << endl;
+			cout << "    max(" << f.max.x << ", " << f.max.y << ", " << f.max.z << ")" << endl;
+		}
+		for (const auto& f : problem.fluids_complex_str) {
+			cout << "EXPRESSION=if (" << f << ") > 0" << endl;
+		}
+		for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+			if (h_nodes.type[it] == GAS) {
+				// creating fluid cells
+				if (problem.isFluid(h_PARAMS.getPosition(it) * h_PARAMS.unit.Length)) {
+					generateNode(it, LIQUID);
+					++ct;
+				}
+			}
+		}
+	}
+	else {
+		cout << "Initializing fluid domain from configuration file:" << endl;
+		cout << "X=(" << double(max(h_PARAMS.domain[0], h_PARAMS.freeSurfaceBorders[0])) * h_PARAMS.unit.Length << ", " << double(min(h_PARAMS.domain[1], h_PARAMS.freeSurfaceBorders[1])) * h_PARAMS.unit.Length << ")" << endl;
+		cout << "Y=(" << double(max(h_PARAMS.domain[2], h_PARAMS.freeSurfaceBorders[2])) * h_PARAMS.unit.Length << ", " << double(min(h_PARAMS.domain[3], h_PARAMS.freeSurfaceBorders[3])) * h_PARAMS.unit.Length << ")" << endl;
+		cout << "Z=(" << double(max(h_PARAMS.domain[4], h_PARAMS.freeSurfaceBorders[4])) * h_PARAMS.unit.Length << ", " << double(min(h_PARAMS.domain[5], h_PARAMS.freeSurfaceBorders[5])) * h_PARAMS.unit.Length << ")" << endl;
+		for (unsigned int it = 0; it < h_PARAMS.totPossibleNodes; ++it) {
+			if (h_nodes.type[it] == GAS) {
+				// creating fluid cells
+				const tVect pos = h_PARAMS.getPosition(it);
+				if ((pos.x > h_PARAMS.freeSurfaceBorders[0]) &&
+					(pos.x < h_PARAMS.freeSurfaceBorders[1]) &&
+					(pos.y > h_PARAMS.freeSurfaceBorders[2]) &&
+					(pos.y < h_PARAMS.freeSurfaceBorders[3]) &&
+					(pos.z > h_PARAMS.freeSurfaceBorders[4]) &&
+					(pos.z < h_PARAMS.freeSurfaceBorders[5])) {
+					generateNode(it, LIQUID);
+					++ct;
+				}
+			}
+		}
+	}
+	cout << ct << " of " << h_PARAMS.totPossibleNodes << " nodes were init as liquid." << endl;
 }
+
 void LB2::generateNode(unsigned int coord, types typeHere) {
 
     // set type
