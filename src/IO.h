@@ -226,13 +226,16 @@ protected:
     void exportParticleOverlap(DEM& dem); // DEM used to be passed as const
         
     // particle force files
-    string forceFileName, wallForceFileName, maxWallForceFileName;
-    ofstream forceFile, wallForceFile, maxWallForceFile;
+    string forceFileName, wallForceFileName;
+    string cylinderForceFileName;
+    ofstream forceFile;
+    ofstream wallForceFile;
+    ofstream cylinderForceFile;
     double hydraulicForceTot(const elmtList& elmts) const;
     double collisionForceTot(const elmtList& elmts) const;
     void exportForces(const DEM& dem);
     void exportWallForce(const DEM& dem);
-    
+    void exportCylinderForce(const DEM& dem);
     // particle energy file
     string energyFileName;
     void exportEnergy(const DEM& dem, const LB& lb);
