@@ -158,17 +158,15 @@ void IO::initialize() {
         dtOverlapFile.close();
     }
 
-    // initializing maximum force-on-the-wall file
-    maxWallForceFileName = workDirectory + "/maxWallForce.dat";
-    maxWallForceFile.open(maxWallForceFileName.c_str(), ios::app);
-    maxWallForceFile << "time n_walls x (maxFParticle_X maxFParticle_Y maxFParticle_Z maxFHydro_X maxFHydro_Y maxFHydro_Z)\n";
-    maxWallForceFile.close();
-
-    // initializing force-on-the-wall file
+    // initializing cylinder & wall force file
     wallForceFileName = workDirectory + "/wallForce.dat";
     wallForceFile.open(wallForceFileName.c_str(), ios::app);
     wallForceFile << "time n_walls x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
     wallForceFile.close();
+    cylinderForceFileName = workDirectory + "/cylinderForce.dat";
+    cylinderForceFile.open(cylinderForceFileName.c_str(), ios::app);
+    cylinderForceFile << "time n_cylinders x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
+    cylinderForceFile.close();
 
     lastScreenExp = 0;
     lastFluidExp = 0;
@@ -265,6 +263,9 @@ void IO::outputStep(LB& lb, DEM& dem) {
 
         if (dem.walls.size() > 0) {
             exportWallForce(dem);
+        }
+        if (dem.cylinders.size() > 0) {
+            exportCylinderForce(dem);
         }
         //
         // update energies
@@ -2474,17 +2475,22 @@ void IO::exportWallForce(const DEM& dem) {
     wallForceFile << endl;
     wallForceFile.close();
 
-    // the maximum since last output
-    maxWallForceFile.open(maxWallForceFileName.c_str(), ios::app);
-    maxWallForceFile << realTime;
-    wallForceFile << " " << dem.walls.size();
-    for (int w = 0; w < dem.walls.size(); ++w) {
-        const tVect partF = dem.walls[w].maxFParticle;
-        const tVect hydroF = dem.walls[w].maxFHydro;
-        maxWallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
+}
+
+void IO::exportCylinderForce(const DEM& dem) {
+    // printing forces acting on all walls
+
+    // this specific time step
+    cylinderForceFile.open(cylinderForceFileName.c_str(), ios::app);
+    cylinderForceFile << realTime;
+    cylinderForceFile << " " << dem.cylinders.size();
+    for (int w = 0; w < dem.cylinders.size(); ++w) {
+        const tVect partF = dem.cylinders[w].FParticle;
+        const tVect hydroF = dem.cylinders[w].FHydro;
+        cylinderForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
     }
-    maxWallForceFile << endl;
-    maxWallForceFile.close();
+    cylinderForceFile << endl;
+    cylinderForceFile.close();
 
 }
 

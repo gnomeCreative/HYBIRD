@@ -1037,6 +1037,10 @@ void DEM::evaluateForces() {
         walls[w].FParticle.reset();
     }
 
+    for (int c = 0; c < walls.size(); ++c) {
+        cylinders[c].FParticle.reset();
+    }
+
     for (int o = 0; o < objects.size(); ++o) {
         objects[o].FParticle.reset();
     }
@@ -2371,7 +2375,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
     // force updating
     elmtJ->FWall = elmtJ->FWall + normalForce;
     elmtJ->solidIntensity += normalForce.abs();
-    // wallI->FParticle=wallI->FParticle-fnv;
+    cylinderI->FParticle = cylinderI->FParticle - normalForce;
     // torque updating
     if (elmtJ->size > 1) {
         elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
@@ -2416,7 +2420,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
         // force updating
         elmtJ->FWall = elmtJ->FWall - tangForce;
         elmtJ->solidIntensity += tangForce.abs();
-        //wallI->FParticle = wallI->FParticle+ftv;
+        cylinderI->FParticle = cylinderI->FParticle + tangForce;
     }
     //ROLLING
 

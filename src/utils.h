@@ -37,10 +37,6 @@ public:
     tVect FHydro;
     // collision force on wall
     tVect FParticle;
-    // max hydraulic force on wall
-    tVect maxFHydro;
-    // max collision force on wall
-    tVect maxFParticle;
     // is it a moving wall? (true = moving; false = fixed);
     bool moving;
     // is it a slipping wall?
@@ -61,8 +57,6 @@ public:
         vel=tVect(0.0,0.0,0.0);
         FHydro=tVect(0.0,0.0,0.0);
         FParticle=tVect(0.0,0.0,0.0);
-        maxFHydro=tVect(0.0,0.0,0.0);
-        maxFParticle=tVect(0.0,0.0,0.0);
         moving=false;
         slip=false;
         translating=false;
@@ -152,6 +146,10 @@ public:
     bool translating;
     // translation vector
     tVect trans;
+    // hydraulic force on cylinder
+    tVect FHydro;
+    // collision force on cylinderall
+    tVect FParticle;
     
     // default constructor
     cylinder(){
@@ -167,6 +165,8 @@ public:
         type=EMPTY;
         translating=false;
         trans=tVect(0.0,0.0,0.0);
+        FHydro = tVect(0.0, 0.0, 0.0);
+        FParticle = tVect(0.0, 0.0, 0.0);
         }
     // constructor
     cylinder(tVect ip1, tVect ip2, double radius){
@@ -178,6 +178,8 @@ public:
         omega=tVect(0.0,0.0,0.0);
         moving=false;
         slip=false;
+        FHydro = tVect(0.0, 0.0, 0.0);
+        FParticle = tVect(0.0, 0.0, 0.0);
     }
     // get tangential speed of a point rotating with the cylinder
     tVect getSpeed(tVect pt) const;

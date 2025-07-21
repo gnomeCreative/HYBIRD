@@ -89,7 +89,9 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
         if (dem.walls.size() > 0) {
             exportWallForce(dem);
         }
-        
+        if (dem.cylinders.size() > 0) {
+            exportCylinderForce(dem);
+        }
         // update energies
         totalKineticEnergy = 0.0;
         energyExit = false;
