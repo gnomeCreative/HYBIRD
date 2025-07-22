@@ -125,6 +125,9 @@ public:
     double triBeginX,triBeginY,triBeginZ;
     double triDefSpeed;
     double pressureX,pressureY,pressureZ;
+    // stuff for SHEAR_CELL_2023
+	double shearVelocity;
+	double avgParticleDiam;
 public:
 
     DEM() {
@@ -169,16 +172,17 @@ public:
         multiStep = 1;
         numVisc = 0.0;
     }
-    void exportThreadNumber();
-    void discreteElementStep();
+    void discreteElementStep(const double& fluidviscosity, const double& spacing);
     void discreteElementGet(GetPot& config_file, GetPot& command_line);
-    void discreteElementInit(const Problem& problem, const std::array<types, 6> &externalBoundary, const std::array<double, 3> &externalSize, const std::array<tVect, 6> &externalBoundaryLocation,
+    void discreteElementInit(const typeList& externalBoundary, const doubleList& externalSize, const vecList& externalBoundaryLocation,
             const tVect externalAccel, const tVect externalRotation, const tVect externalRotationCenter, const bool externalSolveCoriolis, const bool externalSolveCentrifugal, const double& externalTimeStep);
     void evolveBoundaries();
 //    void evolveObj();
     void determineTimeStep(const double& externalTimeStep);
     // energy functions
     void updateEnergy(double& totalKineticEnergy);
+	void radiusexpansion();
+	
 private:
     // initialization functions
     void compositeProperties();
@@ -188,7 +192,7 @@ private:
     // integration functions
     void predictor();
     void corrector();
-    void evaluateForces();
+	void evaluateForces(const double& fluidviscosity, const double& spacing);
     void updateParticlesPredicted();
     void updateParticlesCorrected();
     double criticalTimeStep() const;
@@ -209,7 +213,7 @@ private:
     // force computation functions
     Elongation* findSpring(const unsigned int& t, const unsigned int& indexI, particle* partj);
     void computeApparentForces();
-    void particleParticleContacts();
+    void particleParticleContacts(const double& fluidviscosity, const double& spacing);
     void wallParticleContacts();
     void cylinderParticelContacts();
     void objectParticleContacts();
@@ -222,8 +226,10 @@ private:
     tVect FRtangentialContact(const tVect& tangRelVelContact, const double& fn, const double& overlap, const double& effRad, const double& effMass, Elongation* elongation_new, const double& friction, const double& tangStiff, const double& viscTang);
     tVect rollingContact(const tVect& wI, const tVect& wJ, const double& effRad, const double& fn, const double& rolling);
     void saveObjectForces();
-    void lubrication(int i, int j, double ri, double rj, tVect x0ij);
+    inline void lubrication(const particle *partI, const particle *partJ, const tVect& vectorDistance, const double& fluidviscosity, const double& spacing);
     /// this are the (new) ones that save the contacts (Devis))
+    double lubnormalContact(const double& lag, const double& vrelnnorm, const double& effRad, const double& fluidviscosity, const double& spacing);
+    double lubtangentialContact(const double& lag, const tVect& tangRelVelContact, const double& effRad, const double& fluidviscosity, const double& spacing);
 };
 
 #endif /* DEM_H */

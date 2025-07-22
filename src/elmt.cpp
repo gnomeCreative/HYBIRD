@@ -76,11 +76,17 @@ void elmt::initialize(const double& partDensity, std::vector <vecList>& prototyp
     // initialize forces
     FHydro.reset();
     FParticle.reset();
+	FLub.reset();
     FWall.reset();
+	FLubWall.reset();
     FGrav=demF*m;
     MHydro.reset();
     MParticle.reset();
+	MLub.reset();
     MWall.reset();
+	MLubWall.reset();
+
+    elasticEnergy = 0.0;
     
 }
 
@@ -288,6 +294,10 @@ void particle::ghostUpdate(particle& originParticle, tVect& pbcVector) {
         radiusVec=originParticle.radiusVec;
         // updating particle speed
         x1=originParticle.x1;
+
+		if (problemName == SHEAR_CELL_2023) {
+			r = originParticle.r;
+		}
 }
 
 void object::updateMax(const tVect& direction, const double& time) {

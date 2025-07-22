@@ -37,6 +37,8 @@ public:
     tVect FHydro;
     // collision force on wall
     tVect FParticle;
+	// lubrication force on wall
+	tVect FLub;
     // max hydraulic force on wall
     tVect maxFHydro;
     // max collision force on wall
@@ -61,6 +63,7 @@ public:
         vel=tVect(0.0,0.0,0.0);
         FHydro=tVect(0.0,0.0,0.0);
         FParticle=tVect(0.0,0.0,0.0);
+		FLub = tVect(0.0, 0.0, 0.0);
         maxFHydro=tVect(0.0,0.0,0.0);
         maxFParticle=tVect(0.0,0.0,0.0);
         moving=false;
@@ -225,6 +228,8 @@ public:
     double grav;
     // elastic potential energy
     double elastic;
+    // turbulent kinetic energy
+    double turbulent;
     // total energy
     double total;
     energy(){
@@ -233,6 +238,7 @@ public:
         trKin=0.0;
         grav=0.0;
         elastic=0.0;
+        turbulent = 0.0;
         total=0.0;
     }
     void reset();

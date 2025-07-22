@@ -185,6 +185,31 @@ protected:
     string fluidFlowRateFileName;
     ofstream fluidFlowRateFile;
     void exportFluidFlowRate(const LB& lb);
+
+	//viscosity file
+
+	string viscosityFileName;
+	ofstream viscosityFile;
+
+	//tau file
+
+	string tauFileName;
+	ofstream tauFile;
+
+	//tau file
+
+	string sigmaFileName;
+	ofstream sigmaFile;
+
+    //temperature file
+
+    string temperatureFileName;
+    ofstream temperatureFile;
+
+    //temperature file
+
+    string energycontributionFileName;
+    ofstream energycontributionFile;
     
    // particle flow rate file
     string particleFlowRateFileName;
@@ -230,6 +255,7 @@ protected:
     ofstream forceFile, wallForceFile, maxWallForceFile;
     double hydraulicForceTot(const elmtList& elmts) const;
     double collisionForceTot(const elmtList& elmts) const;
+	double lubricationForceTot(const elmtList& elmts) const;
     void exportForces(const DEM& dem);
     void exportWallForce(const DEM& dem);
     
@@ -249,6 +275,8 @@ protected:
     void initViscFile();
     void writeViscFile(const LB& lb, const wallList& walls, const elmtList& elmts);
     void exportShearCell(const LB& lb, const DEM& dem);
+    void exportShearCell2023(const LB& lb, const DEM& dem);
+	void exportShearCell2023bumpy(const LB& lb, const DEM& dem);
     void apparentViscosity(const LB& lb, const wallList& walls, double& externalShear, double& wallStress, double& appVisc) const;
 
     // AVALANCHE /////

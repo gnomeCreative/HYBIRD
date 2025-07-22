@@ -57,8 +57,8 @@ void goCycle(IO& io, DEM& dem, LB& lb) {
 //    dem.evolveObj();
     //cout<<"1"<<endl;
     if (io.demSolver) {
-
-        dem.discreteElementStep();
+		        dem.discreteElementStep(lb.fluidMaterial.initDynVisc*lb.unit.DynVisc, lb.unit.Length);
+		//cout << lb.fluidMaterial.initDynVisc*lb.unit.DynVisc << endl;
     }
 
     if (io.lbmSolver && dem.demTime >= dem.demInitialRepeat) {
@@ -173,7 +173,7 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
     else if (problemNameString == "WILL") problemName = WILL;
     else if (problemNameString == "WILL_SETTLING") problemName = WILL_SETTLING;
     else if (problemNameString == "TRIAXIAL") problemName = TRIAXIAL;
-    else if (problemNameString == "SHEARCELL2022") problemName = SHEARCELL2023;
+    else if (problemNameString == "SHEAR_CELL_2023") problemName = SHEAR_CELL_2023;
     else if (problemNameString == "INTRUDER") problemName = INTRUDER;
     else if (problemNameString == "OBJMOVING") problemName = OBJMOVING;
     string problemFileString;
@@ -348,6 +348,12 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
             PARSE_CLASS_MEMBER(configFile, dem.triDefSpeed, "triDefSpeed", 0.0);
             break;
         }
+        case SHEAR_CELL_2023:
+		{
+			PARSE_CLASS_MEMBER(configFile, dem.shearVelocity, "shearVelocity", 0.0);
+			PARSE_CLASS_MEMBER(configFile, dem.avgParticleDiam, "avgParticleDiam", 0.0);
+			break;
+		}
 
     }
 

@@ -27,6 +27,7 @@
 #include "utils.h"
 #include "elmt.h"
 #include "getpot.h"
+#include "DEM.h"
 
 using namespace std;
 extern ProblemName problemName;
@@ -211,7 +212,7 @@ public:
     void restartInterface(ifstream& fluidFileID, unsigned int& totNodes);
     void initializeLists();
     //void resetLists();
-    void initializeVariables();
+    void initializeVariables(double shearVelocity);
     void initializeWalls(wallList& walls, cylinderList& cylinders, objectList& objects);
     // integration functions
     void collision(node* nodeHere);
