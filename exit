@@ -1,0 +1,75 @@
+diff --git a/src/gpu/LB2.cu b/src/gpu/LB2.cu
+index 6f4119f..5f0bbce 100644
+--- a/src/gpu/LB2.cu
++++ b/src/gpu/LB2.cu
+@@ -6,6 +6,8 @@
+ 
+ #include "DEM.h"
+ #include "Problem.h"
++#include <cmath>   // for sin/cos
++
+ 
+ /**
+  * Storage for static members must be defined
+@@ -2849,6 +2851,61 @@ void LB2::step(DEM &dem, bool io_demSolver) {
+     }
+ 
+     if (dem.demTime >= dem.demInitialRepeat && hd_nodes.activeCount) {
++        // --- Gravity tilt update for LBM (match DEM: 22 deg over 10 s) ---
++        // Uses dem.demTime (seconds) and rotates gravity in X–Z plane (tilt about +Y),
++        // same sign convention as your DEM code:
++        //   demF.x = -g * sin(theta), demF.z = -g * cos(theta)
++
++        // Avoid M_PI portability issues by defining our own constant:
++        constexpr double PI = 3.14159265358979323846;
++        constexpr double degToRad = PI / 180.0;
++        constexpr double maxTiltRad = 22.0 * degToRad;
++
++        const double t = dem.demTime;                    // seconds
++        const double g_phys = 9.806;                     // m/s^2 (physical)
++        const double currentTilt =
++            (t < 10.0) ? (maxTiltRad * (t / 10.0)) : maxTiltRad;
++
++        // Physical gravity components (tilt in X-Z plane; initial gravity along -Z)
++        const double gx_phys = -g_phys * std::sin(currentTilt);
++        const double gy_phys =  0.0;
++        const double gz_phys = -g_phys * std::cos(currentTilt);
++
++        // Convert to LBM lattice units using configured unit scaling
++        const double gx = gx_phys / PARAMS.unit.Accel;
++        const double gy = gy_phys / PARAMS.unit.Accel;
++        const double gz = gz_phys / PARAMS.unit.Accel;
++
++        // Ensure the LBM force field is enabled and update PARAMS.lbF
++        if (!h_PARAMS.forceField) {
++            h_PARAMS.forceField = true;
++        }
++        h_PARAMS.lbF = tVect(gx, gy, gz);
++
++        // IMPORTANT: copy updated params to device (safe no-op on CPU builds)
++        this->syncParams();
++
++        // Throttled console logging (every 0.01 s)
++        {
++            static double lastPrintTime = -1.0;
++            const double printInterval = 0.01;
++            if (t - lastPrintTime >= printInterval) {
++                std::cout << "[LBM t = " << t << " s] Tilt = "
++                          << (currentTilt / degToRad) << " deg | Gravity (lattice): "
++                          << "X = " << h_PARAMS.lbF.x
++                          << ", Z = " << h_PARAMS.lbF.z << std::endl;
++                lastPrintTime = t;
++            }
++        }
++        // --- end gravity tilt update ---
++
++
++
++
++
++
++
++
+         this->latticeBoltzmannStep();
+         
+         if (io_demSolver) {

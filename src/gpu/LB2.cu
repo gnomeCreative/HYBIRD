@@ -6,6 +6,8 @@
 
 #include "DEM.h"
 #include "Problem.h"
+#include <cmath>   // for sin/cos
+
 
 /**
  * Storage for static members must be defined
@@ -2858,6 +2860,58 @@ void LB2::step(DEM &dem, bool io_demSolver) {
     }
 
     if (dem.demTime >= dem.demInitialRepeat && hd_nodes.activeCount) {
+
+        //GRAVITY TILT IMPLEMENTATION ===========================
+  	//lineraly tilt gravity 22 deg over 10s period
+
+        constexpr double PI = 3.14159265358979323846; //faced portability issues, defined new constant
+        constexpr double degToRad = PI /180.0;
+        constexpr double maxTiltRad = 22.0 *degToRad;
+
+        const double t = dem.demTime; //seconds
+        const double g_phys =9.806;                     
+        const double currentTilt =
+            (t < 10.0) ? (maxTiltRad * (t / 10.0)) : maxTiltRad; //if t<10, scale maxTiltRad linearly
+
+        //normal SI units
+        const double gx_phys = -g_phys * std::sin(currentTilt);
+        const double gy_phys =  0.0;
+        const double gz_phys =-g_phys * std::cos(currentTilt);
+
+        //lattice scaling using conversion factor
+        const double gx = gx_phys / PARAMS.unit.Accel;
+        const double gy = gy_phys /PARAMS.unit.Accel;
+        const double gz = gz_phys /PARAMS.unit.Accel;
+
+ 	if (!h_PARAMS.forceField){
+            h_PARAMS.forceField =true;
+        }
+        h_PARAMS.lbF = tVect(gx, gy, gz); //lattice unit gravity vector 
+
+        //DEMI DO NOT CHANGE ----- workaround for avoiding illegal memory access error
+        this->syncParams(); //copies host parameters to GPU
+
+        //output at same freq as DEM, tilt is the same although I havent changed angles to be in SI 
+        {
+            static double lastPrintTime = -1.0;
+            const double printInterval = 0.01;
+            if (t - lastPrintTime >= printInterval) {
+                std::cout << "[LBM t = " << t << " s] Tilt = "
+                          << (currentTilt / degToRad) << " deg | Gravity (lattice): "
+                          << "X = " << h_PARAMS.lbF.x
+                          << ", Z = " << h_PARAMS.lbF.z << std::endl;
+                lastPrintTime = t;
+            }
+        }
+        //END OF GRAVITY TILT IMPLEMENTATION =======================
+
+
+
+
+
+
+
+
         this->latticeBoltzmannStep();
         
         if (io_demSolver) {
