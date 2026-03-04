@@ -284,17 +284,17 @@ void IO2::createFiles(LB2& lb, const DEM& dem) {
                 exportRecycleParticles(dem.elmts, dem.pbcs, filePathBuffer);
             }
     }
-    //if (dem.objects.size() > 0) {
+    if (dem.objects.size() > 0) {
 
-    //    const unsigned int objectExpCounter = (objectExpTime > 0 ? static_cast<unsigned int> (realTime / objectExpTime) + 1 : 0);
-    //    if (objectExpCounter > lastObjectExp) {
-    //        lastObjectExp = objectExpCounter;
-    //        char filePathBuffer [1024];
-    //        sprintf(filePathBuffer, objectFileFormat.c_str(), currentTimeStep);
-    //        exportParaviewObjects(dem.objects, filePathBuffer);
-    //    }
-    //}
-    //
+        const unsigned int objectExpCounter = (objectExpTime > 0 ? static_cast<unsigned int> (realTime / objectExpTime) + 1 : 0);
+        if (objectExpCounter > lastObjectExp) {
+            lastObjectExp = objectExpCounter;
+            char filePathBuffer [1024];
+            sprintf(filePathBuffer, objectFileFormat.c_str(), currentTimeStep);
+            exportParaviewObjects(dem.objects, filePathBuffer);
+        }
+    }
+    
     //if (dem.cylinders.size() > 0) {
     //    
     //    const unsigned int CylinderExpCounter = (cylinderExpTime > 0 ? static_cast<unsigned int> (realTime / cylinderExpTime) + 1 : 0);
