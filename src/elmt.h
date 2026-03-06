@@ -30,7 +30,7 @@ public:
     // belonging cell for neighbor list
     unsigned int tableCell;
     // particle radius
-    double r;
+    double particleRadius;
     // position of the particle
     tVect  x0;
     // velocity of the particle
@@ -44,7 +44,7 @@ public:
         clusterIndex=0;
         protoIndex=0;
         tableCell=0;
-        r=0.0;
+        particleRadius=0.0;
         x0.reset();
         x1.reset();
         radiusVec.reset();
@@ -66,19 +66,21 @@ class elmt{
 public:
     bool wSolver;
     // element index
-    unsigned int index;
+    unsigned int elmtIndex;
     // is it active? (false=destroyed)
     bool active;
     // constitutive particles indexes
     intList components;
     // number of constitutive particles
     unsigned int elmtSize;
+    // protorype reference
+    unsigned int prototype;
     // radius of constitutive particles (supposed, for the moment, of being constant)
-    double radius;
+    double elmtRadius;
     // mass stored in the element
-    double m;
+    double elmtMass;
     // inertia tensor on principal axis (diagonal)
-    tVect I;
+    tVect elmtInertia;
     // Position and derivatives
     // position of the center of mass of the element
     tVect x0;
@@ -130,8 +132,9 @@ public:
         wSolver=true;
         //
         active=true;
+        prototype = 0;
         elmtSize=1;
-        radius=1.0;
+        elmtRadius=1.0;
         x0=x1=x2=x3=x4=x5=tVect(0.0,0.0,0.0);
         q0=tQuat(1.0,0.0,0.0,0.0);
         q1=q2=q3=q4=q5=tQuat(0.0,0.0,0.0,0.0);
@@ -144,9 +147,9 @@ public:
         qp0=tQuat(1.0,0.0,0.0,0.0);
         qp1=qp2=qp3=qp4=qp5=tQuat(0.0,0.0,0.0,0.0);
         wp0=wp1=wp2=wp3=wp4=wp5=tVect(0.0,0.0,0.0);
-        index=0;
-        m=1.0;
-        I=tVect(1.0,1.0,1.0);
+        elmtIndex=0;
+        elmtMass=1.0;
+        elmtInertia=tVect(1.0,1.0,1.0);
         FHydro.reset();
         FWall.reset();
         FParticle.reset();

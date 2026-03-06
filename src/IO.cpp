@@ -715,7 +715,7 @@ void IO::exportParaviewParticles(const elmtList& elmts, const particleList& part
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radius\"/>\n";
     for (int i = 0; i < Pnumber; ++i) {
         if (particles[i].active) {
-            paraviewParticleFile << particles[i].r << "\n";
+            paraviewParticleFile << particles[i].particleRadius << "\n";
         }
     }
     //    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"mass\"/>\n";
@@ -975,7 +975,7 @@ void IO::exportParaviewParticles_binaryv3(const elmtList& elmts, const particleL
     offset = active_particles.size() * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (int i = 0; i < active_particles.size(); ++i) {
-        d_buffer[i] = particles[active_particles[i]].r;
+        d_buffer[i] = particles[active_particles[i]].particleRadius;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // particleIndex
@@ -1360,7 +1360,7 @@ void IO::exportRecycleParticles(const elmtList& elmts, const pbcList& pbcs, cons
             // import variables
             recycleParticleFile << index << "\t";
             recycleParticleFile << elmts[i].elmtSize << "\t";
-            recycleParticleFile << elmts[i].radius << "\t";
+            recycleParticleFile << elmts[i].elmtRadius << "\t";
             // element center could be out of domain of there are periodic walls, fix this.
             tVect printPosition = elmts[i].x0;
             for (int b = 0; b < pbcs.size(); ++b) {
@@ -2282,7 +2282,7 @@ void IO::exportParticleFlowRate(const DEM& dem) {
     tVect flowRate(0.0, 0.0, 0.0);
     double totMass = 0.0;
     for (int n = 0; n < dem.elmts.size(); ++n) {
-        flowRate += dem.elmts[n].m * dem.elmts[n].x1;
+        flowRate += dem.elmts[n].elmtMass * dem.elmts[n].x1;
         //totMass += dem.elmts[n].m;
     }
     //if (totMass > 0.0) {
@@ -2403,7 +2403,7 @@ void IO::exportParticleOverlap(DEM& dem) { // used to be passed as const
     int totContactParticles(0), totDtContactParticles(0);
 
     for (int p = 0; p < dem.elmts.size(); ++p) {
-        const double radiusHere = dem.elmts[p].radius;
+        const double radiusHere = dem.elmts[p].elmtRadius;
         // istantaneous overlap
         const double overlapHere = dem.elmts[p].maxOverlap;
         if (overlapHere > 0.0) {
@@ -2645,7 +2645,7 @@ double IO::totParticleMass(const elmtList& elmts) const {
 
     for (int n = 0; n < elmts.size(); ++n) {
         // calculate mass
-        mass += elmts[n].m;
+        mass += elmts[n].elmtMass;
     }
 
     return mass;
@@ -2694,8 +2694,8 @@ tVect IO::particleCenterOfMass(const elmtList& elmts) const {
     double totMass(0.0);
 
     for (int p = 0; p < elmts.size(); ++p) {
-        center += elmts[p].m * elmts[p].x0;
-        totMass += elmts[p].m;
+        center += elmts[p].elmtMass * elmts[p].x0;
+        totMass += elmts[p].elmtMass;
     }
 
     return center / totMass;
@@ -2783,8 +2783,8 @@ void IO::exportHPartObstacle(const DEM& dem) {
 
     double radMax = 0.0;
     for (int n = 0; n < dem.elmts.size(); ++n) {
-        if (radMax < dem.elmts[n].radius) {
-            radMax = dem.elmts[n].radius;
+        if (radMax < dem.elmts[n].elmtRadius) {
+            radMax = dem.elmts[n].elmtRadius;
         }
     }
     double xObMax = 0.0;
@@ -2894,8 +2894,8 @@ void IO::exportKmPartObstacle(const DEM& dem) {
 
     double radMax = 0.0;
     for (int n = 0; n < dem.elmts.size(); ++n) {
-        if (radMax < dem.elmts[n].radius) {
-            radMax = dem.elmts[n].radius;
+        if (radMax < dem.elmts[n].elmtRadius) {
+            radMax = dem.elmts[n].elmtRadius;
         }
     }
 
@@ -2968,7 +2968,7 @@ void IO::exportKmPartObstacle(const DEM& dem) {
                         if ((dem.elmts[n].x0.dot(Zp) < zInt) && (dem.elmts[n].x0.dot(Zp) >= zInf)) {
                             numPartInt += 1;
                             const tVect wSquare = dem.elmts[n].wLocal.compProd(dem.elmts[n].wLocal);
-                            enKinM += (0.5 * dem.elmts[n].m * dem.elmts[n].x1.norm2() + 0.5 * dem.elmts[n].I.dot(wSquare));
+                            enKinM += (0.5 * dem.elmts[n].elmtMass * dem.elmts[n].x1.norm2() + 0.5 * dem.elmts[n].elmtInertia.dot(wSquare));
                             //cout<<"enKinM"<<enKinM<<" "<<0.5*dem.elmts[n].m * dem.elmts[n].x1.norm2()<<" "<<0.5*dem.elmts[n].I.dot(wSquare);
 
                         }
@@ -3063,9 +3063,9 @@ void IO::exportHongKongFlow(DEM& dem) {
     for (int i = 0; i < dem.elmts.size(); ++i) {
         const double elmtX = dem.elmts[i].x0.dot(Xp);
         const double elmtY = dem.elmts[i].x0.dot(Yp);
-        const double elmtZ = dem.elmts[i].x0.dot(Zp) + dem.elmts[i].radius;
+        const double elmtZ = dem.elmts[i].x0.dot(Zp) + dem.elmts[i].elmtRadius;
         const double elmtU = dem.elmts[i].x1.dot(Xp);
-        const double elmtMass = dem.elmts[i].m;
+        const double elmtMass = dem.elmts[i].elmtMass;
         // check if we are inside observation window (upstream)
         if (elmtX > upBegin && elmtX < upEnd) {
             uUp += elmtU;
