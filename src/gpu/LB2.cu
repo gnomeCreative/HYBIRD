@@ -95,7 +95,7 @@ void LB2::syncParticlesIn<CPU>(const particleList &particles) {
     // Repackage host particle data from array of structures, to structure of arrays
     for (unsigned int i = 0; i < h_particles.count; ++i) {
         h_particles.clusterIndex[i] = particles[i].clusterIndex;
-        h_particles.r[i] = particles[i].r;
+        h_particles.r[i] = particles[i].particleRadius;
         h_particles.x0[i] = particles[i].x0;
         h_particles.radiusVec[i] = particles[i].radiusVec;
     }
@@ -206,7 +206,7 @@ void LB2::syncParticlesOut<CPU>(particleList &particles) {
     // Repackage device particle data from structure of arrays to array of structures 
     for (unsigned int i = 0; i < h_particles.count; ++i) {
         particles[i].clusterIndex = h_particles.clusterIndex[i];
-        particles[i].r = h_particles.r[i];
+        particles[i].particleRadius = h_particles.r[i];
         particles[i].x0 = h_particles.x0[i];
         particles[i].radiusVec = h_particles.radiusVec[i];
     }
