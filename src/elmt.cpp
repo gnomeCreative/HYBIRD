@@ -6,7 +6,7 @@
 using namespace std;
 
 void elmt::elmtShow() const {
-    cout<<"Element number "<<index<<" with "<<size<<" particles of radius "<<radius<<"\n";
+    cout<<"Element number "<<index<<" with "<<elmtSize<<" particles of radius "<<radius<<"\n";
     cout<<"Position: "; x0.show();
     cout<<"; Velocity: "; x1.show(); cout<<";\n";
     cout<<"Orientation: "; q0.show(); cout<<";\n";
@@ -62,13 +62,13 @@ void elmt::initialize(const double& partDensity, std::vector <vecList>& prototyp
     // calculated variables (the element is supposed to be a sphere for the moment)
     // mass
     const double singleMass=4.0/3.0*partDensity*M_PI*radius*radius*radius;
-    m=size*singleMass;
+    m=elmtSize*singleMass;
     // inertia moment (diagonal) - Huygens-Steiner theorem
     // inertia of single spheres
-    I=size*2.0/5.0*singleMass*radius*radius*tVect(1.0,1.0,1.0);
+    I=elmtSize*2.0/5.0*singleMass*radius*radius*tVect(1.0,1.0,1.0);
     // transport components
-    for (int n=0; n<size; ++n) {
-        I+=singleMass*radius*radius*prototypes[size][n].transport();
+    for (int n=0; n<elmtSize; ++n) {
+        I+=singleMass*radius*radius*prototypes[elmtSize][n].transport();
     }
 
     active=true;
@@ -122,9 +122,9 @@ void elmt::resetVelocity() {
 }
 
 void elmt::generateParticles(unsigned int& globalIndex, particleList& particles, const std::vector<vecList>& prototypes) {
-    components.resize(size);
+    components.resize(elmtSize);
 
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < elmtSize; ++i) {
         // add standard particle
         particle dummyPart;
         dummyPart.particleIndex = globalIndex;
@@ -257,8 +257,8 @@ void particle::updatePredicted(const elmt& motherElmt, const std::vector <vecLis
     radiusVec=Zero;
     x1=motherElmt.xp1;
             
-    if (motherElmt.size>1) {
-        x0=x0+r*project(prototypes[motherElmt.size][protoIndex],motherElmt.qp0);
+    if (motherElmt.elmtSize>1) {
+        x0=x0+r*project(prototypes[motherElmt.elmtSize][protoIndex],motherElmt.qp0);
         // updating radius (distance of particle center of mass to element center of mass)
         radiusVec=x0-motherElmt.xp0;
         x1=x1+motherElmt.wpGlobal.cross(radiusVec);
@@ -272,8 +272,8 @@ void particle::updateCorrected(const elmt& motherElmt, const std::vector <vecLis
     radiusVec=Zero;
     x1=motherElmt.x1;
             
-    if (motherElmt.size>1) {
-        x0=x0+r*project(prototypes[motherElmt.size][protoIndex],motherElmt.q0);
+    if (motherElmt.elmtSize>1) {
+        x0=x0+r*project(prototypes[motherElmt.elmtSize][protoIndex],motherElmt.q0);
         // updating radius (distance of particle center of mass to element center of mass)
         radiusVec=x0-motherElmt.x0;
         x1=x1+motherElmt.wGlobal.cross(radiusVec);
