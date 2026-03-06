@@ -98,10 +98,10 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
         elmt dummyElmt;
 
         // import variables
-        particleFileID >> dummyElmt.index;
-        particleFileID >> dummyElmt.size;
-        particleFileID >> dummyElmt.radius;
-        dummyElmt.radius = dummyElmt.radius*scale;
+        particleFileID >> dummyElmt.elmtIndex;
+        particleFileID >> dummyElmt.prototype;
+        particleFileID >> dummyElmt.elmtRadius;
+        dummyElmt.elmtRadius = dummyElmt.elmtRadius*scale;
         // position
         double x0, y0, z0;
         particleFileID>>x0;
@@ -263,9 +263,9 @@ void DEM::discreteElementInit(const Problem &problem, const std::array<types, 6>
     maxPartRadius = 0.0;
     meanPartRadius = 0.0;
     for (int n = 0; n < elmts.size(); ++n) {
-        const double radiusHere = elmts[n].radius;
+        const double radiusHere = elmts[n].elmtRadius;
         // calculate mass
-        totMass += elmts[n].m;
+        totMass += elmts[n].elmtMass;
         meanPartRadius += radiusHere;
         if (radiusHere > maxPartRadius) {
             maxPartRadius = radiusHere;
@@ -1097,12 +1097,12 @@ void DEM::evaluateForces() {
 
         // numerical viscosity for stability
         // see "Viscous torque on a sphere under arbitrary rotation" by Lei,  Yang, and Wu, Applied Physics Letters 89, 181908 (2006)
-        const tVect FVisc = -6.0 * M_PI * numVisc * elmts[n].radius * elmts[n].xp1;
-        const tVect MVisc = -8.0 * M_PI * numVisc * elmts[n].radius * elmts[n].radius * elmts[n].radius * elmts[n].wpGlobal;
+        const tVect FVisc = -6.0 * M_PI * numVisc * elmts[n].elmtRadius * elmts[n].xp1;
+        const tVect MVisc = -8.0 * M_PI * numVisc * elmts[n].elmtRadius * elmts[n].elmtRadius * elmts[n].elmtRadius * elmts[n].wpGlobal;
 
         // translational motion
         // acceleration (sum of forces / mass + sum of accelerations)
-        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall) / elmts[n].m + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
+        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall) / elmts[n].elmtMass + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
 
         // rotational motion
         // adjoint of orientation quaternion
@@ -1116,11 +1116,11 @@ void DEM::evaluateForces() {
         //if (elmts[n].size
         const tVect momentBf = project(moment, elmts[n].qp0.adjoint());
         // rotational acceleration (body-fixed reference frame) (Newton equation for principal system)
-        const tVect waBf = newtonAcc(momentBf, elmts[n].I, elmts[n].wpLocal);
+        const tVect waBf = newtonAcc(momentBf, elmts[n].elmtInertia, elmts[n].wpLocal);
         // rotational acceleration (vector)
         elmts[n].w1 = project(waBf, elmts[n].qp0);
         // rotational acceleration (quaternion)
-        if (elmts[n].size > 1) {
+        if (elmts[n].elmtSize > 1) {
             const tQuat waQuat = quatAcc(waBf, elmts[n].qp1);
             elmts[n].q2 = 0.5 * elmts[n].qp0.multiply(waQuat);
         }
@@ -1184,11 +1184,11 @@ double DEM::criticalTimeStep() const {
     // maximum damping coefficient to avoid having too large deltat
     static const double maxDampCoef = 0.9;
 
-    double minRad = elmts[0].radius;
-    double minMass = elmts[0].m;
+    double minRad = elmts[0].elmtRadius;
+    double minMass = elmts[0].elmtMass;
     for (int n = 0; n < elmts.size(); ++n) {
-        minRad = std::min(minRad, elmts[n].radius);
-        minMass = std::min(minMass, elmts[n].m);
+        minRad = std::min(minRad, elmts[n].elmtRadius);
+        minMass = std::min(minMass, elmts[n].elmtMass);
     }
 
     // double const k=8.0/15.0*sphereMat.youngMod/(1-sphereMat.poisson*sphereMat.poisson)*sqrt(minRad);
@@ -1270,8 +1270,8 @@ void DEM::initNeighborParameters() {
     // maximum radius
     double maxRad = 0.0;
     for (int i = 0; i < elmts.size(); ++i) {
-        if (maxRad < elmts[i].radius) {
-            maxRad = elmts[i].radius;
+        if (maxRad < elmts[i].elmtRadius) {
+            maxRad = elmts[i].elmtRadius;
         }
     }
     for (int o = 0; o < objects.size(); ++o) {
@@ -1282,8 +1282,8 @@ void DEM::initNeighborParameters() {
     // minimum radius
     double minRad = 1.0e9;
     for (int i = 0; i < elmts.size(); ++i) {
-        if (minRad > elmts[i].radius) {
-            minRad = elmts[i].radius;
+        if (minRad > elmts[i].elmtRadius) {
+            minRad = elmts[i].elmtRadius;
         }
     }
     cout << "Max radius=" << maxRad << endl;
@@ -1375,7 +1375,7 @@ void DEM::evalCellTable() {
             cout << "Position: (" << elmts[p].x0.dot(Xp) << " " << elmts[p].x0.dot(Yp) << " " << elmts[p].x0.dot(Zp) << ")" << endl;
             cout << "Velocity: (" << elmts[p].x1.dot(Xp) << " " << elmts[p].x1.dot(Yp) << " " << elmts[p].x1.dot(Zp) << ")" << endl;
             elmts[p].resetVelocity();
-            elmts[p].radius = 0.0;
+            elmts[p].elmtRadius = 0.0;
             elmts[p].x0 = Zero;
             //exit(0);
             //            continue;
@@ -1511,7 +1511,7 @@ void DEM::evalNeighborTable() {
         ghosts.clear();
         //resizing components of elements
         for (int n = 0; n < elmts.size(); ++n) {
-            elmts[n].components.resize(elmts[n].size);
+            elmts[n].components.resize(elmts[n].elmtSize);
         }
         // periodicity shift
         pbcShift();
@@ -1661,7 +1661,7 @@ void DEM::evalNearObjectTable() {
     for (int n = 0; n < stdPartNumber; ++n) {
         if (particles[n].active) {
             const tVect posPartHere = particles[n].x0;
-            const double radiusPartHere = particles[n].r;
+            const double radiusPartHere = particles[n].particleRadius;
             for (int o = 0; o < objects.size(); ++o) {
                 const double radiusObjHere = objects[o].r;
                 const tVect x0ij = posPartHere - objects[o].x0;
@@ -1739,7 +1739,7 @@ void DEM::createGhosts() {
         // cycle through elements
         for (int n = 0; n < elmts.size(); ++n) {
             // cycle through standard particles
-            for (int j = 0; j < elmts[n].size; ++j) {
+            for (int j = 0; j < elmts[n].elmtSize; ++j) {
                 const unsigned int p = elmts[n].components[j];
                 // distances from the periodic walls
                 const double leftDist = pbcs[b].pl1.dist(particles[p].x0);
@@ -1781,7 +1781,7 @@ void DEM::createGhosts() {
 
     //resizing components of elements
     for (int t = 0; t < elmts.size(); ++t) {
-        elmts[t].components.resize(elmts[t].size);
+        elmts[t].components.resize(elmts[t].elmtSize);
     }
 
     // creating particles from ghosts
@@ -1881,8 +1881,8 @@ void DEM::particleParticleContacts() {
         particle *partJ = &particles[*ipj];
 
         // checking for overlap
-        const double ri = partI->r;
-        const double rj = partJ->r;
+        const double ri = partI->particleRadius;
+        const double rj = partJ->particleRadius;
         const double sigij = ri + rj;
         const double sigij2 = sigij*sigij;
         // distance between centers
@@ -1948,7 +1948,7 @@ void DEM::wallParticleContacts() {
 
         if (isInsideLimits) {
             // radius
-            const double rj = partJ->r;
+            const double rj = partJ->particleRadius;
 
             // distance before contact
             const double overlap = rj - distance;
@@ -1981,7 +1981,7 @@ void DEM::cylinderParticelContacts() {
         cylinder *cylinderI = &cylinders[*icyl];
 
         // radius
-        const double rj = partJ->r;
+        const double rj = partJ->particleRadius;
         // distance from wall (norm)
         const double distance = cylinderI->dist(partJ->x0);
         // distance before contact
@@ -2020,7 +2020,7 @@ void DEM::objectParticleContacts() {
         object *objectI = &objects[*iobj];
 
         // radius
-        const double rj = partJ->r;
+        const double rj = partJ->particleRadius;
         // distance from object (vector)
         const tVect vectorDistance = partJ->x0 - objectI->x0;
         // distance from object (norm)
@@ -2049,8 +2049,8 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
     // NORMAL FORCE ///////////////////////////////////////////////////////////////////
 
     // geometry /////////////////////////////
-    const double radI = partI->r;
-    const double radJ = partJ->r;
+    const double radI = partI->particleRadius;
+    const double radJ = partJ->particleRadius;
     // distance norm
     const double distance = vectorDistance.norm();
     // overlap
@@ -2064,7 +2064,7 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
     // relative normal velocity
     const tVect normalRelVel = en*normRelVel;
     // effective mass
-    const double effMass = elmtI->m * elmtJ->m / (elmtI->m + elmtJ->m);
+    const double effMass = elmtI->elmtMass * elmtJ->elmtMass / (elmtI->elmtMass + elmtJ->elmtMass);
     // effective radius
     const double effRad = radI * radJ / (radI + radJ);
     /*cout<<"overlap "<<overlap<<endl;
@@ -2096,7 +2096,7 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
         elmtI->FParticle = elmtI->FParticle - normalForce;
         elmtI->solidIntensity += normalForce.abs();
         //  moment generated in non-spherical particles
-        if (elmtI->size > 1) {
+        if (elmtI->elmtSize > 1) {
             elmtI->MParticle = elmtI->MParticle - centerDistI.cross(normalForce);
         }
     }
@@ -2104,7 +2104,7 @@ inline void DEM::particleParticleCollision(const particle *partI, const particle
         elmtJ->FParticle = elmtJ->FParticle + normalForce;
         elmtJ->solidIntensity += normalForce.abs();
         //  moment generated in non-spherical particles
-        if (elmtJ->size > 1) {
+        if (elmtJ->elmtSize > 1) {
             elmtJ->MParticle = elmtJ->MParticle + centerDistJ.cross(normalForce);
         }
     }
@@ -2206,7 +2206,7 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
 
     // geometry ///////////////
     // particle radius
-    const double radJ = partJ->r;
+    const double radJ = partJ->particleRadius;
     // first local unit vector (normal)
     const tVect en = wallI->n;
     // speed of the wall at contact point
@@ -2219,7 +2219,7 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
     const tVect normalRelVel = en*normRelVel;
 
     // force computation /////////////////////////////////
-    double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->m); // removed 2.0 *
+    double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->elmtMass); // removed 2.0 *
 
     //    switch (problemName) {
     //        case TRIAXIAL:
@@ -2243,7 +2243,7 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
     const tVect vecRadJ = -radJ*en;
     // vectorized distance contactPoint-center of cluster
     tVect centerDistJ = vecRadJ;
-    if (elmtJ->size > 1) {
+    if (elmtJ->elmtSize > 1) {
         // vectorized distance contactPoint-center of cluster
         centerDistJ = centerDistJ + (partJ->x0 - elmtJ->xp0);
     }
@@ -2253,7 +2253,7 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
     wallI->FParticle = wallI->FParticle - normalForce;
     elmtJ->solidIntensity += normalForce.abs();
     // torque updating
-    if (elmtJ->size > 1) {
+    if (elmtJ->elmtSize > 1) {
         elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
     }
 
@@ -2290,7 +2290,7 @@ inline void DEM::wallParticleCollision(wall *wallI, const particle *partJ, const
             }
         }
 
-        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->m, elongation_new, sphereMat.frictionCoefWall,
+        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->elmtMass, elongation_new, sphereMat.frictionCoefWall,
                 sphereMat.linearStiff, sphereMat.viscTang);
 
         // torque updating
@@ -2334,7 +2334,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
 
     // geometry ///////////////
     // particle radius
-    const double radJ = partJ->r;
+    const double radJ = partJ->particleRadius;
     // vectorial distance
     const tVect vecDistance = cylinderI->vecDist(partJ->x0);
     // contact point
@@ -2351,7 +2351,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
     const tVect normalRelVel = en*normRelVel;
 
     // force computation /////////////////////////////////
-    const double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->m); // was 2.0 * overlap
+    const double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->elmtMass); // was 2.0 * overlap
 
     // Overlap elastic potential energy
     //                    energy.elastic+=fn*xj/2.5;
@@ -2371,7 +2371,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
     elmtJ->solidIntensity += normalForce.abs();
     // wallI->FParticle=wallI->FParticle-fnv;
     // torque updating
-    if (elmtJ->size > 1) {
+    if (elmtJ->elmtSize > 1) {
         elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
     }
 
@@ -2406,7 +2406,7 @@ inline void DEM::cylinderParticleCollision(cylinder *cylinderI, const particle *
             }
         }
 
-        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->m, elongation_new, sphereMat.frictionCoefWall,
+        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->elmtMass, elongation_new, sphereMat.frictionCoefWall,
                 sphereMat.linearStiff, sphereMat.viscTang);
 
         // torque updating
@@ -2445,7 +2445,7 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
 
     // geometry ///////////////
     // particle radius
-    const double radJ = partJ->r;
+    const double radJ = partJ->particleRadius;
     // distance from object (norm)
     const double distance = vectorDistance.norm();
     // distance before contact
@@ -2462,7 +2462,7 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
     const tVect normalRelVel = en*normRelVel;
 
     // force computation /////////////////////////////////
-    const double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->m); // was 2.0 * overlap
+    const double normNormalForce = normalContact(overlap, normRelVel, radJ, elmtJ->elmtMass); // was 2.0 * overlap
 
     // Overlap elastic potential energy
     //                    energy.elastic+=fn*xj/2.5;
@@ -2483,7 +2483,7 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
     elmtJ->solidIntensity += normalForce.abs();
 
     // torque updating
-    if (elmtJ->size > 1) {
+    if (elmtJ->elmtSize > 1) {
         elmtJ->MWall = elmtJ->MWall + centerDistJ.cross(normalForce);
     }
 
@@ -2518,7 +2518,7 @@ inline void DEM::objectParticleCollision(object *objectI, const particle *partJ,
             }
         }
 
-        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->m, elongation_new, sphereMat.frictionCoefObj,
+        tVect tangForce = FRtangentialContact(tangRelVelContact, normNormalForce, overlap, radJ, elmtJ->elmtMass, elongation_new, sphereMat.frictionCoefObj,
                 sphereMat.linearStiff, sphereMat.viscTang);
 
         // torque updating
@@ -2754,15 +2754,15 @@ void DEM::updateEnergy(double& totalKineticEnergy) {
     double tKin(0.0), rKin(0.0), mass(0.0);
     for (int n = 0; n < elmts.size(); ++n) {
         if (elmts[n].active) {
-            tKin += 0.5 * elmts[n].m * elmts[n].x1.norm2();
+            tKin += 0.5 * elmts[n].elmtMass * elmts[n].x1.norm2();
             // adjoint of orientation quaternion
             //const tQuat q0adj=elmts[n].q0.adjoint();
             // rotational velocity (body-fixed reference frame)
             //const tVect w=wLocal;//2.0*quat2vec( q0adj.multiply( elmts[n].q1 ) );
             //        Tvect w=2.0*quat2vec( elmts[i].q1.multiply( elmts[i].q0.adjoint() ) );
             const tVect wSquare = elmts[n].wLocal.compProd(elmts[n].wLocal);
-            rKin += elmts[n].I.dot(wSquare);
-            mass += elmts[n].m;
+            rKin += elmts[n].elmtInertia.dot(wSquare);
+            mass += elmts[n].elmtMass;
         }
     }
 
@@ -2789,7 +2789,7 @@ void DEM::updateEnergy(double& totalKineticEnergy) {
         }
         for (int n = 0; n < elmts.size(); n++) {
             const double heigth = zeroWall.dist(elmts[n].x0);
-            g += elmts[n].m * heigth*gravityNorm;
+            g += elmts[n].elmtMass * heigth*gravityNorm;
         }
     }
     particleEnergy.grav = g;

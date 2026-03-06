@@ -1538,7 +1538,7 @@ void LB::initializeParticleBoundaries(particleList& particles) {
 
     for (int n = 0; n < particles.size(); ++n) {
         const tVect convertedPosition = particles[n].x0 / unit.Length;
-        const double convertedRadius = hydrodynamicRadius * particles[n].r / unit.Length;
+        const double convertedRadius = hydrodynamicRadius * particles[n].particleRadius / unit.Length;
         const unsigned int particleIndexHere = particles[n].particleIndex;
 #pragma omp parallel for
         for (int it = 0; it < activeNodes.size(); ++it) {
@@ -1576,7 +1576,7 @@ void LB::checkNewInterfaceParticles(elmtList& elmts, particleList& particles) {
             for (int n = 0; n < elmts[m].components.size(); ++n) {
 
                 const tVect convertedPosition = particles[elmts[m].components[n]].x0 / unit.Length;
-                const double convertedRadius = hydrodynamicRadius * particles[elmts[m].components[n]].r / unit.Length;
+                const double convertedRadius = hydrodynamicRadius * particles[elmts[m].components[n]].particleRadius / unit.Length;
                 const unsigned int particleIndexHere = particles[elmts[m].components[n]].particleIndex;
 #pragma omp parallel for
                 for (int it = 0; it < interfaceNodes.size(); ++it) {
@@ -3029,7 +3029,7 @@ void LB::findNewActive(nodeList& newPopUpNodes, elmtList& elmts, particleList& p
                 // checking if it has been uncovered in component j of the cluster
                 // radius need to be increased by half a lattice unit
                 // this is because solid boundaries are located halfway between solid and fluid nodes
-                if (nodePosition.insideSphere(particles[componentIndex].x0 / unit.Length, hydrodynamicRadius * particles[componentIndex].r / unit.Length)) { //-0.5?
+                if (nodePosition.insideSphere(particles[componentIndex].x0 / unit.Length, hydrodynamicRadius * particles[componentIndex].particleRadius / unit.Length)) { //-0.5?
                     // if the node is still inside the element, the hypothesis of new active is not true anymore
                     newActive = false;
                     // and we can get out of the cycle
@@ -3091,7 +3091,7 @@ void LB::findNewSolid(nodeList& newSolidNodes, elmtList& elmts, particleList& pa
                             // check if it getting inside
                             // radius need to be increased by half a lattice unit
                             // this is because solid boundaries are located halfway between soli and fluid nodes
-                            if (linkPosition.insideSphere(particles[componentIndex].x0 / unit.Length, hydrodynamicRadius * particles[componentIndex].r / unit.Length)) { //-0.5?
+                            if (linkPosition.insideSphere(particles[componentIndex].x0 / unit.Length, hydrodynamicRadius * particles[componentIndex].particleRadius / unit.Length)) { //-0.5?
                                 // if so, then the false hypothesis does not hold true anymore
                                 newSolid = true;
                                 // and we exit the cycle
