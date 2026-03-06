@@ -72,7 +72,7 @@ public:
     // constitutive particles indexes
     intList components;
     // number of constitutive particles
-    unsigned int size;
+    unsigned int elmtSize;
     // radius of constitutive particles (supposed, for the moment, of being constant)
     double radius;
     // mass stored in the element
@@ -130,7 +130,7 @@ public:
         wSolver=true;
         //
         active=true;
-        size=1;
+        elmtSize=1;
         radius=1.0;
         x0=x1=x2=x3=x4=x5=tVect(0.0,0.0,0.0);
         q0=tQuat(1.0,0.0,0.0,0.0);
@@ -158,7 +158,7 @@ public:
         MRolling.reset();
         ACoriolis.reset();
         ACentrifugal.reset();
-        components.resize(size);
+        components.resize(elmtSize);
         fluidVolume=0.0;
         maxOverlap=0.0;
     }

@@ -1359,7 +1359,7 @@ void IO::exportRecycleParticles(const elmtList& elmts, const pbcList& pbcs, cons
         if (elmts[i].active) {
             // import variables
             recycleParticleFile << index << "\t";
-            recycleParticleFile << elmts[i].size << "\t";
+            recycleParticleFile << elmts[i].elmtSize << "\t";
             recycleParticleFile << elmts[i].radius << "\t";
             // element center could be out of domain of there are periodic walls, fix this.
             tVect printPosition = elmts[i].x0;
