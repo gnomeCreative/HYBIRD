@@ -74,6 +74,7 @@ typedef std::vector< std::vector<int> > intSet;
 typedef std::vector< std::vector<double> > doubleSet;
 typedef std::vector< types > typeList;
 
+
 // vector variable type
 // defined with 3 double numbers
 //typedef class tinyVector tVect;
@@ -277,6 +278,8 @@ class cylinder;
 typedef std::vector<cylinder> cylinderList;
 class pbc;
 typedef std::vector<pbc> pbcList;
+class prototype;
+typedef std::map<int, prototype > prototypeMap;
 
 #include "myvector.inl"
 

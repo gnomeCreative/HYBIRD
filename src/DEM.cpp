@@ -99,7 +99,7 @@ void DEM::discreteElementGet(GetPot& configFile, GetPot& commandLine) {
 
         // import variables
         particleFileID >> dummyElmt.elmtIndex;
-        particleFileID >> dummyElmt.prototype;
+        particleFileID >> dummyElmt.prototypeID;
         particleFileID >> dummyElmt.elmtRadius;
         dummyElmt.elmtRadius = dummyElmt.elmtRadius*scale;
         // position
@@ -216,22 +216,20 @@ void DEM::discreteElementInit(const Problem &problem, const std::array<types, 6>
     // acceleration field
     demF = externalAccel;
 
-    
-
     // initializing particles
     const double partDensity = sphereMat.density;
 
     // initializing composite particle properties
-    compositeProperties();
+    definePrototypes();
     // clear particle list
     particles.clear();
 
     unsigned int globalIndex = 0;
     for (int n = 0; n < elmts.size(); ++n) {
         // initialize element
-        elmts[n].initialize(partDensity, prototypes, demF);
+        elmts[n].initialize(partDensity, prototypes[elmts[n].prototypeID], demF);
         // generate particles
-        elmts[n].generateParticles(globalIndex, particles, prototypes);
+        elmts[n].generateParticles(globalIndex, prototypes[elmts[n].prototypeID], particles);
     }
 
     // the number of standard particles (=not ghosts) is now fixed, and WILL NOT BE CHANGED
@@ -537,44 +535,62 @@ void DEM::evolveBoundaries() {
 
 // initialization functions
 
-void DEM::compositeProperties() {
-
-    vecList prototype1, prototype2, prototype3, prototype4, prototype5;
-
-
+void DEM::definePrototypes() {
+  
     // prototypes for shapes
     // every vector defines the position of a particle in the object reference frame
     // unit is radius
 
-    prototypes.resize(6);
-    prototype1.resize(1);
-    prototype1[0].reset();
-    prototypes[1] = prototype1;
-    prototype2.resize(2);
-    prototype2[0] = tVect(0.5, 0.0, 0.0);
-    prototype2[1] = tVect(-0.5, 0.0, 0.0);
-    prototypes[2] = prototype2;
-    prototype3.resize(3);
-    prototype3[0] = tVect(0.0, 1.0, 0.0);
-    prototype3[1] = tVect(-sqrt(3) / 2, -1 / 2, 0.0);
-    prototype3[2] = tVect(sqrt(3) / 2, -1 / 2, 0.0);
-    prototypes[3] = prototype3;
-    prototype4.resize(4);
-    prototype4[0] = tVect(0.0, 0.0, 1.0);
-    prototype4[1] = tVect(0.0, 2.0 * sqrt(2) / 3.0, -1.0 / 3.0);
-    prototype4[2] = tVect(2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
-    prototype4[3] = tVect(-2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
-    prototypes[4] = prototype4;
+    // total number of prototypes
+    prototypes.clear();
 
-    // prototype for immersed cylinders (submarine)
-    prototypes[5] = prototype5;
-    prototype5.resize(5);
-    prototype5[0] = tVect(0.0, 0.0, 0.0);
-    prototype5[1] = tVect(0.0, 1.0, 0.0);
-    prototype5[2] = tVect(0.0, 2.0, 0.0);
-    prototype5[3] = tVect(0.0, 3.0, 0.0);
-    prototype5[4] = tVect(0.0, 4.0, 0.0);
-    prototypes[5] = prototype5;
+    // prototype 0 does not exist (legacy issue) - keep undefined so that if used this raises an obvious issue
+
+    // prototype 1 is the standard sphere
+    prototype prototype1;
+    prototype1.prototypeID = 1;
+    prototype1.prototypeSize = 1;
+    prototype1.prototypeStructure.push_back(tVect(0.0, 0.0, 0.0));
+    prototype1.massFactor = 1.0;
+    prototype1.inertiaFactor = 1.0;
+    prototypes[prototype1.prototypeID]=prototype1;
+
+    // prototype 2 is two overlapping spheres
+    prototype prototype2;
+    prototype2.prototypeID = 2;
+    prototype2.prototypeSize = 2;
+    prototype2.prototypeStructure.push_back(tVect(0.5, 0.0, 0.0));
+    prototype2.prototypeStructure.push_back(tVect(-0.5, 0.0, 0.0));
+    prototype2.massFactor = 2.0;
+    prototype2.inertiaFactor = 2.0;
+    prototypes[prototype2.prototypeID]=prototype2;
+
+    //prototypes[1] = prototype1;
+    //prototype2.resize(2);
+    //prototype2[0] = tVect(0.5, 0.0, 0.0);
+    //prototype2[1] = tVect(-0.5, 0.0, 0.0);
+    //prototypes[2] = prototype2;
+    //prototype3.resize(3);
+    //prototype3[0] = tVect(0.0, 1.0, 0.0);
+    //prototype3[1] = tVect(-sqrt(3) / 2, -1 / 2, 0.0);
+    //prototype3[2] = tVect(sqrt(3) / 2, -1 / 2, 0.0);
+    //prototypes[3] = prototype3;
+    //prototype4.resize(4);
+    //prototype4[0] = tVect(0.0, 0.0, 1.0);
+    //prototype4[1] = tVect(0.0, 2.0 * sqrt(2) / 3.0, -1.0 / 3.0);
+    //prototype4[2] = tVect(2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
+    //prototype4[3] = tVect(-2.0 * sqrt(6) / 6.0, -2.0 * sqrt(2) / 6.0, -1.0 / 3.0);
+    //prototypes[4] = prototype4;
+
+    //// prototype for immersed cylinders (submarine)
+    //prototypes[5] = prototype5;
+    //prototype5.resize(5);
+    //prototype5[0] = tVect(0.0, 0.0, 0.0);
+    //prototype5[1] = tVect(0.0, 1.0, 0.0);
+    //prototype5[2] = tVect(0.0, 2.0, 0.0);
+    //prototype5[3] = tVect(0.0, 3.0, 0.0);
+    //prototype5[4] = tVect(0.0, 4.0, 0.0);
+    //prototypes[5] = prototype5;
 
 }
 
@@ -1137,7 +1153,8 @@ void DEM::updateParticlesPredicted() {
         if (particles[p].active) {
             //getting belonging element index
             const unsigned int clusterIndex = particles[p].clusterIndex;
-            particles[p].updatePredicted(elmts[clusterIndex], prototypes);
+            const unsigned int prototypeIndexHere = elmts[clusterIndex].prototypeID;
+            particles[p].updatePredicted(elmts[clusterIndex], prototypes[prototypeIndexHere]);
         }
     }
     if (ghosts.size() != 0) {
@@ -1161,7 +1178,8 @@ void DEM::updateParticlesCorrected() {
         if (particles[p].active) {
             //getting belonging element index
             const unsigned int clusterIndex = particles[p].clusterIndex;
-            particles[p].updateCorrected(elmts[clusterIndex], prototypes);
+            const unsigned int prototypeIndexHere = elmts[clusterIndex].prototypeID;
+            particles[p].updateCorrected(elmts[clusterIndex], prototypes[prototypeIndexHere]);
         }
     }
 
