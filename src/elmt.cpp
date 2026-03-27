@@ -20,9 +20,9 @@ void elmt::initialize(const double& partDensity, const prototype& prototypeHere,
     elmtSize = prototypeHere.prototypeSize;
 
     if (elmtSize == 1)
-        wSolver = false;
-    else if (elmtSize > 1)
         wSolver = true;
+    else if (elmtSize > 1)
+        wSolver = false;
         
     // translational degrees of freedom
     xp0=x0;
@@ -73,7 +73,10 @@ void elmt::initialize(const double& partDensity, const prototype& prototypeHere,
     elmtMass= referenceMass * prototypeHere.massFactor;
     // inertia moment (diagonal) - Huygens-Steiner theorem
     // inertia of single spheres
-    elmtInertia=elmtSize*2.0/5.0* referenceMass * elmtRadius*elmtRadius*tVect(1.0,1.0,1.0)* prototypeHere.inertiaFactor;
+    elmtInertia = elmtSize * 2.0 / 5.0 * referenceMass * elmtRadius * elmtRadius * tVect(1.0, 1.0, 1.0);
+    elmtInertia.x= elmtInertia.x *prototypeHere.inertiaFactor[0];
+    elmtInertia.y = elmtInertia.y * prototypeHere.inertiaFactor[1];
+    elmtInertia.z = elmtInertia.z * prototypeHere.inertiaFactor[2];
 
     //// transport components
     //for (int n=0; n<elmtSize; ++n) {
