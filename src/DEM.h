@@ -44,9 +44,10 @@ private:
     intList cellTable;
     // numerical viscosity to avoid energy problems
     double numVisc;
-    // prototype shape collection
-    std::vector <vecList> prototypes;
 public:
+    // prototype shape collection
+    prototypeMap prototypes;
+    // stuff for contact optimisation algorithm
     unsIntList neighborTable;
     unsIntList nearWallTable;
     unsIntList nearObjectTable;
@@ -181,7 +182,7 @@ public:
     void updateEnergy(double& totalKineticEnergy);
 private:
     // initialization functions
-    void compositeProperties();
+    void definePrototypes();
     void initializeWalls(const Problem& problem, const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation);
     void initializeCylinders(const Problem& problem);
     void initializePbcs(const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation);

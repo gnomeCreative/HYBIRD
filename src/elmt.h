@@ -22,7 +22,7 @@ public:
     // belonging element index
     unsigned int clusterIndex;
     // index of the component of the prototype
-    unsigned int protoIndex;
+    unsigned int prototypeIndex;
     // is it active? (false=destroyed)
     bool active;
     // is it a ghost?
@@ -42,7 +42,7 @@ public:
     particle() {
         particleIndex=0;
         clusterIndex=0;
-        protoIndex=0;
+        prototypeIndex=0;
         tableCell=0;
         particleRadius=0.0;
         x0.reset();
@@ -57,8 +57,8 @@ public:
         }
         
     }
-    void updatePredicted(const elmt& motherElmt, const std::vector <vecList>& prototypes);
-    void updateCorrected(const elmt& motherElmt, const std::vector <vecList>& prototypes);
+    void updatePredicted(const elmt& motherElmt, const prototype& prototypeHere);
+    void updateCorrected(const elmt& motherElmt, const prototype& prototypeHere);
     void ghostUpdate(particle& originParticle, tVect& pbcVector);
 };
 
@@ -73,8 +73,8 @@ public:
     intList components;
     // number of constitutive particles
     unsigned int elmtSize;
-    // protorype reference
-    unsigned int prototype;
+    // prototype reference
+    unsigned int prototypeID;
     // radius of constitutive particles (supposed, for the moment, of being constant)
     double elmtRadius;
     // mass stored in the element
@@ -132,8 +132,8 @@ public:
         wSolver=true;
         //
         active=true;
-        prototype = 0;
-        elmtSize=1;
+        prototypeID = 0;
+        elmtSize=0;
         elmtRadius=1.0;
         x0=x1=x2=x3=x4=x5=tVect(0.0,0.0,0.0);
         q0=tQuat(1.0,0.0,0.0,0.0);
@@ -166,9 +166,9 @@ public:
         maxOverlap=0.0;
     }
     void elmtShow()const;
-    void initialize(const double& partDensity, std::vector <vecList>& prototypes, tVect& demF);
+    void initialize(const double& partDensity, const prototype& prototypeHere, tVect& demF);
     void resetVelocity();
-    void generateParticles(unsigned int& globalIndex, particleList& particles,  const std::vector <vecList>& prototypes);
+    void generateParticles(unsigned int& globalIndex, const prototype& prototypeHere, particleList& particles);
     void predict(const double c1[],const double c2[]);
     void correct(const double coeff1ord[],const double coeff2ord[]);
     void translate(const tVect& transVec);
@@ -308,6 +308,23 @@ public:
     void reset();
     void copy (const Elongation& e2);
 };
+
+class prototype {
+public:
+    unsigned int prototypeID;
+    unsigned int prototypeSize;
+    std::vector<tVect> prototypeStructure;
+    //doubleList radiusFactors;
+    double massFactor;
+    double inertiaFactor;
+    prototype() {
+        prototypeSize = 0;
+        massFactor = 1.0;
+        inertiaFactor = 1.0;
+    }
+};
+
+
 
 #endif	/* ELMT_H */
 

@@ -524,7 +524,7 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radius\"/>\n";
     for (int i = 0; i < Pnumber; ++i) {
         if (particles[i].active) {
-            paraviewParticleFile << particles[i].r << "\n";
+            paraviewParticleFile << particles[i].particleRadius << "\n";
         }
     }
     //    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"mass\"/>\n";
@@ -784,7 +784,7 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     offset = active_particles.size() * sizeof(double);
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (unsigned int i = 0; i < active_particles.size(); ++i) {
-        d_buffer[i] = particles[active_particles[i]].r;
+        d_buffer[i] = particles[active_particles[i]].particleRadius;
     }
     paraviewParticleFile.write(t_buffer, offset);
     // particleIndex
