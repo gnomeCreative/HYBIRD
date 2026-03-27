@@ -547,23 +547,26 @@ void DEM::definePrototypes() {
     // prototype 0 does not exist (legacy issue) - keep undefined so that if used this raises an obvious issue
 
     // prototype 1 is the standard sphere
-    prototype prototype1;
-    prototype1.prototypeID = 1;
-    prototype1.prototypeSize = 1;
-    prototype1.prototypeStructure.push_back(tVect(0.0, 0.0, 0.0));
-    prototype1.massFactor = 1.0;
-    prototype1.inertiaFactor = 1.0;
-    prototypes[prototype1.prototypeID]=prototype1;
+    prototype newPrototype;
+    newPrototype.prototypeID = 1;
+    newPrototype.prototypeSize = 1;
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 0.0));
+    newPrototype.massFactor = 1.0;
+    newPrototype.inertiaFactor[0] = 1.0;
+    newPrototype.inertiaFactor[1] = 1.0;
+    newPrototype.inertiaFactor[2] = 1.0;
+    prototypes[newPrototype.prototypeID]= newPrototype;
 
     // prototype 2 is two overlapping spheres
-    prototype prototype2;
-    prototype2.prototypeID = 2;
-    prototype2.prototypeSize = 2;
-    prototype2.prototypeStructure.push_back(tVect(0.5, 0.0, 0.0));
-    prototype2.prototypeStructure.push_back(tVect(-0.5, 0.0, 0.0));
-    prototype2.massFactor = 2.0;
-    prototype2.inertiaFactor = 2.0;
-    prototypes[prototype2.prototypeID]=prototype2;
+    newPrototype.prototypeID = 2;
+    newPrototype.prototypeSize = 2;
+    newPrototype.prototypeStructure.push_back(tVect(0.5, 0.0, 0.0));
+    newPrototype.prototypeStructure.push_back(tVect(-0.5, 0.0, 0.0));
+    newPrototype.massFactor = 2.0;
+    newPrototype.inertiaFactor[0] = 3.0;
+    newPrototype.inertiaFactor[1] = 2.0;
+    newPrototype.inertiaFactor[2] = 2.0;
+    prototypes[newPrototype.prototypeID]= newPrototype;
 
     //prototypes[1] = prototype1;
     //prototype2.resize(2);

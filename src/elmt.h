@@ -316,11 +316,13 @@ public:
     std::vector<tVect> prototypeStructure;
     //doubleList radiusFactors;
     double massFactor;
-    double inertiaFactor;
+    double inertiaFactor[3];
     prototype() {
         prototypeSize = 0;
         massFactor = 1.0;
-        inertiaFactor = 1.0;
+        inertiaFactor[0] = 1.0;
+        inertiaFactor[1] = 1.0;
+        inertiaFactor[2] = 1.0;
     }
 };
 
