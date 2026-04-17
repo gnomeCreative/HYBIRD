@@ -563,9 +563,9 @@ void DEM::definePrototypes() {
     newPrototype.prototypeStructure.push_back(tVect(0.5, 0.0, 0.0));
     newPrototype.prototypeStructure.push_back(tVect(-0.5, 0.0, 0.0));
     newPrototype.massFactor = 2.0;
-    newPrototype.inertiaFactor[0] = 3.0;
-    newPrototype.inertiaFactor[1] = 2.0;
-    newPrototype.inertiaFactor[2] = 2.0;
+    newPrototype.inertiaFactor[0] = 0.8965;
+    newPrototype.inertiaFactor[1] = 0.9573;
+    newPrototype.inertiaFactor[2] = 0.9573;
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     //prototypes[1] = prototype1;
