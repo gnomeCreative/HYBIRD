@@ -571,7 +571,6 @@ void DEM::definePrototypes() {
     // prototype 10 is ten overlapping spheres
     newPrototype.prototypeID = 10;
     newPrototype.prototypeSize = 10;
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 0.0));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 1.0));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 2.0));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 3.0));
@@ -581,6 +580,7 @@ void DEM::definePrototypes() {
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 7.0));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 8.0));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 9.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 10.0));
     newPrototype.massFactor = 7.12;
     newPrototype.inertiaFactor[0] = 8.1367;
     newPrototype.inertiaFactor[1] = 7.7747;
