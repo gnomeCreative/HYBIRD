@@ -544,10 +544,12 @@ void DEM::definePrototypes() {
     // total number of prototypes
     prototypes.clear();
 
+    prototype newPrototype;
+
     // prototype 0 does not exist (legacy issue) - keep undefined so that if used this raises an obvious issue
 
     // prototype 1 is the standard sphere
-    prototype newPrototype;
+    newPrototype.reset();
     newPrototype.prototypeID = 1;
     newPrototype.prototypeSize = 1;
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 0.0));
@@ -558,6 +560,7 @@ void DEM::definePrototypes() {
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     // prototype 2 is two overlapping spheres
+    newPrototype.reset();
     newPrototype.prototypeID = 2;
     newPrototype.prototypeSize = 2;
     newPrototype.prototypeStructure.push_back(tVect(0.5, 0.0, 0.0));
@@ -569,6 +572,7 @@ void DEM::definePrototypes() {
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     // prototype 10 is ten overlapping spheres
+    newPrototype.reset();
     newPrototype.prototypeID = 10;
     newPrototype.prototypeSize = 10;
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 1.0));

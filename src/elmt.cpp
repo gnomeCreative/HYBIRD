@@ -323,3 +323,13 @@ void Elongation::copy(const Elongation& e2){
      p=e2.p;
      slipping=e2.slipping;
 }
+
+void prototype::reset() {
+    prototypeID = 0;
+    prototypeSize = 0;
+    massFactor = 1.0;
+    inertiaFactor[0] = 1.0;
+    inertiaFactor[1] = 1.0;
+    inertiaFactor[2] = 1.0;
+    prototypeStructure.clear();
+}
