@@ -562,10 +562,29 @@ void DEM::definePrototypes() {
     newPrototype.prototypeSize = 2;
     newPrototype.prototypeStructure.push_back(tVect(0.5, 0.0, 0.0));
     newPrototype.prototypeStructure.push_back(tVect(-0.5, 0.0, 0.0));
-    newPrototype.massFactor = 2.0;
-    newPrototype.inertiaFactor[0] = 0.8965;
-    newPrototype.inertiaFactor[1] = 0.9573;
-    newPrototype.inertiaFactor[2] = 0.9573;
+    newPrototype.massFactor = 1.68;
+    newPrototype.inertiaFactor[0] = 1.793;
+    newPrototype.inertiaFactor[1] = 1.9147;
+    newPrototype.inertiaFactor[2] = 1.9147;
+    prototypes[newPrototype.prototypeID]= newPrototype;
+
+    // prototype 10 is ten overlapping spheres
+    newPrototype.prototypeID = 10;
+    newPrototype.prototypeSize = 10;
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 0.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 1.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 2.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 3.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 4.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 5.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 6.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 7.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 8.0));
+    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 9.0));
+    newPrototype.massFactor = 7.12;
+    newPrototype.inertiaFactor[0] = 8.1367;
+    newPrototype.inertiaFactor[1] = 7.7747;
+    newPrototype.inertiaFactor[2] = 7.7747;
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     //prototypes[1] = prototype1;
