@@ -318,12 +318,15 @@ public:
     double massFactor;
     double inertiaFactor[3];
     prototype() {
+        prototypeID = 0;
         prototypeSize = 0;
         massFactor = 1.0;
         inertiaFactor[0] = 1.0;
         inertiaFactor[1] = 1.0;
         inertiaFactor[2] = 1.0;
+        prototypeStructure.clear();
     }
+    void reset();
 };
 
 
