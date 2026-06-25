@@ -69,6 +69,8 @@ public:
     unsigned int elmtIndex;
     // is it active? (false=destroyed)
     bool active;
+    // is it mobile? (false=bonded)
+    bool mobile;
     // constitutive particles indexes
     intList components;
     // number of constitutive particles
@@ -132,6 +134,7 @@ public:
         wSolver=true;
         //
         active=true;
+        mobile = true;
         prototypeID = 0;
         elmtSize=0;
         elmtRadius=1.0;
@@ -317,6 +320,10 @@ public:
     //doubleList radiusFactors;
     double massFactor;
     double inertiaFactor[3];
+    bool bonded;
+    tVect bondLocation;
+    tVect bondBendingStrength;
+
     prototype() {
         prototypeID = 0;
         prototypeSize = 0;
@@ -325,7 +332,11 @@ public:
         inertiaFactor[1] = 1.0;
         inertiaFactor[2] = 1.0;
         prototypeStructure.clear();
+        bonded = false;
+        bondLocation.reset();
+        bondBendingStrength.reset();
     }
+
     void reset();
 };
 
