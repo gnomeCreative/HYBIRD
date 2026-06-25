@@ -419,6 +419,9 @@ void DEM::discreteElementStep() {
         // force evaluation
         evaluateForces();
 
+        //check if any bonded element is becoming mobile;
+        breakBonds();
+
         // corrector step
         corrector();
 
@@ -557,6 +560,7 @@ void DEM::definePrototypes() {
     newPrototype.inertiaFactor[0] = 1.0;
     newPrototype.inertiaFactor[1] = 1.0;
     newPrototype.inertiaFactor[2] = 1.0;
+    newPrototype.bonded = false;
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     // prototype 2 is two overlapping spheres
@@ -569,6 +573,7 @@ void DEM::definePrototypes() {
     newPrototype.inertiaFactor[0] = 1.793;
     newPrototype.inertiaFactor[1] = 1.9147;
     newPrototype.inertiaFactor[2] = 1.9147;
+    newPrototype.bonded = false;
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     // prototype 10 is ten overlapping spheres
@@ -589,6 +594,9 @@ void DEM::definePrototypes() {
     newPrototype.inertiaFactor[0] = 8.1367;
     newPrototype.inertiaFactor[1] = 7.7747;
     newPrototype.inertiaFactor[2] = 7.7747;
+    newPrototype.bonded = true;
+    newPrototype.bondLocation = tVect(0.0,0.0,0.0);
+    newPrototype.bondBendingStrength = tVect(0.0, 0.0, 0.0);
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     //prototypes[1] = prototype1;
@@ -1168,6 +1176,26 @@ void DEM::evaluateForces() {
         }
     }
 
+}
+
+void DEM::breakBonds() {
+
+    //#pragma omp parallel for
+    for (int a = 0; a < activeElmts.size(); ++a) {
+        //cout<<"pr a= "<<a<<endl;
+        unsigned int n = activeElmts[a];
+        //cout<<"pr n= "<<n<<endl;
+        if (elmts[n].mobile == false) {
+            const tVect centreOfMass_Moment = elmts[n].MParticle + elmts[n].MHydro;
+            const tVect centreOfMass_Force = elmts[n].FParticle + elmts[n].FHydro + elmts[n].FGrav;
+            const tVect centreOfMass_Distance = elmts[n].elmtRadius * project(prototypes[elmts[n].prototypeID].bondLocation, elmts[n].q0);
+            const tVect breakageMoment = centreOfMass_Moment + centreOfMass_Force.cross(centreOfMass_Distance);
+            if (breakageMoment.norm() > prototypes[elmts[n].prototypeID].bondBendingStrength.norm()) {
+                elmts[n].mobile = true;
+            }
+        }
+        //cout<<"pr end"<<endl;
+    }
 }
 
 void DEM::updateParticlesPredicted() {

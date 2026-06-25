@@ -190,6 +190,7 @@ private:
     void predictor();
     void corrector();
     void evaluateForces();
+    void breakBonds();
     void updateParticlesPredicted();
     void updateParticlesCorrected();
     double criticalTimeStep() const;
