@@ -84,6 +84,13 @@ void elmt::initialize(const double& partDensity, const prototype& prototypeHere,
     //}
 
     active=true;
+
+    if (prototypeHere.bonded) {
+        mobile = false;
+    }
+    else {
+        mobile = true;
+    }
     
     // initialize forces
     FHydro.reset();
@@ -158,102 +165,110 @@ void elmt::generateParticles(unsigned int& globalIndex, const prototype& prototy
 
 void elmt::predict(const double c1[], const double c2[]) {
 
-    xp0 = x0 + x1 * c2[0] + x2 * c2[1] + x3 * c2[2] + x4 * c2[3] + x5 * c2[4];
-    xp1 = x1 + x2 * c2[0] + x3 * c2[1] + x4 * c2[2] + x5 * c2[3];
-    xp2 = x2 + x3 * c2[0] + x4 * c2[1] + x5 * c2[2];
-    xp3 = x3 + x4 * c2[0] + x5 * c2[1];
-    xp4 = x4 + x5 * c2[0];
-    xp5 = x5;
+    if (mobile) {
 
-    qp0 = q0 + q1 * c2[0] + q2 * c2[1] + q3 * c2[2] + q4 * c2[3] + q5 * c2[4];
-    qp1 = q1 + q2 * c2[0] + q3 * c2[1] + q4 * c2[2] + q5 * c2[3];
-    qp2 = q2 + q3 * c2[0] + q4 * c2[1] + q5 * c2[2];
-    qp3 = q3 + q4 * c2[0] + q5 * c2[1];
-    qp4 = q4 + q5 * c2[0];
-    qp5 = q5;
+        xp0 = x0 + x1 * c2[0] + x2 * c2[1] + x3 * c2[2] + x4 * c2[3] + x5 * c2[4];
+        xp1 = x1 + x2 * c2[0] + x3 * c2[1] + x4 * c2[2] + x5 * c2[3];
+        xp2 = x2 + x3 * c2[0] + x4 * c2[1] + x5 * c2[2];
+        xp3 = x3 + x4 * c2[0] + x5 * c2[1];
+        xp4 = x4 + x5 * c2[0];
+        xp5 = x5;
 
-    qp0.normalize();
+        qp0 = q0 + q1 * c2[0] + q2 * c2[1] + q3 * c2[2] + q4 * c2[3] + q5 * c2[4];
+        qp1 = q1 + q2 * c2[0] + q3 * c2[1] + q4 * c2[2] + q5 * c2[3];
+        qp2 = q2 + q3 * c2[0] + q4 * c2[1] + q5 * c2[2];
+        qp3 = q3 + q4 * c2[0] + q5 * c2[1];
+        qp4 = q4 + q5 * c2[0];
+        qp5 = q5;
 
-    wp0 = w0 + w1 * c1[0] + w2 * c1[1] + w3 * c1[2] + w4 * c1[3] + w5 * c1[4];
-    wp1 = w1 + w2 * c1[0] + w3 * c1[1] + w4 * c1[2] + w5 * c1[3];
-    wp2 = w2 + w3 * c1[0] + w4 * c1[1] + w5 * c1[2];
-    wp3 = w3 + w4 * c1[0] + w5 * c1[1];
-    wp4 = w4 + w5 * c1[0];
-    wp5 = w5;
+        qp0.normalize();
 
-    if (wSolver) {
-        wpGlobal = wp0;
-        wpLocal = project(wpGlobal, qp0.adjoint());
-    } else {
-        //q1.forceStability(q0);
-        const tQuat qp0adj = qp0.adjoint();
-        wpGlobal = 2.0 * quat2vec(qp1.multiply(qp0adj));
-        wpLocal = 2.0 * quat2vec(qp0adj.multiply(qp1));
+        wp0 = w0 + w1 * c1[0] + w2 * c1[1] + w3 * c1[2] + w4 * c1[3] + w5 * c1[4];
+        wp1 = w1 + w2 * c1[0] + w3 * c1[1] + w4 * c1[2] + w5 * c1[3];
+        wp2 = w2 + w3 * c1[0] + w4 * c1[1] + w5 * c1[2];
+        wp3 = w3 + w4 * c1[0] + w5 * c1[1];
+        wp4 = w4 + w5 * c1[0];
+        wp5 = w5;
+
+        if (wSolver) {
+            wpGlobal = wp0;
+            wpLocal = project(wpGlobal, qp0.adjoint());
+        }
+        else {
+            //q1.forceStability(q0);
+            const tQuat qp0adj = qp0.adjoint();
+            wpGlobal = 2.0 * quat2vec(qp1.multiply(qp0adj));
+            wpLocal = 2.0 * quat2vec(qp0adj.multiply(qp1));
+        }
     }
 
 }
 
 void elmt::correct(const double coeff1ord[], const double coeff2ord[]) {
 
-    const tVect x2Corr = x2 - xp2;
+    if (mobile) {
 
-    x0 = xp0 + x2Corr * coeff2ord[0];
-    x1 = xp1 + x2Corr * coeff2ord[1];
-    // x2 calculated directly at the end of force routine
-    x3 = xp3 + x2Corr * coeff2ord[3];
-    x4 = xp4 + x2Corr * coeff2ord[4];
-    x5 = xp5 + x2Corr * coeff2ord[5];
+        const tVect x2Corr = x2 - xp2;
 
-    xp0 = x0;
-    xp1 = x1;
-    xp2 = x2;
-    xp3 = x3;
-    xp4 = x4;
-    xp5 = x5;
+        x0 = xp0 + x2Corr * coeff2ord[0];
+        x1 = xp1 + x2Corr * coeff2ord[1];
+        // x2 calculated directly at the end of force routine
+        x3 = xp3 + x2Corr * coeff2ord[3];
+        x4 = xp4 + x2Corr * coeff2ord[4];
+        x5 = xp5 + x2Corr * coeff2ord[5];
 
-    const tVect w1Corr = w1 - wp1;
+        xp0 = x0;
+        xp1 = x1;
+        xp2 = x2;
+        xp3 = x3;
+        xp4 = x4;
+        xp5 = x5;
 
-    w0 = wp0 + w1Corr * coeff1ord[0];
-    // w1 calculated directly at the end of force routine
-    w2 = wp2 + w1Corr * coeff1ord[2];
-    w3 = wp3 + w1Corr * coeff1ord[3];
-    w4 = wp4 + w1Corr * coeff1ord[4];
-    w5 = wp5 + w1Corr * coeff1ord[5];
+        const tVect w1Corr = w1 - wp1;
 
-    wp0 = w0;
-    wp1 = w1;
-    wp2 = w2;
-    wp3 = w3;
-    wp4 = w4;
-    wp5 = w5;
+        w0 = wp0 + w1Corr * coeff1ord[0];
+        // w1 calculated directly at the end of force routine
+        w2 = wp2 + w1Corr * coeff1ord[2];
+        w3 = wp3 + w1Corr * coeff1ord[3];
+        w4 = wp4 + w1Corr * coeff1ord[4];
+        w5 = wp5 + w1Corr * coeff1ord[5];
 
-    const tQuat q2Corr = q2 - qp2;
+        wp0 = w0;
+        wp1 = w1;
+        wp2 = w2;
+        wp3 = w3;
+        wp4 = w4;
+        wp5 = w5;
 
-    q0 = qp0 + q2Corr * coeff2ord[0];
-    q1 = qp1 + q2Corr * coeff2ord[1];
-    // q2 calculated directly at the end of force routine
-    q3 = qp3 + q2Corr * coeff2ord[3];
-    q4 = qp4 + q2Corr * coeff2ord[4];
-    q5 = qp5 + q2Corr * coeff2ord[5];
-    //normalization of q0
-    q0.normalize();
+        const tQuat q2Corr = q2 - qp2;
 
-    qp0 = q0;
-    qp1 = q1;
-    qp2 = q2;
-    qp3 = q3;
-    qp4 = q4;
-    qp5 = q5;
+        q0 = qp0 + q2Corr * coeff2ord[0];
+        q1 = qp1 + q2Corr * coeff2ord[1];
+        // q2 calculated directly at the end of force routine
+        q3 = qp3 + q2Corr * coeff2ord[3];
+        q4 = qp4 + q2Corr * coeff2ord[4];
+        q5 = qp5 + q2Corr * coeff2ord[5];
+        //normalization of q0
+        q0.normalize();
+
+        qp0 = q0;
+        qp1 = q1;
+        qp2 = q2;
+        qp3 = q3;
+        qp4 = q4;
+        qp5 = q5;
 
 
-    if (wSolver) {
-        wGlobal = w0;
-        wLocal = project(wGlobal, q0.adjoint());
-    } else {
-        //q1.forceStability(q0);
-        const tQuat q0adj = q0.adjoint();
-        wGlobal = 2.0 * quat2vec(q1.multiply(q0adj));
-        wLocal = 2.0 * quat2vec(q0adj.multiply(q1));
+        if (wSolver) {
+            wGlobal = w0;
+            wLocal = project(wGlobal, q0.adjoint());
+        }
+        else {
+            //q1.forceStability(q0);
+            const tQuat q0adj = q0.adjoint();
+            wGlobal = 2.0 * quat2vec(q1.multiply(q0adj));
+            wLocal = 2.0 * quat2vec(q0adj.multiply(q1));
+        }
     }
 }
 
