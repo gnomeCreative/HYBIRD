@@ -595,7 +595,7 @@ void DEM::definePrototypes() {
     newPrototype.inertiaFactor[1] = 7.7747;
     newPrototype.inertiaFactor[2] = 7.7747;
     newPrototype.bonded = true;
-    newPrototype.bondLocation = tVect(0.0,0.0,0.0);
+    newPrototype.bondLocation = tVect(0.0,0.0,-5.5);
     newPrototype.bondBendingStrength = tVect(0.0, 0.0, 0.0);
     prototypes[newPrototype.prototypeID]= newPrototype;
 
