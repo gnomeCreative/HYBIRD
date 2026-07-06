@@ -318,6 +318,7 @@ public:
     unsigned int prototypeSize;
     std::vector<tVect> prototypeStructure;
     //doubleList radiusFactors;
+    std::vector<double> radiusFactors;       // component radii relative to elmtRadius
     double massFactor;
     double inertiaFactor[3];
     bool bonded;
