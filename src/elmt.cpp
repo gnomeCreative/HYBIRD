@@ -73,7 +73,7 @@ void elmt::initialize(const double& partDensity, const prototype& prototypeHere,
     elmtMass= referenceMass * prototypeHere.massFactor;
     // inertia moment (diagonal) - Huygens-Steiner theorem
     // inertia of single spheres
-    elmtInertia = elmtSize * 2.0 / 5.0 * referenceMass * elmtRadius * elmtRadius * tVect(1.0, 1.0, 1.0);
+    elmtInertia = 2.0 / 5.0 * referenceMass * elmtRadius * elmtRadius * tVect(1.0, 1.0, 1.0);
     elmtInertia.x= elmtInertia.x *prototypeHere.inertiaFactor[0];
     elmtInertia.y = elmtInertia.y * prototypeHere.inertiaFactor[1];
     elmtInertia.z = elmtInertia.z * prototypeHere.inertiaFactor[2];
@@ -149,7 +149,15 @@ void elmt::generateParticles(unsigned int& globalIndex, const prototype& prototy
         dummyPart.particleIndex = globalIndex;
         components[i] = dummyPart.particleIndex;
         dummyPart.clusterIndex = elmtIndex;
-        dummyPart.particleRadius = elmtRadius;
+        		
+        //set particle radius according to prototype radius factor
+        double radiusFactor = 1.0;
+        if (!prototypeHere.radiusFactors.empty()) {
+            ASSERT(prototypeHere.radiusFactors.size() == elmtSize);
+            radiusFactor = prototypeHere.radiusFactors[i];
+        }
+        dummyPart.particleRadius = elmtRadius * radiusFactor;
+
         dummyPart.prototypeIndex = i;
         dummyPart.isGhost = false;
         dummyPart.active=true;
@@ -285,7 +293,7 @@ void particle::updatePredicted(const elmt& motherElmt, const prototype& prototyp
     x1=motherElmt.xp1;
             
     if (motherElmt.elmtSize>1) {
-        x0=x0+particleRadius*project(prototypeHere.prototypeStructure[prototypeIndex],motherElmt.qp0);
+        x0=x0+ motherElmt.elmtRadius*project(prototypeHere.prototypeStructure[prototypeIndex],motherElmt.qp0);
         // updating radius (distance of particle center of mass to element center of mass)
         radiusVec=x0-motherElmt.xp0;
         x1=x1+motherElmt.wpGlobal.cross(radiusVec);
@@ -300,7 +308,7 @@ void particle::updateCorrected(const elmt& motherElmt, const prototype& prototyp
     x1=motherElmt.x1;
             
     if (motherElmt.elmtSize>1) {
-        x0=x0+particleRadius*project(prototypeHere.prototypeStructure[prototypeIndex],motherElmt.q0);
+        x0=x0+ motherElmt.elmtRadius*project(prototypeHere.prototypeStructure[prototypeIndex],motherElmt.q0);
         // updating radius (distance of particle center of mass to element center of mass)
         radiusVec=x0-motherElmt.x0;
         x1=x1+motherElmt.wGlobal.cross(radiusVec);
@@ -347,4 +355,5 @@ void prototype::reset() {
     inertiaFactor[1] = 1.0;
     inertiaFactor[2] = 1.0;
     prototypeStructure.clear();
+    radiusFactors.clear();
 }
