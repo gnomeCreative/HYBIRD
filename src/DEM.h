@@ -134,6 +134,7 @@ public:
         drumSpeed = 0.0;
         newNeighborList = false;
         objMaxTotalForce=Zero;
+		totSprings = 0;
         demSize.resize(3);
         demSize[0] = demSize[1] = demSize[2] = 1.0;
         demTime = 0.0;

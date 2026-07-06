@@ -579,7 +579,7 @@ void DEM::definePrototypes() {
     // prototype 10 is ten overlapping spheres
     newPrototype.reset();
     newPrototype.prototypeID = 10;
-    newPrototype.prototypeSize = 10;
+    newPrototype.prototypeSize = 26;
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 0.5));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -0.5));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 1.5));
@@ -590,6 +590,59 @@ void DEM::definePrototypes() {
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -3.5));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 4.5));
     newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -4.5));
+
+    // smaller spheres surrounding the tree column: in total 16 spheres
+    newPrototype.prototypeStructure.push_back(tVect(0.828427, 0.000000, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.765367, 0.317025, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.585786, 0.585786, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.317025, 0.765367, -5.328427));
+
+    newPrototype.prototypeStructure.push_back(tVect(0.000000, 0.828427, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.317025, 0.765367, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.585786, 0.585786, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.765367, 0.317025, -5.328427));
+
+    newPrototype.prototypeStructure.push_back(tVect(-0.828427, 0.000000, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.765367, -0.317025, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.585786, -0.585786, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.317025, -0.765367, -5.328427));
+
+    newPrototype.prototypeStructure.push_back(tVect(0.000000, -0.828427, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.317025, -0.765367, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.585786, -0.585786, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.765367, -0.317025, -5.328427));
+    // component radius factors for main tree column
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+    newPrototype.radiusFactors.push_back(1.0);
+	// component radius factors for smaller spheres surrounding the tree column: in total 16 spheres
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+    newPrototype.radiusFactors.push_back(0.1716);
+
     newPrototype.massFactor = 7.12;
     newPrototype.inertiaFactor[0] = 8.1367;
     newPrototype.inertiaFactor[1] = 7.7747;
