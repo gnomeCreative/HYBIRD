@@ -1221,6 +1221,13 @@ void LB2::streaming<CUDA>() {
     CUDA_CHECK();
 
 #ifdef _DEBUG
+    if (hd_nodes.activeCount > h_nodes.activeAlloc) {
+        if (h_nodes.activeI) {
+            free(h_nodes.activeI);
+        }
+        h_nodes.activeI = static_cast<unsigned int*>(malloc(hd_nodes.activeCount * sizeof(unsigned int)));
+        h_nodes.activeAlloc = hd_nodes.activeCount;
+    }
     CUDA_CALL(cudaMemcpy(h_nodes.f, hd_nodes.f, sizeof(double) * hd_nodes.count * lbmDirec, cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_nodes.activeI, hd_nodes.activeI, sizeof(unsigned int) * hd_nodes.activeCount, cudaMemcpyDeviceToHost));
     for (unsigned int in = 0; in < hd_nodes.activeCount; ++in) {
@@ -2103,6 +2110,7 @@ Node2& LB2::getNodes() {
     if (hd_nodes.activeCount > h_nodes.activeAlloc) {
         if (h_nodes.activeI) free(h_nodes.activeI);
         h_nodes.activeI = static_cast<unsigned int*>(malloc(hd_nodes.activeCount * sizeof(unsigned int)));
+        h_nodes.activeAlloc = hd_nodes.activeCount;
     }
     h_nodes.activeCount = hd_nodes.activeCount;
     if (hd_nodes.interfaceCount > h_nodes.interfaceAlloc) {
@@ -2837,6 +2845,7 @@ void LB2::initializeLists() {
     // Array to buffer
     assert(!h_nodes.activeI);
     h_nodes.activeCount = static_cast<unsigned int>(fluidNodes.size());
+    h_nodes.activeAlloc = static_cast<unsigned int>(fluidNodes.size());
     h_nodes.activeI = static_cast<unsigned int*>(malloc(h_nodes.activeCount * sizeof(unsigned int)));
     memcpy(h_nodes.activeI, fluidNodes.data(), h_nodes.activeCount * sizeof(unsigned int));
     
