@@ -87,19 +87,23 @@ void elmt::initialize(const double& partDensity, const prototype& prototypeHere,
 
     if (prototypeHere.bonded) {
         mobile = false;
+		bondState = 0;
     }
     else {
         mobile = true;
+		bondState = 2;
     }
     
     // initialize forces
     FHydro.reset();
     FParticle.reset();
     FWall.reset();
+	FMagnet.reset();
     FGrav=demF*elmtMass;
     MHydro.reset();
     MParticle.reset();
     MWall.reset();
+	MMagnet.reset();
     
 }
 

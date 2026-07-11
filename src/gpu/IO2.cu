@@ -625,6 +625,18 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
             elmts[particles[i].clusterIndex].MWall.printFixedLine(paraviewParticleFile);
         }
     }
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FMagnet\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Pnumber; ++i) {
+        if (particles[i].active) {
+            elmts[particles[i].clusterIndex].FMagnet.printFixedLine(paraviewParticleFile);
+        }
+    }
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MMagnet\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Pnumber; ++i) {
+        if (particles[i].active) {
+            elmts[particles[i].clusterIndex].MMagnet.printFixedLine(paraviewParticleFile);
+        }
+    }
     if (lbmSolver) {
         paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\"/>\n";
         for (int i = 0; i < Pnumber; ++i) {
@@ -747,6 +759,10 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MWall\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
     offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FMagnet\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MMagnet\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
     if (lbmSolver) {
         paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
         offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
@@ -862,6 +878,19 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MWall;
+    }
+    // FMagnet
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].FMagnet;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // MMagnet
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MMagnet;
     }
     paraviewParticleFile.write(t_buffer, offset);
     if (lbmSolver) {

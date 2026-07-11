@@ -192,6 +192,7 @@ private:
     void corrector();
     void evaluateForces();
     void breakBonds();
+    void applyMagnetForce();//adding magnet resistance while tree is rotating
     void updateParticlesPredicted();
     void updateParticlesCorrected();
     double criticalTimeStep() const;
