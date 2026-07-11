@@ -112,8 +112,8 @@ public:
     // predicted angular velocity rates (global)
     tVect wp0,wp1,wp2,wp3,wp4,wp5;
     // forces and moments
-    tVect FHydro,FParticle,FWall,FGrav,FSpringP,FSpringW;
-    tVect MHydro,MParticle,MWall,MRolling;
+    tVect FHydro,FParticle,FWall,FGrav,FSpringP,FSpringW, FMagnet;
+    tVect MHydro,MParticle,MWall,MRolling,MMagnet;
     // force intensities
     tVect solidIntensity;
     // connectivity (coordination number)
@@ -129,12 +129,27 @@ public:
     // whether the element is slipping on a wall
     int slippingCase;
     // default constructor
+    
+	//---------New variables for bonded elements-----------
+    // 0=bonded, 1=bond failed but resistance (e.g. magnet) still active, 2=fully detached.
+	int bondState;
+    // Orientation of the tree when the bond first fails.
+    // Use this to measure how much the tree has rotated after failure.
+    tQuat qBondInitial;
+    // Rotation angle after bond failure.
+    // When this angle exceeds a threshold, the magnet is removed.
+    double postFailureRotation;
+    //------------------------------------------------------
+
     elmt() {
         //
         wSolver=true;
         //
         active=true;
         mobile = true;
+		bondState = 2;
+        qBondInitial = tQuat(1.0, 0.0, 0.0, 0.0);
+		postFailureRotation = 0.0;
         prototypeID = 0;
         elmtSize=0;
         elmtRadius=1.0;
@@ -158,10 +173,12 @@ public:
         FParticle.reset();
         FSpringP.reset();
         FSpringW.reset();
+		FMagnet.reset();
         MHydro.reset();
         MParticle.reset();
         MWall.reset();
         MRolling.reset();
+		MMagnet.reset();
         ACoriolis.reset();
         ACentrifugal.reset();
         components.resize(elmtSize);

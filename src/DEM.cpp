@@ -649,7 +649,7 @@ void DEM::definePrototypes() {
     newPrototype.inertiaFactor[2] = 7.7747;
     newPrototype.bonded = true;
     newPrototype.bondLocation = tVect(0.0,0.0,-5.5);
-    newPrototype.bondBendingStrength = tVect(0.0, 0.01, 0.0);
+    newPrototype.bondBendingStrength = tVect(0.0, 0.0, 0.0);
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     //prototypes[1] = prototype1;
@@ -1117,8 +1117,12 @@ void DEM::evaluateForces() {
         unsigned int n = activeElmts[a];
         elmts[n].FParticle.reset();
         elmts[n].FWall.reset();
+        elmts[n].FMagnet.reset();
+
         elmts[n].MParticle.reset();
         elmts[n].MWall.reset();
+        elmts[n].MMagnet.reset();
+
         elmts[n].FSpringP.reset();
         elmts[n].FSpringW.reset();
         elmts[n].MRolling.reset();
@@ -1168,6 +1172,9 @@ void DEM::evaluateForces() {
     // forces due to contact with cylinders
     cylinderParticelContacts();
 
+	// forces due to contact with magnetic field
+    applyMagnetForce();
+
     totSprings = 0;
     if (staticFrictionSolve) {
         // erase springs that are still inactive
@@ -1205,7 +1212,7 @@ void DEM::evaluateForces() {
 
         // translational motion
         // acceleration (sum of forces / mass + sum of accelerations)
-        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall) / elmts[n].elmtMass + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
+        elmts[n].x2 = (FVisc + elmts[n].FHydro + elmts[n].FParticle + elmts[n].FWall + elmts[n].FMagnet) / elmts[n].elmtMass + demF + elmts[n].ACoriolis + elmts[n].ACentrifugal;
 
         // rotational motion
         // adjoint of orientation quaternion
@@ -1213,7 +1220,7 @@ void DEM::evaluateForces() {
         // rotational velocity (body-fixed reference frame)
         //const tVect wBf=2.0*quat2vec( q0adj.multiply( elmts[n].qp1 ) );
         // moment in global reference frame
-        const tVect moment = MVisc + elmts[n].MHydro + elmts[n].MParticle + elmts[n].MWall + elmts[n].MRolling;
+        const tVect moment = MVisc + elmts[n].MHydro + elmts[n].MParticle + elmts[n].MWall + elmts[n].MMagnet + elmts[n].MRolling;
 
         // moment in body-fixed reference frame
         //if (elmts[n].size
@@ -1233,21 +1240,77 @@ void DEM::evaluateForces() {
 
 void DEM::breakBonds() {
 
-    //#pragma omp parallel for
+    //define tree release angle as 0.35, which is about 20 degrees
+    constexpr double treeReleaseAngle = 0.35;
     for (int a = 0; a < activeElmts.size(); ++a) {
-        //cout<<"pr a= "<<a<<endl;
         unsigned int n = activeElmts[a];
-        //cout<<"pr n= "<<n<<endl;
-        if (elmts[n].mobile == false) {
+        prototype& proto = prototypes[elmts[n].prototypeID];
+        //only apply this bond-break logic to bonded prototypes
+        if (!proto.bonded) {
+            continue;
+        }
+        //State 0: fully fixed tree
+        if (elmts[n].bondState == 0) {
+            // check if the bond is broken
             const tVect centreOfMass_Moment = elmts[n].MParticle + elmts[n].MHydro;
             const tVect centreOfMass_Force = elmts[n].FParticle + elmts[n].FHydro + elmts[n].FGrav;
             const tVect centreOfMass_Distance = elmts[n].elmtRadius * project(prototypes[elmts[n].prototypeID].bondLocation, elmts[n].q0);
             const tVect breakageMoment = centreOfMass_Moment + centreOfMass_Force.cross(centreOfMass_Distance);
-            if (breakageMoment.norm() > prototypes[elmts[n].prototypeID].bondBendingStrength.norm()) {
+            if (breakageMoment.norm() > proto.bondBendingStrength.norm()) {
                 elmts[n].mobile = true;
+                elmts[n].bondState = 1;
+                //Store the orientation of the element at the moment of bond breakage
+                elmts[n].qBondInitial = elmts[n].q0;
+                //Reset post-failure rotation
+                elmts[n].postFailureRotation = 0.0;
+                cout << "Bond breakage detected for element " << n << endl;
             }
         }
-        //cout<<"pr end"<<endl;
+        //State 1: bond failed, magnet resistance active
+        else if (elmts[n].bondState == 1) {
+			const tVect zInitial = project(tVect(0.0, 0.0, 1.0), elmts[n].qBondInitial);
+            const tVect zNow = project(tVect(0.0, 0.0, 1.0), elmts[n].q0);
+            double cosTheta = zInitial.dot(zNow);
+            // Numerical protection: acos() only accepts values in [-1, 1].
+            if (cosTheta > 1.0) {
+                cosTheta = 1.0;
+            }
+            if (cosTheta < -1.0) {
+                cosTheta = -1.0;
+            }
+            //Rotation angle after bond failure
+            elmts[n].postFailureRotation = acos(cosTheta);
+            //Check if the rotation angle exceeds the threshold for tree release
+            if (elmts[n].postFailureRotation > treeReleaseAngle) {
+                elmts[n].bondState = 2; //fully mobile
+                elmts[n].mobile = true;
+                cout << "Tree release detected for element " << n << endl;
+            }
+        }
+    }
+}
+void DEM::applyMagnetForce() {
+	constexpr double magnetPullForce = 0.48;//Input required. This is a placeholder value for the magnetic pull force.
+    //damping is not added for now, but it could be added if needed
+    const tVect magnetDirection = Zm;
+    for (int a = 0; a < activeElmts.size(); ++a) {
+        const unsigned int n = activeElmts[a];
+        if (elmts[n].bondState != 1) {
+            continue;
+        }
+
+        const prototype& proto = prototypes[elmts[n].prototypeID];
+        if (!proto.bonded) {
+            continue;
+        }
+        const tVect bondVector =
+            elmts[n].elmtRadius * project(proto.bondLocation, elmts[n].qp0);
+        const tVect magneticPull = magnetPullForce * magnetDirection;
+        //A constant magnet force is assumed for now.
+        const tVect magneticForce = magneticPull;//Add dampingForce if needed
+        //Store the magnetic force in the element's FMagnet variable for later use in the corrector step
+        elmts[n].FMagnet += magneticForce;
+        elmts[n].MMagnet += bondVector.cross(magneticForce);
     }
 }
 
