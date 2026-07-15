@@ -1290,7 +1290,7 @@ void DEM::breakBonds() {
     }
 }
 void DEM::applyMagnetForce() {
-	constexpr double magnetPullForce = 0.48;//Input required. This is a placeholder value for the magnetic pull force.
+	constexpr double magnetPullForce = 0.8;//Input required. This is a placeholder value for the magnetic pull force.
     //damping is not added for now, but it could be added if needed
     const tVect magnetDirection = Zm;
     for (int a = 0; a < activeElmts.size(); ++a) {
