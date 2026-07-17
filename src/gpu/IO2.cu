@@ -1799,7 +1799,7 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     std::fill(uc_buffer, uc_buffer + PARAMS.totPossibleNodes, (unsigned char)2);
     for (unsigned int i = 0; i < nodes.count; ++i) {
-        uc_buffer[i] = nodes.isInsideParticle(i) ? nodes.type[i] : 1;
+        uc_buffer[i] = nodes.isInsideParticle(i) ? 1 : nodes.type[i];
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Velocity
