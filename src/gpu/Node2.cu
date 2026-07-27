@@ -23,7 +23,7 @@ __host__ void Node2::initialize(const unsigned int i, const double density, cons
     addForce(i, force);
 
 }
-__host__ void Node2::setEquilibrium(const unsigned int i, const double nHere, const tVect& velHere) {
+__host__ __device__ void Node2::setEquilibrium(const unsigned int i, const double nHere, const tVect& velHere) {
     const double usq = velHere.norm2();
 
     for (int j = 0; j < lbmDirec; ++j) {

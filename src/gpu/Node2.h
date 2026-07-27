@@ -120,8 +120,8 @@ struct Node2 {
 
     // functions working on distribution functions
     __host__ void initialize(unsigned int i, double density, const tVect &velocity, double massFunction, double viscosity, const tVect &F, double ageHere, const tVect &rotationSpeed);
-    __host__ void setEquilibrium(unsigned int i, double nHere, const tVect& velHere);
-    
+    __host__ __device__ void setEquilibrium(unsigned int i, double nHere, const tVect& velHere);
+
     __host__ __device__ double liquidFraction(const unsigned int i) const {
         return mass[i] / n[i];
     }

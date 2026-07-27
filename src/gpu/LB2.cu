@@ -1567,13 +1567,25 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
         // create new interface node
         nodes->generateNode(in_i, INTERFACE);
         // node is becoming active and needs to be initialized
-        double massSurplusHere = -marginalMass * PARAMS.fluidMaterial.initDensity;
-        // same density and velocity; 1% of the mass
-        nodes->copy(in_i, nodes->d[in_i]); // d[0] contains src node
+
+        const unsigned int src_i = nodes->d[in_i];
+
+        // Copy velocity and material properties from the source node.
+        nodes->copy(in_i, src_i);
+
+        // Impose the free surface pressure and reconstruct equilibrium populations.
+        const double rhoNew = PARAMS.fluidMaterial.initDensity;
+        const tVect velocityNew = nodes->u[in_i];
+
+        nodes->n[in_i] = rhoNew;
+        nodes->setEquilibrium(in_i, rhoNew, velocityNew);
+
+        // Initialise with 1 per cent liquid fraction.
+        double massSurplusHere = -marginalMass * rhoNew;
         nodes->mass[in_i] = -massSurplusHere;
-        // the 1% of the mass is taken form the surplus
-        nodes->scatterMass(in_i, massSurplusHere);  // @TODO race condition on extraMass (not currently enabled as redundant)?
-        // massSurplus += massSurplusHere;
+
+        nodes->scatterMass(in_i, massSurplusHere);
+
     }
 
 
