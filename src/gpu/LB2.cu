@@ -838,13 +838,13 @@ __host__ __device__ __forceinline__ void common_computeHydroForces(const unsigne
         const unsigned int particleIndex = nodes->solidIndex[an_i];
         const unsigned int clusterIndex = particles->clusterIndex[particleIndex];
         // calculating velocity of the solid boundary at the node (due to rotation of particles)
-        // vectorized radius (real units)
-        const tVect radius = nodes->getPosition(index) - particles->x0[particleIndex] / PARAMS.unit.Length + particles->radiusVec[particleIndex] / PARAMS.unit.Length;
-        // update velocity of the particle node (u=v_center+omega x radius) (real units)
-        const tVect localVel = elements->x1[clusterIndex] / PARAMS.unit.Speed + (elements->wGlobal[clusterIndex].cross(radius)) / PARAMS.unit.AngVel;
+        // vectorized radius (lattice units)
+        const tVect radius = nodes->getPosition(index) - particles->x0[particleIndex] / PARAMS.unit.Length + particles->radiusVec[particleIndex] / PARAMS.unit.Length;  // particles->x0[particleIndex] / PARAMS.unit.Length + particles->radiusVec[particleIndex] / PARAMS.unit.Length;
+        // update velocity of the particle node (u=v_center+omega x radius) (lattice units)
+        const tVect localVel = elements->x1[clusterIndex] / PARAMS.unit.Speed +(elements->wGlobal[clusterIndex].cross(radius)) / PARAMS.unit.AngVel;
 
         // calculate differential velocity
-        const tVect diffVel = nodes->age[an_i] * nodes->age[an_i] * nodes->liquidFraction(an_i) * (nodes->u[an_i] - localVel);
+        const tVect diffVel = (nodes->u[an_i] - localVel); //nodes->age[an_i] * nodes->age[an_i] * nodes->liquidFraction(an_i) * 
 
         // force on fluid
         nodes->hydroForce[an_i] += -1.0 * diffVel;
@@ -856,7 +856,7 @@ __host__ __device__ __forceinline__ void common_computeHydroForces(const unsigne
         atomicAdd(&elements->FHydro[clusterIndex].x, 1.0 * diffVel.x);
         atomicAdd(&elements->FHydro[clusterIndex].y, 1.0 * diffVel.y);
         atomicAdd(&elements->FHydro[clusterIndex].z, 1.0 * diffVel.z);
-        const tVect t = 1.0 * radius.cross(diffVel);
+        const tVect t = 1.0 * radius.cross(diffVel); //1.0 * radius.cross(diffVel);
         atomicAdd(&elements->MHydro[clusterIndex].x, t.x);
         atomicAdd(&elements->MHydro[clusterIndex].y, t.y);
         atomicAdd(&elements->MHydro[clusterIndex].z, t.z);

@@ -643,13 +643,13 @@ void DEM::definePrototypes() {
     newPrototype.radiusFactors.push_back(0.1716);
     newPrototype.radiusFactors.push_back(0.1716);
 
-    newPrototype.massFactor = 7.12;
-    newPrototype.inertiaFactor[0] = 8.1367;
-    newPrototype.inertiaFactor[1] = 7.7747;
-    newPrototype.inertiaFactor[2] = 7.7747;
+    newPrototype.massFactor = 7.27;
+    newPrototype.inertiaFactor[0] = 173.9;
+    newPrototype.inertiaFactor[1] = 173.9;
+    newPrototype.inertiaFactor[2] = 8.28;
     newPrototype.bonded = true;
     newPrototype.bondLocation = tVect(0.0,0.0,-5.5);
-    newPrototype.bondBendingStrength = tVect(0.0, 0.0, 0.0);
+    newPrototype.bondBendingStrength = tVect(0.0, 0.05, 0.0);
     prototypes[newPrototype.prototypeID]= newPrototype;
 
     //prototypes[1] = prototype1;
@@ -1560,13 +1560,14 @@ void DEM::evalCellTable() {
         // if the coordinate exceeds the borders of the box, a message is displayed
         if (c > cellTable.size() || c < 0) { // just put control over ghost, here !!!!!!!!!!!!!!!!!!!!!!
             cout << "#neighborList, " << c << " initCellTable: particle " << p << " outside box, ignoring for force calculation." << endl;
-            cout << "Position: (" << elmts[p].x0.dot(Xp) << " " << elmts[p].x0.dot(Yp) << " " << elmts[p].x0.dot(Zp) << ")" << endl;
-            cout << "Velocity: (" << elmts[p].x1.dot(Xp) << " " << elmts[p].x1.dot(Yp) << " " << elmts[p].x1.dot(Zp) << ")" << endl;
-            elmts[p].resetVelocity();
-            elmts[p].elmtRadius = 0.0;
-            elmts[p].x0 = Zero;
-            //exit(0);
-            //            continue;
+            const unsigned int motherElmt = particles[p].clusterIndex;
+            cout << "FHydro: (" << elmts[motherElmt].FHydro.dot(Xp) << " " << elmts[motherElmt].FHydro.dot(Yp) << " " << elmts[motherElmt].FHydro.dot(Zp) << ")" << endl;
+            cout << "Position: (" << elmts[motherElmt].x0.dot(Xp) << " " << elmts[motherElmt].x0.dot(Yp) << " " << elmts[motherElmt].x0.dot(Zp) << ")" << endl;
+            cout << "Velocity: (" << elmts[motherElmt].x1.dot(Xp) << " " << elmts[motherElmt].x1.dot(Yp) << " " << elmts[motherElmt].x1.dot(Zp) << ")" << endl;
+            //elmts[motherElmt].resetVelocity();
+            //elmts[motherElmt].radius = 0.0;
+            //elmts[motherElmt].x0 = Zero;
+            exit(0);
         }
 
         // cellTable is a structure to contain data in an efficient way

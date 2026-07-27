@@ -63,12 +63,12 @@ void goCycle(IO& io, DEM& dem, LB& lb) {
 
     if (io.lbmSolver && dem.demTime >= dem.demInitialRepeat) {
 
+        lb.latticeBolzmannStep(dem.elmts, dem.particles, dem.walls, dem.objects);
+
         if (io.demSolver) {
 
             lb.latticeBoltzmannCouplingStep(dem.newNeighborList, dem.elmts, dem.particles);
         }
-
-        lb.latticeBolzmannStep(dem.elmts, dem.particles, dem.walls, dem.objects);
 
         // Lattice Boltzmann core steps
 

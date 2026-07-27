@@ -563,6 +563,12 @@ void IO2::exportParaviewParticles(const elmtList& elmts, const particleList& par
             particles[i].x1.printFixedLine(paraviewParticleFile);
         }
     }
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radiusVec\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Pnumber; ++i) {
+        if (particles[i].active) {
+            particles[i].radiusVec.printFixedLine(paraviewParticleFile);
+        }
+    }
     //    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"slipCase\" NumberOfComponents=\"1\"/>\n";
     //    for (int i = 0; i < Pnumber; ++i) {
     //        if (particles[i].active) {
@@ -763,6 +769,8 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"MMagnet\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
     offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
+    paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"radiusVec\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
+    offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
     if (lbmSolver) {
         paraviewParticleFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\" />\n";
         offset += active_particles.size() * 3 * sizeof(double) + sizeof(unsigned int);
@@ -891,6 +899,13 @@ void IO2::exportParaviewParticles_binaryv3(const elmtList& elmts, const particle
     paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
     for (unsigned int i = 0; i < active_particles.size(); ++i) {
         v_buffer[i] = elmts[particles[active_particles[i]].clusterIndex].MMagnet;
+    }
+    paraviewParticleFile.write(t_buffer, offset);
+    // radiusVec
+    offset = active_particles.size() * 3 * sizeof(double);
+    paraviewParticleFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    for (unsigned int i = 0; i < active_particles.size(); ++i) {
+        v_buffer[i] = particles[active_particles[i]].radiusVec;
     }
     paraviewParticleFile.write(t_buffer, offset);
     if (lbmSolver) {
@@ -1787,6 +1802,8 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     offset += PARAMS.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
     paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"pressure\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
     offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
+    paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"hydroForce\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << offset << "\"/>\n";
+    offset += PARAMS.totPossibleNodes * 3 * sizeof(double) + sizeof(unsigned int);
     if (PARAMS.fluidMaterial.rheologyModel != NEWTONIAN || PARAMS.fluidMaterial.turbulenceOn) {
         paraviewFluidFile << "    <DataArray type=\"Float64\" Name=\"dynVisc\" NumberOfComponents=\"1\" format=\"appended\" offset=\"" << offset << "\" RangeMin=\"0\" RangeMax=\"2\"/>\n";
         offset += PARAMS.totPossibleNodes * sizeof(double) + sizeof(unsigned int);
@@ -1846,6 +1863,14 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     const double THIRD_PRESSURE = 0.3333333 * PARAMS.unit.Pressure;
     for (unsigned int i = 0; i < nodes.count; ++i) {
         d_buffer[i] = (nodes.n[i] - 1.0) * THIRD_PRESSURE;
+    }
+    paraviewFluidFile.write(t_buffer, offset);
+    // Hydraulic force
+    offset = PARAMS.totPossibleNodes * 3 * sizeof(double);
+    paraviewFluidFile.write(reinterpret_cast<const char*>(&offset), sizeof(unsigned int));
+    memset(v_buffer, 0, sizeof(tVect) * PARAMS.totPossibleNodes);
+    for (unsigned int i = 0; i < nodes.count; ++i) {
+        v_buffer[i] = nodes.hydroForce[i] * PARAMS.unit.Accel * PARAMS.unit.Density;
     }
     paraviewFluidFile.write(t_buffer, offset);
     // Dynamic Viscosity
