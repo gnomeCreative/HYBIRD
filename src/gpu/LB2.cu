@@ -1582,8 +1582,8 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_update(const u
         const double rhoNew = PARAMS.fluidMaterial.initDensity;
 
         // Initialise weighted velocity and nonequilibrium stress sums
-        tVect velocityNew = Zero;
-        tMat stressNew;
+        tVect velocityNew(0.0, 0.0, 0.0);
+        tMat stressNew(0.0, 0.0, 0.0,   0.0, 0.0, 0.0,   0.0, 0.0, 0.0);
         double totalWeight = 0.0;
 
         // Find the 18 neighbouring lattice nodes.
