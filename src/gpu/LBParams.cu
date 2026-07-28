@@ -319,9 +319,9 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
 
         // Project the rectangular domain onto the gravity direction.
         const double gravityLength =
-              fabs(gravityDirection.dot(X)) * lbPhysicalSize[0]
-            + fabs(gravityDirection.dot(Y)) * lbPhysicalSize[1]
-            + fabs(gravityDirection.dot(Z)) * lbPhysicalSize[2];
+              fabs(gravityDirection.dot(Xp)) * lbPhysicalSize[0]
+            + fabs(gravityDirection.dot(Yp)) * lbPhysicalSize[1]
+            + fabs(gravityDirection.dot(Zp)) * lbPhysicalSize[2];
 
         // Ensure that the projected domain length is valid.
         ASSERT(gravityLength > 0.0);
