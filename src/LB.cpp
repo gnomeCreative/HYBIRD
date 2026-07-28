@@ -312,7 +312,6 @@ void LB::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
     PARSE_CLASS_MEMBER(configFile, lbFX, "forceX", 0.0);
     PARSE_CLASS_MEMBER(configFile, lbFY, "forceY", 0.0);
     PARSE_CLASS_MEMBER(configFile, lbFZ, "forceZ", 0.0);
-
     // Construct the physical acceleration vector.
     const tVect physicalForce(lbFX, lbFY, lbFZ);
     const double gravityMagnitude = physicalForce.norm();
