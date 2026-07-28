@@ -353,7 +353,6 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
     // shear rate (second invariant)
     const double shearRate = 2.0 * gamma.magnitude();
 
-    // Bingham model
     double nuApp = 0.0;
     switch (PARAMS.fluidMaterial.rheologyModel) {
         case NEWTONIAN:
@@ -375,7 +374,7 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
             } else {
                 this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid;
             }
-            nuApp = PARAMS.fluidMaterial.initDynVisc + this->friction[index] * pressure / shearRate;
+            nuApp = this->friction[index] * pressure / shearRate;
             break;
         }
         case VOELLMY:
@@ -414,6 +413,10 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
             break;
         }
     }
+
+	// Change the newly calculated rheology gradually for new cells to avoid numerical instabilities
+    nuApp = (1.0 - this->age[index]) * this->visc[index] +
+        this->age[index] * nuApp;
 
     // Smagorinsky turbulence model
     if (PARAMS.fluidMaterial.turbulenceOn) {

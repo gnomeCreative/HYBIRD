@@ -43,6 +43,9 @@ public:
     double particleDensity;
     // minimum pressure for stabilizing frictional models (rheologyModel=MUI,FRICTIONAL)
     double minimumPressure;
+    // Papanastasiou regularisation for the static friction contribution (rheologyModel=MUI,FRICTIONAL,VOELLMY)
+    bool frictionRegularisation;
+    double regularisationLambda;
     // activation of Smagorinsky turbulence model
     bool turbulenceOn;
     // parameter for Smagorinsky turbulence model
@@ -66,6 +69,8 @@ public:
         , rhod2(0)
         , particleDensity(0)
         , minimumPressure(0)
+        , frictionRegularisation(false)
+        , regularisationLambda(0.0)
         , turbulenceOn(false)
         , turbConst(0.0)
         , earthPressureCoeff(1.0) { }
