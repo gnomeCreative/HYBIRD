@@ -354,6 +354,49 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
     const double shearRate = 2.0 * gamma.magnitude();
 
     double nuApp = 0.0;
+
+    // Initialise quantities shared by the frictional rheologies.
+    double pressure = 0.0;
+    double staticFriction = 0.0;
+    double regularisationFactor = 1.0;
+    double frictionViscosity = 0.0;
+
+    // Calculate the common frictional contribution.
+    if (usesFriction) {
+
+		// cap pressure to minimium value to avoid singularity at free surface
+        pressure = std::max(PARAMS.fluidMaterial.minimumPressure , 0.33333333 * (this->n[index] - 1.0));
+
+        // Select the bulk or basal friction coefficient.
+        if (this->basal[index]) {
+            staticFriction =
+                PARAMS.fluidMaterial.basalFrictionCoefFluid;
+        }
+        else {
+            staticFriction =
+                PARAMS.fluidMaterial.frictionCoefFluid;
+        }
+
+        // Apply Papanastasiou regularisation when enabled.
+        if (PARAMS.fluidMaterial.frictionRegularisation) {
+            regularisationFactor = 1.0 - exp(-shearRate/ PARAMS.fluidMaterial.regularisationLambda);
+
+            // Use the analytical limit at zero shear rate.
+            if (shearRate > 0.0) {
+                inverseRate = regularisationFactor / shearRate;
+            }
+            else {
+                inverseRate = 1.0 / PARAMS.fluidMaterial.regularisationLambda;
+            }
+
+            frictionViscosity = staticFriction * pressure * inverseRate;
+        }
+        else {
+            // Recover the original unregularised contribution.
+            frictionViscosity = staticFriction * pressure / shearRate;
+        }
+    }
+
     switch (PARAMS.fluidMaterial.rheologyModel) {
         case NEWTONIAN:
         {
@@ -367,26 +410,18 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         }
         case FRICTIONAL:
         {
-            // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
-            if (this->basal[index]) {
-                this->friction[index] = PARAMS.fluidMaterial.basalFrictionCoefFluid;
-            } else {
-                this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid;
-            }
-            nuApp = this->friction[index] * pressure / shearRate;
+            // Store the regularised frictional contribution.
+            this->friction[index] = staticFriction * regularisationFactor;
+
+            nuApp = frictionViscosity;
             break;
         }
         case VOELLMY:
         {
-            // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
-            if (this->basal[index]) {
-                this->friction[index] = PARAMS.fluidMaterial.basalFrictionCoefFluid;
-            } else {
-                this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid;
-            }
-            nuApp = this->friction[index] * pressure / shearRate + PARAMS.fluidMaterial.rhod2 * shearRate;
+            // Add the rate-dependent Voellmy contribution.
+            this->friction[index] = staticFriction * regularisationFactor;
+
+            nuApp = frictionViscosity + PARAMS.fluidMaterial.rhod2 * shearRate;
             break;
         }
         case BAGNOLD:
@@ -397,19 +432,31 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         }
         case MUI:
         {
-            // p=c_s^2 * n, scaled by atmospheric pressure (n_atm=1.0)
-            const double pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0)); //smoothedPressure
-            const double inertialNumber = PARAMS.fluidMaterial.particleDiameter * shearRate / sqrt(pressure / PARAMS.fluidMaterial.particleDensity);
-            const double regularizationFactor = 1.0;//-exp(-shearRate/0.00005);
-            if (this->basal[index]) {
-                this->friction[index] = PARAMS.fluidMaterial.basalFrictionCoefFluid * regularizationFactor + PARAMS.fluidMaterial.deltaFriction / (PARAMS.fluidMaterial.baseInertial / inertialNumber + 1.0);
-            } else {
-                this->friction[index] = PARAMS.fluidMaterial.frictionCoefFluid * regularizationFactor + PARAMS.fluidMaterial.deltaFriction / (PARAMS.fluidMaterial.baseInertial / inertialNumber + 1.0);
+            // Calculate the denominator shared by the dynamic terms.
+            const double inertialDenominator = PARAMS.fluidMaterial.baseInertial * sqrt( pressure / PARAMS.fluidMaterial.particleDensity )
+                + PARAMS.fluidMaterial.particleDiameter * shearRate;
+
+            // Initialise the dynamic contributions.
+            double dynamicFriction = 0.0;
+            double dynamicViscosity = 0.0;
+
+            // Calculate the dynamic terms when the denominator is positive.
+            if (inertialDenominator > 0.0) {
+                dynamicFriction = PARAMS.fluidMaterial.deltaFriction * PARAMS.fluidMaterial.particleDiameter * shearRate / inertialDenominator;
+
+                dynamicViscosity = pressure * PARAMS.fluidMaterial.deltaFriction * PARAMS.fluidMaterial.particleDiameter / inertialDenominator;
             }
-            nuApp = this->friction[index] * pressure / shearRate;
-            if (this->type[index] == INTERFACE) { //(pressure<1.5*fluidMaterial.minimumPressure) {
-                nuApp = PARAMS.fluidMaterial.lbMinVisc;
-            }
+
+            // Combine the static and dynamic contributions.
+            this->friction[index] = staticFriction * regularisationFactor + dynamicFriction;
+
+            nuApp = frictionViscosity + dynamicViscosity;
+
+            //// Retain the current interface viscosity treatment.
+            //if (this->type[index] == INTERFACE) {
+            //    nuApp = PARAMS.fluidMaterial.lbMinVisc;
+            //}
+
             break;
         }
     }
