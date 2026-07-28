@@ -127,6 +127,14 @@ __host__device__ constexpr tMat vv[lbmDirec]={    tMat(v[0],v[0]),
                                     tMat(v[16],v[16]),
                                     tMat(v[17],v[17]),
                                     tMat(v[18],v[18]) };
+
+// Three dimensional identity tensor.
+__host__device__ constexpr tMat identityMat(
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0
+);
+
 // opposed directions (used for bounce back)
 __host__device__ constexpr unsigned int opp[lbmDirec]={0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
 

@@ -975,16 +975,16 @@ __host__ __device__ __forceinline__ void common_streaming(const unsigned int i, 
             }
             case INTERFACE:
             {
-#ifdef DEBUG
-                // TEST USING AGE //////////////////////////////////////
-                const double usq = nodes->u[an_i].norm2();
-                const double vuj = nodes->u[an_i].dot(v[j]);
-                nodes->f[A_OFFSET + opp[j]] = nodes->age[ln_i] * nodes->fs[L_OFFSET + opp[j]] +
-                    (1.0 - nodes->age[ln_i]) * (-nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq));
-#else
+//#ifdef DEBUG
+//                // TEST USING AGE //////////////////////////////////////
+//                const double usq = nodes->u[an_i].norm2();
+//                const double vuj = nodes->u[an_i].dot(v[j]);
+//                nodes->f[A_OFFSET + opp[j]] = nodes->age[ln_i] * nodes->fs[L_OFFSET + opp[j]] +
+//                    (1.0 - nodes->age[ln_i]) * (-nodes->fs[A_OFFSET + j] + coeff[j] * PARAMS.fluidMaterial.initDensity * (2.0 + C2x2 * (vuj * vuj) - C3x2 * usq));
+//#else
 
                 nodes->f[A_OFFSET + opp[j]] = nodes->fs[L_OFFSET + opp[j]];
-#endif
+//#endif
                 break;
 
             }
@@ -1561,24 +1561,105 @@ __host__ __device__ __forceinline__ void common_smoothenInterface_find(const uns
     }
 }
 __host__ __device__ __forceinline__ void common_smoothenInterface_update(const unsigned int in_i, Node2* nodes) {
+
     constexpr double marginalMass = 1.0e-2;
+    constexpr float matureAge = 0.999f;
+
     // CHECKING FOR NEW INTERFACE NODES from neighboring a new fluid node
     if (nodes->type[in_i] == GAS_TO_INTERFACE) {
-        // create new interface node
-        nodes->generateNode(in_i, INTERFACE);
         // node is becoming active and needs to be initialized
 
+        // create new interface node
+        nodes->generateNode(in_i, INTERFACE);
+
+        // Retrieve the source node recorded during interface detection
         const unsigned int src_i = nodes->d[in_i];
 
-        // Copy velocity and material properties from the source node.
+        // Copy material properties, using the source state as a fallback
         nodes->copy(in_i, src_i);
 
-        // Impose the free surface pressure and reconstruct equilibrium populations.
+        // Impose the free surface pressure and reconstruct equilibrium populations
         const double rhoNew = PARAMS.fluidMaterial.initDensity;
-        const tVect velocityNew = nodes->u[in_i];
 
+        // Initialise weighted velocity and nonequilibrium stress sums
+        tVect velocityNew = Zero;
+        tMat stressNew;
+        double totalWeight = 0.0;
+
+        // Find the 18 neighbouring lattice nodes.
+        const std::array<unsigned int, lbmDirec> neighbourIndices =  nodes->findNeighbors(in_i);
+
+        for (int j = 1; j < lbmDirec; ++j) {
+
+            const unsigned int neighbourIndex = neighbourIndices[j];
+
+            // Ignore neighbours outside the domain.
+            if (neighbourIndex >= nodes->count) {
+                continue;
+            }
+
+            const types neighbourType = nodes->type[neighbourIndex];
+
+            // Accept only neighbours with a valid fluid state.
+            const bool suitableType =  (neighbourType == LIQUID) || (neighbourType == INTERFACE) || (neighbourType == INTERFACE_FILLED) || neighbourType == (FLUID_TO_INTERFACE);
+
+            // Ignore unsuitable or recently created neighbours.
+            if (!suitableType || nodes->age[neighbourIndex] < matureAge) {
+                continue;
+            }
+
+            // Weight axial neighbours more strongly than diagonal neighbours.
+            totalWeight += coeff[j];
+
+            // Accumulate the weighted neighbour velocity.
+            velocityNew += coeff[j] * nodes->u[neighbourIndex];
+
+            // Calculate the equilibrium populations of this neighbour.
+            std::array<double, lbmDirec> neighbourEquilibrium;
+            nodes->computeEquilibrium(neighbourIndex,neighbourEquilibrium);
+
+            for (int q = 0; q < lbmDirec; ++q) {
+
+                // Calculate the post collision nonequilibrium population.
+                const double fNeq = nodes->fs[neighbourIndex * lbmDirec + q] - neighbourEquilibrium[q];
+
+                // Accumulate its contribution to the stress tensor.
+                stressNew += coeff[j] * fNeq * vv[q];
+           }
+        }
+
+        if (totalWeight > 0.0) {
+
+            // Convert weighted sums into weighted averages.
+            velocityNew /= totalWeight;
+            stressNew /= totalWeight;
+
+        } else {
+
+            // Use the source velocity if no mature neighbour is available.
+            velocityNew = nodes->u[src_i];
+        }
+
+        // Initialise equilibrium populations at the prescribed state.
         nodes->n[in_i] = rhoNew;
+        nodes->u[in_i] = velocityNew;
         nodes->setEquilibrium(in_i, rhoNew, velocityNew);
+
+        constexpr double cs2 = 1.0 / 3.0;
+        constexpr double stressPrefactor = 4.5;
+
+        for (int q = 0; q < lbmDirec; ++q) {
+
+            // Contract the lattice tensor with the interpolated stress.
+            const double stressContraction = (vv[q] - cs2 * identityMat).doubleDot(stressNew);
+
+            // Reconstruct the regularised nonequilibrium population.
+            const double fNeqNew = stressPrefactor * coeff[q] * stressContraction;
+
+            // Add the stress contribution to both population arrays.
+            nodes->f[in_i * lbmDirec + q] += fNeqNew;
+            nodes->fs[in_i * lbmDirec + q] += fNeqNew;
+        }
 
         // Initialise with 1 per cent liquid fraction.
         double massSurplusHere = -marginalMass * rhoNew;

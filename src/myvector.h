@@ -219,6 +219,7 @@ public:
     __host__ __device__ tMat& operator/=(const double& scalar);
     friend __host__ __device__ tMat operator*(const double& scalar, const tMat& mat);
     // mathematical operations
+    __host__ __device__ double doubleDot(const tMat& mat) const;
     __host__ __device__ double magnitude() const;
 };
 
