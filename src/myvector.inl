@@ -481,6 +481,19 @@ __host__ __device__ inline tMat operator*(const double& scalar, const tMat& mat)
 
 // mathematical functions
 
+__host__ __device__ inline double tinyMatrix::doubleDot(const tMat& mat) const {
+
+    return m00 * mat.m00
+        + m01 * mat.m01
+        + m02 * mat.m02
+        + m10 * mat.m10
+        + m11 * mat.m11
+        + m12 * mat.m12
+        + m20 * mat.m20
+        + m21 * mat.m21
+        + m22 * mat.m22;
+}
+
 __host__ __device__ inline double tinyMatrix::magnitude() const {
 //    return 2.0*sqrt((m01*m10+m20*m02+m12*m21-(m00*m11+m11*m22+m22*m00))); // this gives nan
     return sqrt(0.5*(m00*m00+m11*m11+m22*m22+2.0*(m01*m10+m20*m02+m12*m21))); // this WORKS
