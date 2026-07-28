@@ -445,8 +445,62 @@ void LB::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
     PARSE_CLASS_MEMBER(configFile, lbFX, "forceX", 0.0);
     PARSE_CLASS_MEMBER(configFile, lbFY, "forceY", 0.0);
     PARSE_CLASS_MEMBER(configFile, lbFZ, "forceZ", 0.0);
-    lbF = tVect(lbFX, lbFY, lbFZ);
-    lbF /= unit.Accel;
+
+    // Construct the physical acceleration vector.
+    const tVect physicalForce(lbFX, lbFY, lbFZ);
+    const double gravityMagnitude = physicalForce.norm();
+
+    // Initialise the default to zero when gravity is absent.
+    double defaultRegularisationLambda = 0.0;
+
+    // Estimate lambda from the gravitational timescale.
+    if (gravityMagnitude > 0.0) {
+        const tVect gravityDirection = physicalForce / gravityMagnitude;
+
+        // Project the rectangular domain onto the gravity direction.
+        const double gravityLength =
+            fabs(gravityDirection[0]) * lbPhysicalSize[0]
+            + fabs(gravityDirection[1]) * lbPhysicalSize[1]
+            + fabs(gravityDirection[2]) * lbPhysicalSize[2];
+
+        // Ensure that the projected domain length is valid.
+        ASSERT(gravityLength > 0.0);
+
+        // Calculate the characteristic gravitational shear rate.
+        const double referenceShearRate =
+            sqrt(gravityMagnitude / gravityLength);
+
+        // Set lambda to one percent of the reference shear rate.
+        defaultRegularisationLambda =
+            0.01 * referenceShearRate;
+    }
+
+    // Read the regularisation switch.
+    PARSE_CLASS_MEMBER(
+        configFile,
+        fluidMaterial.frictionRegularisation,
+        "frictionRegularisation",
+        false
+    );
+
+    // Read lambda or use the gravity-based estimate.
+    PARSE_CLASS_MEMBER(
+        configFile,
+        fluidMaterial.regularisationLambda,
+        "regularisationLambda",
+        defaultRegularisationLambda
+    );
+
+    // Require a positive lambda when regularisation is active.
+    if (fluidMaterial.frictionRegularisation) {
+        ASSERT(fluidMaterial.regularisationLambda > 0.0);
+    }
+
+    // Convert the acceleration to lattice units.
+    lbF = physicalForce / unit.Accel;
+
+    // Convert lambda from inverse seconds to inverse lattice timesteps.
+    fluidMaterial.regularisationLambda /= unit.AngVel;
 
     // rotation of the local coordinate system (rad/s)
     double rotationX, rotationY, rotationZ;
