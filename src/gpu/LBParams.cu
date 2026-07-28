@@ -170,6 +170,9 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     PARSE_CLASS_MEMBER(configFile, lbFX, "forceX", 0.0);
     PARSE_CLASS_MEMBER(configFile, lbFY, "forceY", 0.0);
     PARSE_CLASS_MEMBER(configFile, lbFZ, "forceZ", 0.0);
+    // Construct the physical acceleration vector.
+    const tVect physicalForce(lbFX, lbFY, lbFZ);
+    const double gravityMagnitude = physicalForce.norm();
 
     // material //////////////////////////////////////////////////
     string rheologyModelString;
@@ -311,10 +314,6 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     PARSE_CLASS_MEMBER(configFile, initVelocityZ, "fluidInitVelocityZ", 0.0);
     initVelocity = tVect(initVelocityX, initVelocityY, initVelocityZ);
     initVelocity /= unit.Speed;
-
-    // Construct the physical acceleration vector.
-    const tVect physicalForce(lbFX, lbFY, lbFZ);
-    const double gravityMagnitude = physicalForce.norm();
 
     // Initialise the default to zero when gravity is absent.
     double defaultRegularisationLambda = 0.0;
