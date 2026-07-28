@@ -254,6 +254,12 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
         break;
     }
     }
+
+    if (fluidMaterial.rheologyModel == MUI || fluidMaterial.rheologyModel == FRICTIONAL || fluidMaterial.rheologyModel == VOELLMY) {
+        // Set the pressure floor from half a lattice cell in physical units.
+        fluidMaterial.minimumPressure = 0.5 * unit.Density * physicalForce.norm() * unit.Length;
+    }
+
     // are we using turbulence modeling? (shutting down improves performances)
     PARSE_CLASS_MEMBER(configFile, fluidMaterial.turbulenceOn, "turbulenceSolver", 0);
     PARSE_CLASS_MEMBER(configFile, fluidMaterial.turbConst, "turbConst", 0.0);
@@ -336,20 +342,10 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     }
 
     // Read the regularisation switch.
-    PARSE_CLASS_MEMBER(
-        configFile,
-        fluidMaterial.frictionRegularisation,
-        "frictionRegularisation",
-        false
-    );
+    PARSE_CLASS_MEMBER(configFile,fluidMaterial.frictionRegularisation,"frictionRegularisation",false);
 
     // Read lambda or use the gravity-based estimate.
-    PARSE_CLASS_MEMBER(
-        configFile,
-        fluidMaterial.regularisationLambda,
-        "regularisationLambda",
-        defaultRegularisationLambda
-    );
+    PARSE_CLASS_MEMBER(configFile,fluidMaterial.regularisationLambda,"regularisationLambda",defaultRegularisationLambda);
 
     // Require a positive lambda when regularisation is active.
     if (fluidMaterial.frictionRegularisation) {
@@ -414,7 +410,7 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     fluidMaterial.rhod2 /= unit.Length * unit.Length * unit.Density;
     cout << "scaling " << fluidMaterial.particleDensity << " by " << unit.Density << " obtaining " << fluidMaterial.particleDensity / unit.Density << endl;
     fluidMaterial.particleDensity /= unit.Density;
-    fluidMaterial.minimumPressure = 0.0;//1.0 * lbF.norm();
+    fluidMaterial.minimumPressure /= unit.Pressure;
     //    PARSE_CLASS_MEMBER(lbmCfgFile, initDensity, "initDensity",1.0);
     //    initDensity/=unit.Density;
     // to avoid errors we set this to be just 1
