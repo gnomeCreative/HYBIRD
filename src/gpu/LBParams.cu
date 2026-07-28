@@ -165,6 +165,12 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     lbBoundaryLocation[4] = tVect(0.0, 0.0, 0.0);
     lbBoundaryLocation[5] = tVect(0.0, 0.0, double(lbSize[2] - 2) * unit.Length);
 
+    // external force field (as acceleration)
+    double lbFX, lbFY, lbFZ;
+    PARSE_CLASS_MEMBER(configFile, lbFX, "forceX", 0.0);
+    PARSE_CLASS_MEMBER(configFile, lbFY, "forceY", 0.0);
+    PARSE_CLASS_MEMBER(configFile, lbFZ, "forceZ", 0.0);
+
     // material //////////////////////////////////////////////////
     string rheologyModelString;
     PARSE_CLASS_MEMBER(configFile, rheologyModelString, "rheologyModel", "none");
@@ -305,12 +311,6 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     PARSE_CLASS_MEMBER(configFile, initVelocityZ, "fluidInitVelocityZ", 0.0);
     initVelocity = tVect(initVelocityX, initVelocityY, initVelocityZ);
     initVelocity /= unit.Speed;
-
-    // external force field (as acceleration)
-    double lbFX, lbFY, lbFZ;
-    PARSE_CLASS_MEMBER(configFile, lbFX, "forceX", 0.0);
-    PARSE_CLASS_MEMBER(configFile, lbFY, "forceY", 0.0);
-    PARSE_CLASS_MEMBER(configFile, lbFZ, "forceZ", 0.0);
 
     // Construct the physical acceleration vector.
     const tVect physicalForce(lbFX, lbFY, lbFZ);
