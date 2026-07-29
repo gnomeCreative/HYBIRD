@@ -353,6 +353,12 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
     // shear rate (second invariant)
     const double shearRate = 2.0 * gamma.magnitude();
 
+    // Identify rheologies containing a frictional contribution.
+    const bool usesFriction =
+        PARAMS.fluidMaterial.rheologyModel == FRICTIONAL ||
+        PARAMS.fluidMaterial.rheologyModel == VOELLMY ||
+        PARAMS.fluidMaterial.rheologyModel == MUI;
+
     double nuApp = 0.0;
 
     // Initialise quantities shared by the frictional rheologies.
@@ -379,6 +385,9 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
 
         // Apply Papanastasiou regularisation when enabled.
         if (PARAMS.fluidMaterial.frictionRegularisation) {
+
+            double inverseRate = 0.0;
+
             regularisationFactor = 1.0 - exp(-shearRate/ PARAMS.fluidMaterial.regularisationLambda);
 
             // Use the analytical limit at zero shear rate.
