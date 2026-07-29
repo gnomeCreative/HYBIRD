@@ -843,8 +843,9 @@ __host__ __device__ __forceinline__ void common_computeHydroForces(const unsigne
         // update velocity of the particle node (u=v_center+omega x radius) (real units)
         const tVect localVel = elements->x1[clusterIndex] / PARAMS.unit.Speed + (elements->wGlobal[clusterIndex].cross(radius)) / PARAMS.unit.AngVel;
 
-        // calculate differential velocity
-        const tVect diffVel = nodes->age[an_i] * nodes->age[an_i] * nodes->liquidFraction(an_i) * (nodes->u[an_i] - localVel);
+        // calculate differential velocity using the smooth activation factor.
+        const double activation = nodes->activationFactor(an_i);
+        const tVect diffVel = activation * nodes->liquidFraction(an_i) * (nodes->u[an_i] - localVel);
 
         // force on fluid
         nodes->hydroForce[an_i] += -1.0 * diffVel;

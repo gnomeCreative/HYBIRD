@@ -125,6 +125,11 @@ struct Node2 {
     __host__ __device__ double liquidFraction(const unsigned int i) const {
         return mass[i] / n[i];
     }
+    // Calculate the smooth activation factor from the node age
+    __host__ __device__ double activationFactor(const unsigned int i) const {
+        const double ageHere = age[i];
+        return ageHere * ageHere * (3.0 - 2.0 * ageHere);
+    }
     /**
      * @brief Return true if the node's soldIndex denotes that it's inside a DEM particle
      */
@@ -401,11 +406,12 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
             frictionViscosity = staticFriction * pressure * inverseRate;
         }
         else {
-            // Recover the original unregularised contribution.
+            // Recover the original unregularised contribution
             frictionViscosity = staticFriction * pressure / shearRate;
         }
     }
 
+	// calculate the apparent viscosity for the selected rheology
     switch (PARAMS.fluidMaterial.rheologyModel) {
         case NEWTONIAN:
         {
@@ -427,7 +433,7 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         }
         case VOELLMY:
         {
-            // Add the rate-dependent Voellmy contribution.
+            // Add the rate-dependent Voellmy contribution
             this->friction[index] = staticFriction * regularisationFactor;
 
             nuApp = frictionViscosity + PARAMS.fluidMaterial.rhod2 * shearRate;
@@ -441,22 +447,22 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
         }
         case MUI:
         {
-            // Calculate the denominator shared by the dynamic terms.
+            // Calculate the denominator shared by the dynamic terms
             const double inertialDenominator = PARAMS.fluidMaterial.baseInertial * sqrt( pressure / PARAMS.fluidMaterial.particleDensity )
                 + PARAMS.fluidMaterial.particleDiameter * shearRate;
 
-            // Initialise the dynamic contributions.
+            // Initialise the dynamic contributions
             double dynamicFriction = 0.0;
             double dynamicViscosity = 0.0;
 
-            // Calculate the dynamic terms when the denominator is positive.
+            // Calculate the dynamic terms when the denominator is positive
             if (inertialDenominator > 0.0) {
                 dynamicFriction = PARAMS.fluidMaterial.deltaFriction * PARAMS.fluidMaterial.particleDiameter * shearRate / inertialDenominator;
 
                 dynamicViscosity = pressure * PARAMS.fluidMaterial.deltaFriction * PARAMS.fluidMaterial.particleDiameter / inertialDenominator;
             }
 
-            // Combine the static and dynamic contributions.
+            // Combine the static and dynamic contributions
             this->friction[index] = staticFriction * regularisationFactor + dynamicFriction;
 
             nuApp = frictionViscosity + dynamicViscosity;
@@ -471,8 +477,8 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
     }
 
 	// Change the newly calculated rheology gradually for new cells to avoid numerical instabilities
-    nuApp = (1.0 - this->age[index]) * this->visc[index] +
-        this->age[index] * nuApp;
+    const double activation = this->activationFactor(index);
+    nuApp = (1.0 - activation) * this->visc[index] + activation * nuApp;
 
     // Smagorinsky turbulence model
     if (PARAMS.fluidMaterial.turbulenceOn) {
