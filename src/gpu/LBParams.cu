@@ -276,7 +276,7 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
             cout << "Pressure is capped to " << fluidMaterial.minimumPressure << " based on multiplier " <<minimumPressureMultiplier<< endl;
         }
         else  {
-            cout << "Pressure is uncapped""<< endl;
+            cout << "Pressure is uncapped"<< endl;
         }
     }
 
