@@ -2426,13 +2426,13 @@ void LB2::allocateHostNodes(const unsigned int count) {
     // Zero initialisation
     memset(h_nodes.f, 0, h_nodes.count * lbmDirec * sizeof(double));
     memset(h_nodes.fs, 0, h_nodes.count * lbmDirec * sizeof(double));
-    memset(h_nodes.n, 0, h_nodes.count * sizeof(double));
+    memset(h_nodes.n, 1.0, h_nodes.count * sizeof(double));
     memset(h_nodes.u, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.hydroForce, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.centrifugalForce, 0, h_nodes.count * sizeof(tVect));
     memset(h_nodes.mass, 0, h_nodes.count * sizeof(double));
     memset(h_nodes.newMass, 0, h_nodes.count * sizeof(double));
-    std::fill(h_nodes.visc, h_nodes.visc + h_nodes.count, 1.0);
+    std::fill(h_nodes.visc, h_nodes.visc + h_nodes.count, 0.0);
     memset(h_nodes.basal, 0, h_nodes.count * sizeof(bool));
     memset(h_nodes.friction, 0, h_nodes.count * sizeof(double));
     memset(h_nodes.age, 0, h_nodes.count * sizeof(float));

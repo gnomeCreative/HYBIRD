@@ -904,7 +904,7 @@ __host__ __device__ __forceinline__ void Node2::eraseNode(const unsigned int ind
     // Zero properties used by Eulerian output
     this->p[index] = false;
     this->u[index] = {0.0,0.0,0.0};
-    this->n[index] = 0.0;
+    this->n[index] = 1.0;
     this->visc[index] = 0.0;
     this->friction[index] = 0.0;
     this->mass[index] = 0.0;
