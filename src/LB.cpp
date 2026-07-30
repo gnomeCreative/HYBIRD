@@ -405,11 +405,17 @@ void LB::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine) {
     if (fluidMaterial.rheologyModel == MUI || fluidMaterial.rheologyModel == FRICTIONAL || fluidMaterial.rheologyModel == VOELLMY) {
         // Read the pressure cap switch
         PARSE_CLASS_MEMBER(configFile, fluidMaterial.pressureCap, "pressureCap", false);
-		// Read the minimum pressure multiplier, which is used to compute the pressure floor
-        double minimumPressureMultiplier;
-        PARSE_CLASS_MEMBER(configFile, minimumPressureMultiplier, "minimumPressureMultiplier", 0.0);
-        // Set the pressure floor from half a lattice cell in physical units.
-        fluidMaterial.minimumPressure = minimumPressureMultiplier * unit.Density * physicalForce.norm() * unit.Length;
+        if (fluidMaterial.pressureCap == true) {
+            // Read the minimum pressure multiplier, which is used to compute the pressure floor
+            double minimumPressureMultiplier;
+            PARSE_CLASS_MEMBER(configFile, minimumPressureMultiplier, "minimumPressureMultiplier", 0.0);
+            // Set the pressure floor from half a lattice cell in physical units.
+            fluidMaterial.minimumPressure = minimumPressureMultiplier * unit.Density * physicalForce.norm() * unit.Length;
+            cout << "Pressure is capped to " << fluidMaterial.minimumPressure << " based on multiplier " << minimumPressureMultiplier << endl;
+        }
+        else {
+            cout << "Pressure is uncapped""<< endl;
+        }
     }
 
     // are we using turbulence modeling? (shutting down improves performances)
