@@ -265,8 +265,13 @@ void LBParams::latticeBoltzmannGet(GetPot& configFile, GetPot& commandLine,  LBI
     }
 
     if (fluidMaterial.rheologyModel == MUI || fluidMaterial.rheologyModel == FRICTIONAL || fluidMaterial.rheologyModel == VOELLMY) {
+        // Read the pressure cap switch
+        PARSE_CLASS_MEMBER(configFile, fluidMaterial.pressureCap, "pressureCap", false);
+		// Read the minimum pressure multiplier, which is used to compute the pressure floor
+        double minimumPressureMultiplier;
+        PARSE_CLASS_MEMBER(configFile, minimumPressureMultiplier, "minimumPressureMultiplier", 0.0);
         // Set the pressure floor from half a lattice cell in physical units.
-        fluidMaterial.minimumPressure = 0.5 * unit.Density * physicalForce.norm() * unit.Length;
+        fluidMaterial.minimumPressure = minimumPressureMultiplier * unit.Density * physicalForce.norm() * unit.Length;
     }
 
     // are we using turbulence modeling? (shutting down improves performances)

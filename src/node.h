@@ -46,6 +46,8 @@ public:
     // Papanastasiou regularisation for the static friction contribution (rheologyModel=MUI,FRICTIONAL,VOELLMY)
     bool frictionRegularisation;
     double regularisationLambda;
+	// pressure cap for stabilizing frictional models (rheologyModel=MUI,FRICTIONAL,VOELLMY)
+    bool pressureCap;
     // activation of Smagorinsky turbulence model
     bool turbulenceOn;
     // parameter for Smagorinsky turbulence model
@@ -70,6 +72,7 @@ public:
         , particleDensity(0)
         , minimumPressure(0)
         , frictionRegularisation(false)
+        , pressureCap(false)
         , regularisationLambda(0.0)
         , turbulenceOn(false)
         , turbConst(0.0)

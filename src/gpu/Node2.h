@@ -376,7 +376,12 @@ __host__ __device__ __forceinline__ void Node2::computeApparentViscosity(const u
     if (usesFriction) {
 
 		// cap pressure to minimium value to avoid singularity at free surface
-        pressure = std::max(PARAMS.fluidMaterial.minimumPressure , 0.33333333 * (this->n[index] - 1.0));
+        if (PARAMS.fluidMaterial.pressureCap) {
+            pressure = std::max(PARAMS.fluidMaterial.minimumPressure, 0.33333333 * (this->n[index] - 1.0));
+        }
+        else {
+            pressure = 0.33333333 * (this->n[index] - 1.0);
+        }
 
         // Select the bulk or basal friction coefficient.
         if (this->basal[index]) {
