@@ -1059,7 +1059,7 @@ void DEM::evaluateForces() {
         walls[w].FParticle.reset();
     }
 
-    for (int c = 0; c < walls.size(); ++c) {
+    for (int c = 0; c < cylinders.size(); ++c) {
         cylinders[c].FParticle.reset();
     }
 
