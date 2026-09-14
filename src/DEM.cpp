@@ -649,55 +649,44 @@ void DEM::definePrototypes() {
     newPrototype.inertiaFactor[2] = 8.28;
     newPrototype.bonded = true;
     newPrototype.bondLocation = tVect(0.0,0.0,-5.5);
-    newPrototype.bondBendingStrength = tVect(0.0, 0.002, 0.0);
+    newPrototype.bondBendingStrength = tVect(0.0, 0.02, 0.0);
     prototypes[newPrototype.prototypeID]= newPrototype;
 
-    // prototype 11 is ten overlapping spheres for the tree trunk, but with a different bond strength
+    // prototype 15 is for 150mm-tall tree with 29 overlapping spheres for the tree trunk, but with a different bond strength
     newPrototype.reset();
-    newPrototype.prototypeID = 11;
-    newPrototype.prototypeSize = 26;
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 0.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -0.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 1.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -1.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 2.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -2.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 3.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -3.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, 4.5));
-    newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, -4.5));
+    newPrototype.prototypeID = 15;
+    newPrototype.prototypeSize = 45;
+    for (int iz = -14; iz <= 14; ++iz) {
+            newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, double(iz))
+        );
+    }
 
     // smaller spheres surrounding the tree column: in total 16 spheres
-    newPrototype.prototypeStructure.push_back(tVect(0.828427, 0.000000, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(0.765367, 0.317025, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(0.585786, 0.585786, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(0.317025, 0.765367, -5.328427));
+    const double basalZ = -14.828427;
+    newPrototype.prototypeStructure.push_back(tVect(0.828427, 0.000000, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(0.765367, 0.317025, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(0.585786, 0.585786, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(0.317025, 0.765367, basalZ));
 
-    newPrototype.prototypeStructure.push_back(tVect(0.000000, 0.828427, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(-0.317025, 0.765367, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(-0.585786, 0.585786, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(-0.765367, 0.317025, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.000000, 0.828427, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(-0.317025, 0.765367, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(-0.585786, 0.585786, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(-0.765367, 0.317025, basalZ));
 
-    newPrototype.prototypeStructure.push_back(tVect(-0.828427, 0.000000, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(-0.765367, -0.317025, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(-0.585786, -0.585786, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(-0.317025, -0.765367, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(-0.828427, 0.000000, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(-0.765367, -0.317025, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(-0.585786, -0.585786, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(-0.317025, -0.765367, basalZ));
 
-    newPrototype.prototypeStructure.push_back(tVect(0.000000, -0.828427, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(0.317025, -0.765367, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(0.585786, -0.585786, -5.328427));
-    newPrototype.prototypeStructure.push_back(tVect(0.765367, -0.317025, -5.328427));
+    newPrototype.prototypeStructure.push_back(tVect(0.000000, -0.828427, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(0.317025, -0.765367, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(0.585786, -0.585786, basalZ));
+    newPrototype.prototypeStructure.push_back(tVect(0.765367, -0.317025, basalZ));
     // component radius factors for main tree column
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
-    newPrototype.radiusFactors.push_back(1.0);
+    for (int i = 0; i < 29; ++i) {
+
+        newPrototype.radiusFactors.push_back(1.0);
+    }
     // component radius factors for smaller spheres surrounding the tree column: in total 16 spheres
     newPrototype.radiusFactors.push_back(0.1716);
     newPrototype.radiusFactors.push_back(0.1716);
@@ -719,13 +708,14 @@ void DEM::definePrototypes() {
     newPrototype.radiusFactors.push_back(0.1716);
     newPrototype.radiusFactors.push_back(0.1716);
 
-    newPrototype.massFactor = 7.27;
-    newPrototype.inertiaFactor[0] = 173.9;
-    newPrototype.inertiaFactor[1] = 173.9;
-    newPrototype.inertiaFactor[2] = 8.28;
+	//cynlinder equivalent properties for mass and inertia
+    newPrototype.massFactor = 22.5;
+    newPrototype.inertiaFactor[0] = 4232.8125;
+    newPrototype.inertiaFactor[1] = 4232.8125;
+    newPrototype.inertiaFactor[2] = 28.125;
     newPrototype.bonded = true;
-    newPrototype.bondLocation = tVect(0.0, 0.0, -5.5);
-    newPrototype.bondBendingStrength = tVect(0.0, 1.0, 0.0);
+    newPrototype.bondLocation = tVect(0.0, 0.0, -15);
+    newPrototype.bondBendingStrength = tVect(0.0, 0.02, 0.0);
     prototypes[newPrototype.prototypeID] = newPrototype;
 
 
@@ -1367,7 +1357,7 @@ void DEM::breakBonds() {
     }
 }
 void DEM::applyMagnetForce() {
-	constexpr double magnetPullForce = 1.5;//Input required. This is a placeholder value for the magnetic pull force.
+	constexpr double magnetPullForce = 8;//Input required. This is a placeholder value for the magnetic pull force.
     //damping is not added for now, but it could be added if needed
     const tVect magnetDirection = Zm;
     for (int a = 0; a < activeElmts.size(); ++a) {
