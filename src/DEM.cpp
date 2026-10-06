@@ -651,73 +651,135 @@ void DEM::definePrototypes() {
     newPrototype.bondLocation = tVect(0.0,0.0,-5.5);
     newPrototype.bondBendingStrength = tVect(0.0, 0.02, 0.0);
     prototypes[newPrototype.prototypeID]= newPrototype;
+//----------------Old prototype15-------------------------------------------------------------------------------------------------
+    // // prototype 15 is for 150mm-tall tree with 29 overlapping spheres for the tree trunk, but with a different bond strength
+    // newPrototype.reset();
+    // newPrototype.prototypeID = 15;
+    // newPrototype.prototypeSize = 45;
+    // for (int iz = -14; iz <= 14; ++iz) {
+    //         newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, double(iz))
+    //     );
+    // }
 
-    // prototype 15 is for 150mm-tall tree with 29 overlapping spheres for the tree trunk, but with a different bond strength
+    // // smaller spheres surrounding the tree column: in total 16 spheres
+    // const double basalZ = -14.828427;
+    // newPrototype.prototypeStructure.push_back(tVect(0.828427, 0.000000, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(0.765367, 0.317025, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(0.585786, 0.585786, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(0.317025, 0.765367, basalZ));
+
+    // newPrototype.prototypeStructure.push_back(tVect(0.000000, 0.828427, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(-0.317025, 0.765367, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(-0.585786, 0.585786, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(-0.765367, 0.317025, basalZ));
+
+    // newPrototype.prototypeStructure.push_back(tVect(-0.828427, 0.000000, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(-0.765367, -0.317025, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(-0.585786, -0.585786, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(-0.317025, -0.765367, basalZ));
+
+    // newPrototype.prototypeStructure.push_back(tVect(0.000000, -0.828427, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(0.317025, -0.765367, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(0.585786, -0.585786, basalZ));
+    // newPrototype.prototypeStructure.push_back(tVect(0.765367, -0.317025, basalZ));
+    // // component radius factors for main tree column
+    // for (int i = 0; i < 29; ++i) {
+
+    //     newPrototype.radiusFactors.push_back(1.0);
+    // }
+    // // component radius factors for smaller spheres surrounding the tree column: in total 16 spheres
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+    // newPrototype.radiusFactors.push_back(0.1716);
+
+	// //cynlinder equivalent properties for mass and inertia
+    // newPrototype.massFactor = 22.5;
+    // newPrototype.inertiaFactor[0] = 4232.8125;
+    // newPrototype.inertiaFactor[1] = 4232.8125;
+    // newPrototype.inertiaFactor[2] = 28.125;
+    // newPrototype.bonded = true;
+    // newPrototype.bondLocation = tVect(0.0, 0.0, -15);
+    // newPrototype.bondBendingStrength = tVect(0.0, 0.02, 0.0);
+    // prototypes[newPrototype.prototypeID] = newPrototype;
+//----------------Old prototype15-------------------------------------------------------------------------------------------------
+
+//-------------New prototype 15: high-resolution 150-mm tree trunk----------------------------------------------------------------
+    //   57 trunk spheres, radius R
+    //   centre spacing = 0.5R = 2.5 mm
+    //   overall trunk height = 30R = 150 mm
+    //   16 basal spheres on a ring of radius R
+
     newPrototype.reset();
     newPrototype.prototypeID = 15;
-    newPrototype.prototypeSize = 45;
-    for (int iz = -14; iz <= 14; ++iz) {
-            newPrototype.prototypeStructure.push_back(tVect(0.0, 0.0, double(iz))
+
+    const unsigned int highResTrunkParticles = 57;
+    const unsigned int basalParticles = 16;
+
+    newPrototype.prototypeSize =
+        highResTrunkParticles + basalParticles;   // 73 total
+    for (int k = -28; k <= 28; ++k) {
+
+    const double z = 0.5 * static_cast<double>(k);
+
+    newPrototype.prototypeStructure.push_back(
+        tVect(0.0, 0.0, z)
+    );
+
+    newPrototype.radiusFactors.push_back(1.0);
+    }
+    const double basalRingRadius   = 1.0;
+    const double basalRadiusFactor = 0.25;
+    const double basalZ            = -14.75;
+
+    for (unsigned int i = 0; i < basalParticles; ++i) {
+
+        const double theta =
+            2.0 * M_PI * static_cast<double>(i)
+            / static_cast<double>(basalParticles);
+
+        newPrototype.prototypeStructure.push_back(
+            tVect(
+                basalRingRadius * cos(theta),
+                basalRingRadius * sin(theta),
+                basalZ
+            )
         );
-    }
 
-    // smaller spheres surrounding the tree column: in total 16 spheres
-    const double basalZ = -14.828427;
-    newPrototype.prototypeStructure.push_back(tVect(0.828427, 0.000000, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(0.765367, 0.317025, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(0.585786, 0.585786, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(0.317025, 0.765367, basalZ));
-
-    newPrototype.prototypeStructure.push_back(tVect(0.000000, 0.828427, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(-0.317025, 0.765367, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(-0.585786, 0.585786, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(-0.765367, 0.317025, basalZ));
-
-    newPrototype.prototypeStructure.push_back(tVect(-0.828427, 0.000000, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(-0.765367, -0.317025, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(-0.585786, -0.585786, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(-0.317025, -0.765367, basalZ));
-
-    newPrototype.prototypeStructure.push_back(tVect(0.000000, -0.828427, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(0.317025, -0.765367, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(0.585786, -0.585786, basalZ));
-    newPrototype.prototypeStructure.push_back(tVect(0.765367, -0.317025, basalZ));
-    // component radius factors for main tree column
-    for (int i = 0; i < 29; ++i) {
-
-        newPrototype.radiusFactors.push_back(1.0);
-    }
-    // component radius factors for smaller spheres surrounding the tree column: in total 16 spheres
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-    newPrototype.radiusFactors.push_back(0.1716);
-
-	//cynlinder equivalent properties for mass and inertia
+        newPrototype.radiusFactors.push_back(
+            basalRadiusFactor
+        );
+    } 
     newPrototype.massFactor = 22.5;
-    newPrototype.inertiaFactor[0] = 4232.8125;
-    newPrototype.inertiaFactor[1] = 4232.8125;
-    newPrototype.inertiaFactor[2] = 28.125;
+    newPrototype.inertiaFactor[0] = 4232.8125;  // Ixx
+    newPrototype.inertiaFactor[1] = 4232.8125;  // Iyy
+    newPrototype.inertiaFactor[2] = 28.125;     // Izz
+// ============================================================
+// BASAL BOND
+// ============================================================
     newPrototype.bonded = true;
-    newPrototype.bondLocation = tVect(0.0, 0.0, -15);
-    newPrototype.bondBendingStrength = tVect(0.0, 0.02, 0.0);
+    // bottom of physical tree
+    newPrototype.bondLocation =
+        tVect(0.0, 0.0, -15.0);
+    newPrototype.bondBendingStrength =
+        tVect(0.0, 1, 0.0);
     prototypes[newPrototype.prototypeID] = newPrototype;
-
+//-------------New prototype 15: high-resolution 150-mm tree trunk----------------------------------------------------------------
 
     //prototypes[1] = prototype1;
     //prototype2.resize(2);
