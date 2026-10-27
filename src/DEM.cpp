@@ -643,10 +643,10 @@ void DEM::definePrototypes() {
     newPrototype.radiusFactors.push_back(0.1716);
     newPrototype.radiusFactors.push_back(0.1716);
 
-    newPrototype.massFactor = 7.27;
-    newPrototype.inertiaFactor[0] = 173.9;
-    newPrototype.inertiaFactor[1] = 173.9;
-    newPrototype.inertiaFactor[2] = 8.28;
+    newPrototype.massFactor = 8.25;
+    newPrototype.inertiaFactor[0] = 213.1;
+    newPrototype.inertiaFactor[1] = 213.1;
+    newPrototype.inertiaFactor[2] = 10.3;
     newPrototype.bonded = true;
     newPrototype.bondLocation = tVect(0.0,0.0,-5.5);
     newPrototype.bondBendingStrength = tVect(0.0, 0.02, 0.0);
@@ -781,6 +781,248 @@ void DEM::definePrototypes() {
     prototypes[newPrototype.prototypeID] = newPrototype;
 //-------------New prototype 15: high-resolution 150-mm tree trunk----------------------------------------------------------------
 
+//---start---------- Prototype 12: 100-mm high-resolution tree ----------------
+    {
+        newPrototype.reset();
+        newPrototype.prototypeID = 12;
+
+        const unsigned int highResTrunkParticles = 37;
+        const unsigned int basalParticles = 16;
+
+        newPrototype.prototypeSize =
+            highResTrunkParticles + basalParticles;   // 53 total
+
+
+        // ============================================================
+        // HIGH-RESOLUTION TREE TRUNK
+        // ============================================================
+        //
+        // k = -18,...,+18
+        //
+        // z/R = 0.5*k
+        //
+        // lowest centre  = -9R
+        // highest centre = +9R
+        //
+        // Overall envelope:
+        // bottom = -10R
+        // top    = +10R
+        // height = 20R = 100 mm for R = 5 mm
+        //
+        for (int k = -18; k <= 18; ++k) {
+
+            const double z =
+                0.5 * static_cast<double>(k);
+
+            newPrototype.prototypeStructure.push_back(
+                tVect(0.0, 0.0, z)
+            );
+
+            newPrototype.radiusFactors.push_back(1.0);
+        }
+
+
+        // ============================================================
+        // BASAL PARTICLE LAYER
+        // ============================================================
+
+        const double basalRingRadius = 1.0;
+        const double basalRadiusFactor = 0.25;
+        const double basalZ = -9.75;
+
+        for (unsigned int i = 0;
+            i < basalParticles;
+            ++i) {
+
+            const double theta =
+                2.0 * M_PI
+                * static_cast<double>(i)
+                / static_cast<double>(basalParticles);
+
+            newPrototype.prototypeStructure.push_back(
+                tVect(
+                    basalRingRadius * cos(theta),
+                    basalRingRadius * sin(theta),
+                    basalZ
+                )
+            );
+
+            newPrototype.radiusFactors.push_back(
+                basalRadiusFactor
+            );
+        }
+
+
+        // ============================================================
+        // PHYSICAL MASS AND MOMENT OF INERTIA
+        // Equivalent 10-mm diameter, 100-mm high solid cylinder
+        // ============================================================
+
+        newPrototype.massFactor = 15.0;
+
+        newPrototype.inertiaFactor[0] = 1259.375;   // Ixx
+        newPrototype.inertiaFactor[1] = 1259.375;   // Iyy
+        newPrototype.inertiaFactor[2] = 18.75;      // Izz
+
+
+        // ============================================================
+        // BASAL BOND
+        // ============================================================
+
+        newPrototype.bonded = true;
+
+        newPrototype.bondLocation =
+            tVect(0.0, 0.0, -10.0);
+
+        newPrototype.bondBendingStrength =
+            tVect(0.0, 2.0, 0.0);
+
+
+        // Add prototype
+        prototypes[newPrototype.prototypeID] =
+            newPrototype;
+    }
+//----end--------- Prototype 12 -----------------------------------------------
+
+ // Start----Prototype 13: 100-mm tree, trunk spacing = 0.1R
+    {
+        newPrototype.reset();
+        newPrototype.prototypeID = 13;
+
+        const unsigned int trunkParticles = 181;
+        const unsigned int basalParticles = 16;
+
+        newPrototype.prototypeSize = trunkParticles + basalParticles;  // 197
+
+
+        // Trunk: centres from -9R to +9R, spacing = 0.1R
+        for (int k = -90; k <= 90; ++k) {
+
+            const double z = 0.1 * static_cast<double>(k);
+
+            newPrototype.prototypeStructure.push_back(
+                tVect(0.0, 0.0, z)
+            );
+
+            newPrototype.radiusFactors.push_back(1.0);
+        }
+
+
+        // Basal ring:
+        // centre radius = R
+        // particle radius = 0.25R
+        // lowest point = -10R
+        const double basalZ = -9.75;
+
+        for (unsigned int i = 0; i < basalParticles; ++i) {
+
+            const double theta =
+                2.0 * M_PI * static_cast<double>(i)
+                / static_cast<double>(basalParticles);
+
+            newPrototype.prototypeStructure.push_back(
+                tVect(
+                    cos(theta),
+                    sin(theta),
+                    basalZ
+                )
+            );
+
+            newPrototype.radiusFactors.push_back(0.25);
+        }
+
+        // Equivalent solid cylinder:
+        // diameter = 10 mm
+        // height   = 100 mm
+        newPrototype.massFactor = 15.0;
+
+        newPrototype.inertiaFactor[0] = 1259.375;  // Ixx
+        newPrototype.inertiaFactor[1] = 1259.375;  // Iyy
+        newPrototype.inertiaFactor[2] = 18.75;     // Izz
+
+
+        // Basal bond
+        newPrototype.bonded = true;
+
+        newPrototype.bondLocation =
+            tVect(0.0, 0.0, -10.0);
+
+        newPrototype.bondBendingStrength =
+            tVect(0.0, 4.0, 0.0);
+
+
+        prototypes[newPrototype.prototypeID] = newPrototype;
+}
+ // End----Prototype 13: 100-mm tree, trunk spacing = 0.1R
+  
+ // Prototype 14: 100-mm tree, trunk spacing = 0.05R
+    {
+        newPrototype.reset();
+        newPrototype.prototypeID = 14;
+
+        const unsigned int trunkParticles = 361;
+        const unsigned int basalParticles = 16;
+
+        newPrototype.prototypeSize = trunkParticles + basalParticles; // 377
+
+
+        // Trunk: centres from -9R to +9R, spacing = 0.05R
+        for (int k = -180; k <= 180; ++k) {
+
+            const double z = 0.05 * static_cast<double>(k);
+
+            newPrototype.prototypeStructure.push_back(
+                tVect(0.0, 0.0, z)
+            );
+
+            newPrototype.radiusFactors.push_back(1.0);
+        }
+
+
+        // Basal ring
+        const double basalZ = -9.75;
+
+        for (unsigned int i = 0; i < basalParticles; ++i) {
+
+            const double theta =
+                2.0 * M_PI * static_cast<double>(i)
+                / static_cast<double>(basalParticles);
+
+            newPrototype.prototypeStructure.push_back(
+                tVect(
+                    cos(theta),
+                    sin(theta),
+                    basalZ
+                )
+            );
+
+            newPrototype.radiusFactors.push_back(0.25);
+        }
+
+
+        // Equivalent solid cylinder:
+        // diameter = 10 mm
+        // height   = 100 mm
+        newPrototype.massFactor = 15.0;
+
+        newPrototype.inertiaFactor[0] = 1259.375;  // Ixx
+        newPrototype.inertiaFactor[1] = 1259.375;  // Iyy
+        newPrototype.inertiaFactor[2] = 18.75;     // Izz
+
+
+        // Basal bond
+        newPrototype.bonded = true;
+
+        newPrototype.bondLocation =
+            tVect(0.0, 0.0, -10.0);
+
+        newPrototype.bondBendingStrength =
+            tVect(0.0, 2.0, 0.0);
+
+
+        prototypes[newPrototype.prototypeID] = newPrototype;
+    }
+
     //prototypes[1] = prototype1;
     //prototype2.resize(2);
     //prototype2[0] = tVect(0.5, 0.0, 0.0);
@@ -809,6 +1051,7 @@ void DEM::definePrototypes() {
     //prototypes[5] = prototype5;
 
 }
+
 
 void DEM::initializeWalls(const Problem &problem, const std::array<types, 6> &externalBoundary, const std::array<tVect, 6> &boundaryLocation) {
     walls.clear();
