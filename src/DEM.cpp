@@ -781,6 +781,112 @@ void DEM::definePrototypes() {
     prototypes[newPrototype.prototypeID] = newPrototype;
 //-------------New prototype 15: high-resolution 150-mm tree trunk----------------------------------------------------------------
 
+//---start---------- Prototype 11: 100-mm tree, trunk spacing = R -------------
+{
+    newPrototype.reset();
+    newPrototype.prototypeID = 11;
+
+    const unsigned int trunkParticles = 19;
+    const unsigned int basalParticles = 16;
+
+    newPrototype.prototypeSize =
+        trunkParticles + basalParticles;   // 35 total
+
+
+    // ============================================================
+    // TREE TRUNK
+    // ============================================================
+    //
+    // k = -9,...,+9
+    //
+    // z/R = k
+    //
+    // centre-to-centre spacing = R
+    //
+    // lowest centre  = -9R
+    // highest centre = +9R
+    //
+    // Overall envelope:
+    // bottom = -10R
+    // top    = +10R
+    // height = 20R = 100 mm for R = 5 mm
+    //
+    for (int k = -9; k <= 9; ++k) {
+
+        const double z =
+            static_cast<double>(k);
+
+        newPrototype.prototypeStructure.push_back(
+            tVect(0.0, 0.0, z)
+        );
+
+        newPrototype.radiusFactors.push_back(1.0);
+    }
+
+
+    // ============================================================
+    // BASAL PARTICLE LAYER
+    // ============================================================
+
+    const double basalRingRadius = 1.0;
+    const double basalRadiusFactor = 0.25;
+    const double basalZ = -9.75;
+
+    for (unsigned int i = 0;
+         i < basalParticles;
+         ++i) {
+
+        const double theta =
+            2.0 * M_PI
+            * static_cast<double>(i)
+            / static_cast<double>(basalParticles);
+
+        newPrototype.prototypeStructure.push_back(
+            tVect(
+                basalRingRadius * cos(theta),
+                basalRingRadius * sin(theta),
+                basalZ
+            )
+        );
+
+        newPrototype.radiusFactors.push_back(
+            basalRadiusFactor
+        );
+    }
+
+
+    // ============================================================
+    // PHYSICAL MASS AND MOMENT OF INERTIA
+    // Equivalent 10-mm diameter, 100-mm high solid cylinder
+    // ============================================================
+
+    newPrototype.massFactor = 15.0;
+
+    newPrototype.inertiaFactor[0] = 1259.375;  // Ixx
+    newPrototype.inertiaFactor[1] = 1259.375;  // Iyy
+    newPrototype.inertiaFactor[2] = 18.75;     // Izz
+
+
+    // ============================================================
+    // BASAL BOND
+    // ============================================================
+
+    newPrototype.bonded = true;
+
+    newPrototype.bondLocation =
+        tVect(0.0, 0.0, -10.0);
+
+    newPrototype.bondBendingStrength =
+        tVect(0.0, 2.0, 0.0);
+
+
+    // Add prototype
+    prototypes[newPrototype.prototypeID] =
+        newPrototype;
+}
+//----end--------- Prototype 11 -----------------------------------------------
+
+
 //---start---------- Prototype 12: 100-mm high-resolution tree ----------------
     {
         newPrototype.reset();
