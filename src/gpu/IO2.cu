@@ -2515,6 +2515,72 @@ void IO2::exportParticleCoordination(const DEM& dem) {
 
 }
 
+void IO2::exportParticleOverlap(DEM& dem) { // used to be passed as const
+    // checking the mean and max overlap to see if system is stiff
+    // prints the total mass in the free fluid domain
+    double meanOverlap(0.0), meanRelOverlap(0.0);
+    double maxOverlap(0.0), maxRelOverlap(0.0);
+    double meanDtOverlap(0.0), meanRelDtOverlap(0.0);
+    double maxDtOverlap(0.0), maxRelDtOverlap(0.0);
+    int totContactParticles(0), totDtContactParticles(0);
+
+    for (int p = 0; p < dem.elmts.size(); ++p) {
+        const double radiusHere = dem.elmts[p].radius;
+        // istantaneous overlap
+        const double overlapHere = dem.elmts[p].maxOverlap;
+        if (overlapHere > 0.0) {
+            ++totContactParticles;
+
+            const double relOverlapHere = overlapHere / radiusHere;
+            if (overlapHere > maxOverlap) {
+                maxOverlap = overlapHere;
+            }
+            if (relOverlapHere > maxRelOverlap) {
+                maxRelOverlap = relOverlapHere;
+            }
+            meanOverlap += overlapHere;
+            meanRelOverlap += relOverlapHere;
+        }
+        // max overlap between output steps
+        const double dtOverlapHere = dem.elmts[p].maxDtOverlap;
+        if (dtOverlapHere > 0.0) {
+            ++totDtContactParticles;
+            const double relDtOverlapHere = dtOverlapHere / radiusHere;
+            if (dtOverlapHere > maxDtOverlap) {
+                maxDtOverlap = dtOverlapHere;
+            }
+            if (relDtOverlapHere > maxRelDtOverlap) {
+                maxRelDtOverlap = relDtOverlapHere;
+            }
+            meanDtOverlap += dtOverlapHere;
+            meanRelDtOverlap += relDtOverlapHere;
+        }
+        // reset also maximum overlap
+        dem.elmts[p].maxDtOverlap = 0.0;
+    }
+
+    if (totContactParticles > 0) {
+        meanOverlap /= double(totContactParticles);
+        meanRelOverlap /= double(totContactParticles);
+    }
+
+    if (totDtContactParticles > 0) {
+        meanDtOverlap /= double(totDtContactParticles);
+        meanRelDtOverlap /= double(totDtContactParticles);
+    }
+
+
+    // printing instantaneous overlap
+    overlapFile.open(overlapFileName.c_str(), ios::app);
+    overlapFile << realTime << " " << meanOverlap << " " << maxOverlap << " " << meanRelOverlap << " " << maxRelOverlap << "\n";
+    overlapFile.close();
+    // printing max overlap between output steps
+    dtOverlapFile.open(dtOverlapFileName.c_str(), ios::app);
+    dtOverlapFile << realTime << " " << meanDtOverlap << " " << maxDtOverlap << " " << meanRelDtOverlap << " " << maxRelDtOverlap << "\n";
+    dtOverlapFile.close();
+
+}
+
 // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
 
 void IO2::exportEnergy(DEM& dem, LB2& lb) {

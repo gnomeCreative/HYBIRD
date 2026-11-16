@@ -49,13 +49,15 @@ class IO2 : public IO {
     // OTHER FILES - DEM /////////////////////////////////////////////////////////////////////////////////////////
     // particle flow rate file
     void exportParticleFlowRate(const DEM& dem);
+    void exportMaxSpeedParticles(const DEM& dem);
     void exportParticleCenterOfMass(const DEM& dem);
     tVect particleCenterOfMass(const elmtList& elmts) const;
     void exportParticleCoordination(const DEM& dem);
+    void exportParticleOverlap(DEM& dem); // DEM used to be passed as const
 
     // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
     void exportEnergy(DEM& dem, LB2& lb);
-    void exportMaxSpeedParticles(const DEM& dem);
+
 };
 
 #endif /* IO_H */
