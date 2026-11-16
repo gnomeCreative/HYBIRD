@@ -2425,6 +2425,96 @@ void IO2::exportParticleFlowRate(const DEM& dem) {
 
 }
 
+void IO2::exportMaxSpeedParticles(const DEM& dem) {
+    // calculating speed for real time check
+    // particle max velocity
+    double maxPartSpeed = 0.0;
+    for (int n = 0; n < dem.elmts.size(); ++n) {
+        maxPartSpeed = std::max(maxPartSpeed, dem.elmts[n].x1.norm2());
+    }
+    maxPartSpeed = sqrt(maxPartSpeed);
+    cout << "MaxPSpeed= " << std::scientific << std::setprecision(2) << maxPartSpeed << " ";
+    exportFile << "MaxPSpeed= " << std::scientific << std::setprecision(2) << maxPartSpeed << " ";
+
+    // particle max rotational velocity
+    double maxPartSpin = 0.0;
+    for (int n = 0; n < dem.elmts.size(); ++n) {
+        maxPartSpin = std::max(maxPartSpin, dem.elmts[n].wGlobal.norm2());
+    }
+    maxPartSpin = sqrt(maxPartSpin);
+    cout << "MaxPSpin= " << std::scientific << std::setprecision(2) << maxPartSpin << " ";
+    exportFile << "MaxPSpin= " << std::scientific << std::setprecision(2) << maxPartSpin << " ";
+
+    // printing max speed
+    maxParticleSpeedFile.open(maxParticleSpeedFileName.c_str(), ios::app);
+    maxParticleSpeedFile << realTime << " " << maxPartSpeed << " " << maxPartSpin << "\n";
+    maxParticleSpeedFile.close();
+
+}
+
+void IO2::exportParticleCenterOfMass(const DEM& dem) {
+
+    // particle center of mass
+    const tVect particleCenter = particleCenterOfMass(dem.elmts);
+
+    // printing particle center of mass
+    particleCenterOfMassFile.open(particleCenterOfMassFileName.c_str(), ios::app);
+    particleCenterOfMassFile << realTime << " " << particleCenter.dot(Xp) << " " << particleCenter.dot(Yp) << " " << particleCenter.dot(Zp) << "\n";
+    particleCenterOfMassFile.close();
+
+}
+
+tVect IO2::particleCenterOfMass(const elmtList& elmts) const {
+    // prints the total mass in the free fluid domain
+    tVect center(0.0, 0.0, 0.0);
+    double totMass(0.0);
+
+    for (int p = 0; p < elmts.size(); ++p) {
+        center += elmts[p].m * elmts[p].x0;
+        totMass += elmts[p].m;
+    }
+
+    return center / totMass;
+}
+
+void IO2::exportParticleCoordination(const DEM& dem) {
+
+    // particle coordination number and force intensity
+    tVect meanSolidIntensity(0.0, 0.0, 0.0);
+    tVect meanFluidIntensity(0.0, 0.0, 0.0);
+    const unsigned int maxCoordination = 16;
+    unsIntList totCoordination;
+    totCoordination.resize(maxCoordination);
+    for (int c = 0; c < maxCoordination; ++c) {
+        totCoordination[c] = 0;
+    }
+    for (int a = 0; a < dem.activeElmts.size(); ++a) {
+        unsigned int p = dem.activeElmts[a];
+        const tVect solidIntensityHere = dem.elmts[p].solidIntensity;
+        const tVect fluidIntensityHere = dem.elmts[p].FHydro.abs();
+        meanSolidIntensity += solidIntensityHere;
+        meanFluidIntensity += fluidIntensityHere;
+        unsigned int coordinationHere = dem.elmts[p].coordination;
+        if (coordinationHere > maxCoordination - 1) {
+            coordinationHere = maxCoordination - 1;
+        }
+        totCoordination[coordinationHere] += 1;
+    }
+    meanSolidIntensity /= dem.elmts.size();
+    meanFluidIntensity /= dem.elmts.size();
+    // printing particle center of mass
+    particleCoordinationFile.open(particleCoordinationFileName.c_str(), ios::app);
+    particleCoordinationFile << realTime << " ";
+    particleCoordinationFile << meanSolidIntensity.dot(Xp) << " " << meanSolidIntensity.dot(Yp) << " " << meanSolidIntensity.dot(Zp) << " ";
+    particleCoordinationFile << meanFluidIntensity.dot(Xp) << " " << meanFluidIntensity.dot(Yp) << " " << meanFluidIntensity.dot(Zp);
+    for (int c = 0; c < maxCoordination; ++c) {
+        particleCoordinationFile << " " << totCoordination[c];
+    }
+    particleCoordinationFile << endl;
+    particleCoordinationFile.close();
+
+}
+
 // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
 
 void IO2::exportEnergy(DEM& dem, LB2& lb) {
