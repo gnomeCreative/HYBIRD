@@ -2581,6 +2581,88 @@ void IO2::exportParticleOverlap(DEM& dem) { // used to be passed as const
 
 }
 
+void IO2::exportWallForce(const DEM& dem) {
+    // printing forces acting on all walls
+
+    // this specific time step
+    wallForceFile.open(wallForceFileName.c_str(), ios::app);
+    wallForceFile << realTime;
+    wallForceFile << " " << dem.walls.size();
+    for (int w = 0; w < dem.walls.size(); ++w) {
+        const tVect partF = dem.walls[w].FParticle;
+        const tVect hydroF = dem.walls[w].FHydro;
+        wallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
+    }
+    wallForceFile << endl;
+    wallForceFile.close();
+
+    // the maximum since last output
+    maxWallForceFile.open(maxWallForceFileName.c_str(), ios::app);
+    maxWallForceFile << realTime;
+    maxWallForceFile << " " << dem.walls.size();
+    for (int w = 0; w < dem.walls.size(); ++w) {
+        const tVect partF = dem.walls[w].maxFParticle;
+        const tVect hydroF = dem.walls[w].maxFHydro;
+        maxWallForceFile << " " << partF.dot(Xp) << " " << partF.dot(Yp) << " " << partF.dot(Zp) << " " << hydroF.dot(Xp) << " " << hydroF.dot(Yp) << " " << hydroF.dot(Zp);
+    }
+    maxWallForceFile << endl;
+    maxWallForceFile.close();
+
+}
+
+void IO2::exportForces(const DEM& dem) {
+    // printing force
+    // hydraulic and collision forces
+    forceFile.open(forceFileName.c_str(), ios::app);
+    const double collisionForce = collisionForceTot(dem.elmts);
+    const double hydraulicForce = hydraulicForceTot(dem.elmts);
+    forceFile << realTime << " " << collisionForce << " " << hydraulicForce << "\n";
+    forceFile.close();
+}
+
+double IO2::hydraulicForceTot(const elmtList& elmts) const {
+    double totForce = 0.0;
+
+    for (int n = 0; n < elmts.size(); ++n) {
+        totForce += elmts[n].FHydro.norm();
+    }
+
+    return totForce;
+}
+
+double IO2::collisionForceTot(const elmtList& elmts) const {
+    double totForce = 0.0;
+
+    for (int n = 0; n < elmts.size(); ++n) {
+        totForce += elmts[n].FParticle.norm();
+        totForce += elmts[n].FWall.norm();
+    }
+
+    return totForce;
+}
+
+void IO2::exportForceObstacle(const objectList& objects) {
+    // printing total force on obstacle
+    ofstream obstacleFile;
+    obstacleFile.open(obstacleFileName.c_str(), ios::app);
+    tVect totObstacleForce = totForceObject(objects, 0, objects.size() - 1);
+    obstacleFile << realTime << " ";
+    totObstacleForce.printLine(obstacleFile);
+    obstacleFile.close();
+}
+
+tVect IO2::totForceObject(const objectList& objects, const unsigned int& groupBegin, const unsigned int& groupEnd) const {
+    // prints the total mass in the free fluid domain
+    tVect totForce(0.0, 0.0, 0.0);
+
+    for (int o = 0; o < objects.size(); ++o) {
+        if (o >= groupBegin && o <= groupEnd) {
+            totForce += objects[o].FParticle + objects[o].FHydro;
+        }
+    }
+
+    return totForce;
+}
 // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
 
 void IO2::exportEnergy(DEM& dem, LB2& lb) {
