@@ -2729,8 +2729,8 @@ void IO2::exportSingleElements(const elmtList& elmts) {
                 xNow << " " << yNow << " " << zNow << " " <<
                 FParticleX << " " << FParticleY << " " << FParticleZ << " " <<
                 FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
-            singleElementFile.close();
         }
+        singleElementFile.close();
     }
 
 }
