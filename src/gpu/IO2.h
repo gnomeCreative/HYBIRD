@@ -60,7 +60,9 @@ class IO2 : public IO {
     double collisionForceTot(const elmtList& elmts) const;
     void exportForceObstacle(const objectList& objects);
     tVect totForceObject(const objectList& objects, const unsigned int& groupBegin, const unsigned int& groupEnd) const;
-
+    void exportSingleObjects(const objectList& objects);
+    void exportSingleElements(const elmtList& elmts);
+    void exportGroupForce(const objectList& objects);
     // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
     void exportEnergy(DEM& dem, LB2& lb);
 

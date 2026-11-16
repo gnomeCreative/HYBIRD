@@ -2663,6 +2663,96 @@ tVect IO2::totForceObject(const objectList& objects, const unsigned int& groupBe
 
     return totForce;
 }
+
+void IO2::exportSingleObjects(const objectList& objects) {
+
+    std::vector<string> xyzString;
+    xyzString.resize(3);
+    xyzString[0] = 'x';
+    xyzString[1] = 'y';
+    xyzString[2] = 'z';
+    for (int i = 0; i < singleObjects.size(); i++) {
+        const unsigned int indexHere = singleObjects[i];
+        const tVect forceHere = objects[indexHere].FHydro + objects[indexHere].FParticle;
+        double f[3] = { forceHere.dot(Xp), forceHere.dot(Yp), forceHere.dot(Zp) };
+        for (int xyz = 0; xyz < 3; xyz++) {
+            string singleObjectFileName = singleObjectDirectory + "/singleObject_" + std::to_string(indexHere) + "_" + xyzString[xyz] + ".dat";
+            ofstream singleObjectFile;
+            singleObjectFile.open(singleObjectFileName.c_str(), ios::app);
+            singleObjectFile << realTime << " " << f[xyz] << "\n";
+            singleObjectFile.close();
+        }
+    }
+
+
+}
+
+void IO2::exportSingleElements(const elmtList& elmts) {
+    // export specific element from the particle.dat file
+
+    for (int i = 0; i < singleElements.size(); i++) {
+        // cycle through all the elemnts to be tracked
+        const unsigned int indexHere = singleElements[i];
+        // get the position of the tracked element
+        const double xNow = elmts[indexHere].x0.x;
+        const double yNow = elmts[indexHere].x0.y;
+        const double zNow = elmts[indexHere].x0.z;
+        // get the forces (particle and hydro) of the tracked element
+        const tVect forceHydro = elmts[indexHere].FHydro;
+        const tVect forcePart = elmts[indexHere].FParticle;
+        double FParticleX = forcePart.dot(Xp);
+        double FParticleY = forcePart.dot(Yp);
+        double FParticleZ = forcePart.dot(Zp);
+        double FHydroX = forceHydro.dot(Xp);
+        double FHydroY = forceHydro.dot(Yp);
+        double FHydroZ = forceHydro.dot(Zp);
+
+        // write the results in a .dat file
+        string singleObjectFileName = singleElementDirectory + "/singleElement_" + std::to_string(indexHere) + ".dat";
+        ofstream singleElementFile;
+        singleElementFile.open(singleObjectFileName.c_str(), ios::app);
+        singleElementFile << std::scientific << std::setprecision(6); // Set scientific format and precision
+
+        if (realTime <= 1e-10) {
+            singleElementFile <<
+                "realTime" << " " << "x" << " " << "y" << " " << "z" << " " <<
+                "FParticleX" << " " << "FParticleY" << " " << "FParticleZ" << " " <<
+                "FHydroX" << " " << "FHydroY" << " " << "FHydroZ" << "\n" <<
+                realTime << " " <<
+                xNow << " " << yNow << " " << zNow << " " <<
+                FParticleX << " " << FParticleY << " " << FParticleZ << " " <<
+                FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
+        }
+        else {
+            singleElementFile <<
+                realTime << " " <<
+                xNow << " " << yNow << " " << zNow << " " <<
+                FParticleX << " " << FParticleY << " " << FParticleZ << " " <<
+                FHydroX << " " << FHydroY << " " << FHydroZ << "\n";
+            singleElementFile.close();
+        }
+    }
+
+}
+void IO2::exportGroupForce(const objectList& objects) {
+    // printing total force on object group
+    for (int i = 0; i < objectGroupBegin.size(); i++) {
+        // compute window length in lattice units (to round to exact window measurement in )
+        const unsigned int beginHere = objectGroupBegin[i];
+        const unsigned int endHere = objectGroupEnd[i];
+
+        tVect groupObstacleForce = totForceObject(objects, beginHere, endHere);
+
+        string objectGroupForceFileName = workDirectory + "/objectGroupForce_" + std::to_string(i) + ".dat";
+        ofstream objectGroupForceFile;
+        objectGroupForceFile.open(objectGroupForceFileName.c_str(), ios::app);
+        objectGroupForceFile << realTime << " ";
+        groupObstacleForce.printLine(objectGroupForceFile);
+        objectGroupForceFile.close();
+    }
+
+}
+
 // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
 
 void IO2::exportEnergy(DEM& dem, LB2& lb) {
