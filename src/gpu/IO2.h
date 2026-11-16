@@ -54,11 +54,11 @@ class IO2 : public IO {
     tVect particleCenterOfMass(const elmtList& elmts) const;
     void exportParticleCoordination(const DEM& dem);
     void exportParticleOverlap(DEM& dem); // DEM used to be passed as const
-    void IO2::exportWallForce(const DEM& dem);
-    void IO2::exportForces(const DEM& dem);
-    double IO2::hydraulicForceTot(const elmtList& elmts) const;
-    double IO2::collisionForceTot(const elmtList& elmts) const;
-    void IO2::exportForceObstacle(const objectList& objects);
+    void exportWallForce(const DEM& dem);
+    void exportForces(const DEM& dem);
+    double hydraulicForceTot(const elmtList& elmts) const;
+    double collisionForceTot(const elmtList& elmts) const;
+    void exportForceObstacle(const objectList& objects);
     tVect totForceObject(const objectList& objects, const unsigned int& groupBegin, const unsigned int& groupEnd) const;
 
     // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
