@@ -8,7 +8,9 @@ class LB2;
 class IO2 : public IO {
     
  public:    
+    void initialize();
     void outputStep(LB2& lb, DEM& dem);
+    void outputFinal();
 
  private:
     // function that groups file creations
@@ -31,6 +33,8 @@ class IO2 : public IO {
     void exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile);
     void exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile);
 
+    // OTHER FILES - LBM /////////////////////////////////////////////////////////////////////////////////////////
+    
     // fluid export functions (.dat files)
     void exportMaxSpeedFluid(LB2& lb);
     void exportFreeSurfaceExtent(LB2& lb);
@@ -42,6 +46,13 @@ class IO2 : public IO {
     void exportPlasticity(LB2& lb);
     void exportMeanViscosity(LB2& lb);
 
+    // OTHER FILES - DEM /////////////////////////////////////////////////////////////////////////////////////////
+    // particle flow rate file
+    string particleFlowRateFileName;
+    ofstream particleFlowRateFile;
+    void exportParticleFlowRate(const DEM& dem);
+
+    // OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
     void exportEnergy(DEM& dem, LB2& lb);
 
 };

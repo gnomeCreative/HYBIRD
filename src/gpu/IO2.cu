@@ -6,6 +6,183 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
+void IO2::initialize() {
+
+    partDirectory = workDirectory + "/particleData";
+    fluidDirectory = workDirectory + "/fluidData";
+
+    bool a;
+    //    if (demSolver) {
+    a = filesystem::create_directories(partDirectory);
+    cout << "Work directory created = " << partDirectory << ". Result: " << a << "\n";
+    //    }
+    //    if (lbmSolver) {
+    a = filesystem::create_directories(fluidDirectory);
+    cout << "Work directory created = " << fluidDirectory << ". Result: " << a << "\n";
+    //    }
+
+    if (singleObjects.size() > 0) {
+        // create directory
+        singleObjectDirectory = workDirectory + "/singleObjectData";
+        int a = filesystem::create_directories(singleObjectDirectory);
+        cout << "Work directory created = " << singleObjectDirectory << ". Result: " << a << "\n";
+    }
+
+    if (singleElements.size() > 0) {
+        // create directory
+        singleElementDirectory = workDirectory + "/singleElementData";
+        int a = filesystem::create_directories(singleElementDirectory);
+        cout << "Work directory created = " << singleElementDirectory << ". Result: " << a << "\n";
+    }
+
+    //  initialising energy file
+    energyFileName = workDirectory + "/energy.dat";
+    //  initializing object force files
+    obstacleFileName = workDirectory + "/objectForce.dat";
+
+    switch (problemName) {
+    case HONGKONG:
+    {
+        hongKongFlowFileName = workDirectory + "/hongKongFlow.dat";
+        hongKongForceFileName = workDirectory + "/hongKongForce.dat";
+        break;
+    }
+    case INCLINEFLOW:
+    {
+        inclineFlowFileName = workDirectory + "/inclineFlow.dat";
+        break;
+    }
+    case TRIAXIAL:
+    {
+        triaxialFileName = workDirectory + "/triaxial.dat";
+        break;
+    }
+    }
+
+
+    // build data file names 
+    fluidFileFormat = fluidDirectory + "/fluid%010u.vti";
+    fluid2DFileFormat = fluidDirectory + "/fluid2D%010u.txt";
+    fluidLagrangianFileFormat = fluidDirectory + "/fluidLag%010u.vtu";
+    partFileFormat = partDirectory + "/part%010u.vtu";
+    fluidRecycleFileFormat = fluidDirectory + "/fluidRecycle%010u.dat";
+    partRecycleFileFormat = partDirectory + "/partRecycle%010u.dat";
+    objectFileFormat = partDirectory + "/object%010u.vtu";
+    cylinderFileFormat = partDirectory + "/cylinder%010u.vtu";
+
+    //  initializing output file
+    exportFileName = workDirectory + "/export.dat";
+
+
+    if (lbmSolver) {
+
+        //  initializing fluid flow rate file
+        fluidFlowRateFileName = workDirectory + "/fluidFlowRate.dat";
+        fluidFlowRateFile.open(fluidFlowRateFileName.c_str(), ios::app);
+        fluidFlowRateFile << "time fluidFlowRateX, fluidFlowRateY, fluidFlowRateZ\n";
+        fluidFlowRateFile.close();
+
+        //  initializing free surface extent file
+        freeSurfaceExtentFileName = workDirectory + "/freeSurfaceExtent.dat";
+        freeSurfaceExtentFile.open(freeSurfaceExtentFileName.c_str(), ios::app);
+        freeSurfaceExtentFile << "time maxX y(maxX) z(maxX) minX y(minX) z(minX) maxY z(maxY) x(maxY) minY z(minY) x(minY) maxZ x(maxZ) y(maxZ) minZ x(minZ) y(minZ)\n";
+        freeSurfaceExtentFile.close();
+
+        //  initializing max speed file
+        maxFluidSpeedFileName = workDirectory + "/maxFluidVel.dat";
+        maxFluidSpeedFile.open(maxFluidSpeedFileName.c_str(), ios::app);
+        maxFluidSpeedFile << "time maxFluidSpeed\n";
+        maxFluidSpeedFile.close();
+
+        //  initializing plasticity file
+        plasticityFileName = workDirectory + "/plasticity.dat";
+        plasticityFile.open(plasticityFileName.c_str(), ios::app);
+        plasticityFile << "time percPlastic\n";
+        plasticityFile.close();
+
+        //  initializing mass file
+        fluidMassFileName = workDirectory + "/fluidMass.dat";
+        fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
+        fluidMassFile.close();
+
+        initializedPlanarFile = false;
+
+    }
+
+    if (demSolver) {
+
+        //  initializing particle flow rate file
+        particleFlowRateFileName = workDirectory + "/particleFlowRate.dat";
+        particleFlowRateFile.open(particleFlowRateFileName.c_str(), ios::app);
+        particleFlowRateFile << "time particleFlowRateX, particleFlowRateY, particleFlowRateZ\n";
+        particleFlowRateFile.close();
+
+        //  initializing force file
+        forceFileName = workDirectory + "/force.dat";
+        forceFile.open(forceFileName.c_str(), ios::app);
+        forceFile << "time collisionForces hydraulicForces\n";
+        forceFile.close();
+
+        //  initializing max speed file
+        maxParticleSpeedFileName = workDirectory + "/maxParticleVel.dat";
+        maxParticleSpeedFile.open(maxParticleSpeedFileName.c_str(), ios::app);
+        maxParticleSpeedFile << "time maxParticleSpeed maxParticleSpin\n";
+        maxParticleSpeedFile.close();
+
+
+        // initializing particle center of mass file 
+        particleCenterOfMassFileName = workDirectory + "/particleCenterOfMass.dat";
+        particleCenterOfMassFile.open(particleCenterOfMassFileName.c_str(), ios::app);
+        particleCenterOfMassFile << "time particleCenterOfMass_X particleCenterOfMass_Y particleCenterOfMass_Z\n";
+        particleCenterOfMassFile.close();
+
+        // initializing particle center of mass file 
+        particleCoordinationFileName = workDirectory + "/particleCoordination.dat";
+
+        // initializing fluid center of mass file 
+        fluidCenterOfMassFileName = workDirectory + "/fluidCenterOfMass.dat";
+        fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
+        fluidCenterOfMassFile << "time fluidCenterOfMass_X fluidCenterOfMass_Y fluidCenterOfMass_Z\n";
+        fluidCenterOfMassFile.close();
+
+        // initializing max overlap files
+        // instantaneous
+        overlapFileName = workDirectory + "/maxOverlap.dat";
+        overlapFile.open(overlapFileName.c_str(), ios::app);
+        overlapFile << "time meanMaxOverlap maxOverlap meanRelativeMaxOverlap maxRelativeOverlap\n";
+        overlapFile.close();
+        // between output steps
+        dtOverlapFileName = workDirectory + "/maxDtOverlap.dat";
+        dtOverlapFile.open(dtOverlapFileName.c_str(), ios::app);
+        dtOverlapFile << "time meanMaxDtOverlap maxDtOverlap meanRelativeMaxDtOverlap maxRelativeDtOverlap\n";
+        dtOverlapFile.close();
+    }
+
+    // initializing maximum force-on-the-wall file
+    maxWallForceFileName = workDirectory + "/maxWallForce.dat";
+    maxWallForceFile.open(maxWallForceFileName.c_str(), ios::app);
+    maxWallForceFile << "time n_walls x (maxFParticle_X maxFParticle_Y maxFParticle_Z maxFHydro_X maxFHydro_Y maxFHydro_Z)\n";
+    maxWallForceFile.close();
+
+    // initializing force-on-the-wall file
+    wallForceFileName = workDirectory + "/wallForce.dat";
+    wallForceFile.open(wallForceFileName.c_str(), ios::app);
+    wallForceFile << "time n_walls x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
+    wallForceFile.close();
+
+    lastScreenExp = 0;
+    lastFluidExp = 0;
+    lastFluidLagrangianExp = 0;
+    lastFluid2DExp = 0;
+    lastPartExp = 0;
+    lastObjectExp = 0;
+    lastCylinderExp = 0;
+    lastFluidRecycleExp = 0;
+    lastPartRecycleExp = 0;
+
+
+}
+
 void IO2::outputStep(LB2& lb, DEM& dem) {
 
 
@@ -197,6 +374,7 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
 
     }
 
+    
     // FILE CREATION PHASE  ////////////////////////////////////////////////////////////////
     createFiles(lb, dem);
 
@@ -211,11 +389,16 @@ void IO2::outputStep(LB2& lb, DEM& dem) {
     //}
 }
 
+void IO2::outputFinal() {
+    // drag file closure
+    exportFile.close();
+}
+
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-// paraview files
+// PARAVIEW /////////////////////////////////////////////////////////////////////////////////////////
 
 void IO2::createFiles(LB2& lb, const DEM& dem) {
     // write vtk at regular interval defined with the input file
@@ -1867,8 +2050,8 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     paraviewFluidFile.close();
 }
 
-//// print export stuff
-//
+// OTHER FILES - LBM /////////////////////////////////////////////////////////////////////////////////////////
+
 void IO2::exportMaxSpeedFluid(LB2& lb) {
 
     static const double soundSpeed = 1.0 / sqrt(3);
@@ -2123,48 +2306,7 @@ void IO2::exportMeanViscosity(LB2& lb) {
 //    cout << "wallDown = " << std::scientific << std::setprecision(2) << dem.walls[0].FParticle.dot(xDirec) << " wallUp = " << std::scientific << std::setprecision(2) << dem.walls[1].FParticle.dot(xDirec) << " ";
 //}
 //
-void IO2::exportEnergy(DEM& dem, LB2& lb) {
 
-    if (dem.elmts.size()) {
-        cout << "Energy (DEM): ";
-        exportFile << "Energy (DEM): ";
-        cout << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
-        exportFile << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
-        cout << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
-        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
-        cout << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
-        exportFile << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
-    }
-    if (lbmSolver) {
-        const energy& fluidE = lb.getFluidEnergy();
-        const energy& fluidImmersedE = lb.getFluidImmersedEnergy();
-
-        cout << "Energy (LBM): ";
-        cout << "eKin = " << std::scientific << std::setprecision(2) << fluidE.kin + fluidImmersedE.kin << " ";
-        exportFile << "eKin = " << std::scientific << std::setprecision(2) << fluidE.kin + fluidImmersedE.kin << " ";
-        cout << "eGrav = " << std::scientific << std::setprecision(2) << fluidE.grav + fluidImmersedE.grav << " ";
-        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << fluidE.grav + fluidImmersedE.grav << " ";
-        cout << "eTot = " << std::scientific << std::setprecision(2) << fluidE.total + fluidImmersedE.total << " ";
-        exportFile << "eTot = " << std::scientific << std::setprecision(2) << fluidE.total + fluidImmersedE.total << " ";
-    }
-
-    ofstream energyFile;
-    energyFile.open(energyFileName.c_str(), ios::app);
-
-    const energy& fluidE = lb.getFluidEnergy();
-    const energy& fluidImmersedE = lb.getFluidImmersedEnergy();//
-
-    energyFile << std::scientific << std::setprecision(6) << realTime << " ";
-    energyFile << std::scientific << std::setprecision(10)
-        << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
-    energyFile << std::scientific << std::setprecision(10)
-        << fluidE.mass * PARAMS.unit.Mass << " " << fluidE.trKin * PARAMS.unit.Energy << " " << fluidE.grav * PARAMS.unit.Energy << " ";
-    energyFile << std::scientific << std::setprecision(10)
-        << fluidImmersedE.mass * PARAMS.unit.Mass << " " << fluidImmersedE.trKin * PARAMS.unit.Energy << " " << fluidImmersedE.grav * PARAMS.unit.Energy << endl;
-
-    energyFile.close();
-
-}
 //
 //// data elaboration
 //
@@ -2254,3 +2396,76 @@ void IO2::exportEnergy(DEM& dem, LB2& lb) {
 //        return Zero;
 //    }
 //}
+
+
+// OTHER FILES - DEM /////////////////////////////////////////////////////////////////////////////////////////
+void IO2::exportParticleFlowRate(const DEM& dem) {
+    // calculating speed for real time check
+    // particle max velocity
+    tVect flowRate(0.0, 0.0, 0.0);
+    double totMass = 0.0;
+    for (int n = 0; n < dem.elmts.size(); ++n) {
+        flowRate += dem.elmts[n].m * dem.elmts[n].x1;
+        //totMass += dem.elmts[n].m;
+    }
+    //if (totMass > 0.0) {
+    //flowRate *= dem.sphereMat.density / totMass;
+    //}
+
+
+    const double flowRateX = flowRate.dot(Xp) / dem.demSize[0];
+    const double flowRateY = flowRate.dot(Yp) / dem.demSize[1];
+    const double flowRateZ = flowRate.dot(Zp) / dem.demSize[2];
+
+    // printing rate
+    particleFlowRateFile.open(particleFlowRateFileName.c_str(), ios::app);
+    particleFlowRateFile << realTime << " " << flowRateX << " " << flowRateY << " " << flowRateZ << "\n";
+    particleFlowRateFile.close();
+
+
+}
+
+// OTHER FILES - LBM-DEM /////////////////////////////////////////////////////////////////////////////////////////
+
+void IO2::exportEnergy(DEM& dem, LB2& lb) {
+
+    if (dem.elmts.size()) {
+        cout << "Energy (DEM): ";
+        exportFile << "Energy (DEM): ";
+        cout << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
+        exportFile << "eKin = " << std::scientific << std::setprecision(2) << dem.particleEnergy.kin << " ";
+        cout << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
+        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << dem.particleEnergy.grav << " ";
+        cout << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
+        exportFile << "eTot = " << std::scientific << std::setprecision(2) << dem.particleEnergy.total << " ";
+    }
+    if (lbmSolver) {
+        const energy& fluidE = lb.getFluidEnergy();
+        const energy& fluidImmersedE = lb.getFluidImmersedEnergy();
+
+        cout << "Energy (LBM): ";
+        cout << "eKin = " << std::scientific << std::setprecision(2) << fluidE.kin + fluidImmersedE.kin << " ";
+        exportFile << "eKin = " << std::scientific << std::setprecision(2) << fluidE.kin + fluidImmersedE.kin << " ";
+        cout << "eGrav = " << std::scientific << std::setprecision(2) << fluidE.grav + fluidImmersedE.grav << " ";
+        exportFile << "eGrav = " << std::scientific << std::setprecision(2) << fluidE.grav + fluidImmersedE.grav << " ";
+        cout << "eTot = " << std::scientific << std::setprecision(2) << fluidE.total + fluidImmersedE.total << " ";
+        exportFile << "eTot = " << std::scientific << std::setprecision(2) << fluidE.total + fluidImmersedE.total << " ";
+    }
+
+    ofstream energyFile;
+    energyFile.open(energyFileName.c_str(), ios::app);
+
+    const energy& fluidE = lb.getFluidEnergy();
+    const energy& fluidImmersedE = lb.getFluidImmersedEnergy();//
+
+    energyFile << std::scientific << std::setprecision(6) << realTime << " ";
+    energyFile << std::scientific << std::setprecision(10)
+        << dem.particleEnergy.mass << " " << dem.particleEnergy.trKin << " " << dem.particleEnergy.rotKin << " " << dem.particleEnergy.grav << " ";
+    energyFile << std::scientific << std::setprecision(10)
+        << fluidE.mass * PARAMS.unit.Mass << " " << fluidE.trKin * PARAMS.unit.Energy << " " << fluidE.grav * PARAMS.unit.Energy << " ";
+    energyFile << std::scientific << std::setprecision(10)
+        << fluidImmersedE.mass * PARAMS.unit.Mass << " " << fluidImmersedE.trKin * PARAMS.unit.Energy << " " << fluidImmersedE.grav * PARAMS.unit.Energy << endl;
+
+    energyFile.close();
+
+}
