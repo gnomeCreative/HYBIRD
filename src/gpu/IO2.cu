@@ -37,40 +37,21 @@ void IO2::initialize() {
 
     //  initialising energy file
     energyFileName = workDirectory + "/energy.dat";
+
     //  initializing object force files
     obstacleFileName = workDirectory + "/objectForce.dat";
 
-    switch (problemName) {
-    case HONGKONG:
-    {
-        hongKongFlowFileName = workDirectory + "/hongKongFlow.dat";
-        hongKongForceFileName = workDirectory + "/hongKongForce.dat";
-        break;
-    }
-    case INCLINEFLOW:
-    {
-        inclineFlowFileName = workDirectory + "/inclineFlow.dat";
-        break;
-    }
-    case TRIAXIAL:
-    {
-        triaxialFileName = workDirectory + "/triaxial.dat";
-        break;
-    }
-    }
-
-
-    // build data file names 
+    // paraview output
     fluidFileFormat = fluidDirectory + "/fluid%010u.vti";
-    fluid2DFileFormat = fluidDirectory + "/fluid2D%010u.txt";
     fluidLagrangianFileFormat = fluidDirectory + "/fluidLag%010u.vtu";
     partFileFormat = partDirectory + "/part%010u.vtu";
+    objectFileFormat = partDirectory + "/object%010u.vtu";
+
+    // restart and recycle
     fluidRecycleFileFormat = fluidDirectory + "/fluidRecycle%010u.dat";
     partRecycleFileFormat = partDirectory + "/partRecycle%010u.dat";
-    objectFileFormat = partDirectory + "/object%010u.vtu";
-    cylinderFileFormat = partDirectory + "/cylinder%010u.vtu";
 
-    //  initializing output file
+    //  general output
     exportFileName = workDirectory + "/export.dat";
 
 
@@ -105,8 +86,11 @@ void IO2::initialize() {
         fluidMassFile.open(fluidMassFileName.c_str(), ios::app);
         fluidMassFile.close();
 
-        initializedPlanarFile = false;
-
+        // initializing fluid center of mass file 
+        fluidCenterOfMassFileName = workDirectory + "/fluidCenterOfMass.dat";
+        fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
+        fluidCenterOfMassFile << "time fluidCenterOfMass_X fluidCenterOfMass_Y fluidCenterOfMass_Z\n";
+        fluidCenterOfMassFile.close();
     }
 
     if (demSolver) {
@@ -129,7 +113,6 @@ void IO2::initialize() {
         maxParticleSpeedFile << "time maxParticleSpeed maxParticleSpin\n";
         maxParticleSpeedFile.close();
 
-
         // initializing particle center of mass file 
         particleCenterOfMassFileName = workDirectory + "/particleCenterOfMass.dat";
         particleCenterOfMassFile.open(particleCenterOfMassFileName.c_str(), ios::app);
@@ -138,12 +121,6 @@ void IO2::initialize() {
 
         // initializing particle center of mass file 
         particleCoordinationFileName = workDirectory + "/particleCoordination.dat";
-
-        // initializing fluid center of mass file 
-        fluidCenterOfMassFileName = workDirectory + "/fluidCenterOfMass.dat";
-        fluidCenterOfMassFile.open(fluidCenterOfMassFileName.c_str(), ios::app);
-        fluidCenterOfMassFile << "time fluidCenterOfMass_X fluidCenterOfMass_Y fluidCenterOfMass_Z\n";
-        fluidCenterOfMassFile.close();
 
         // initializing max overlap files
         // instantaneous
@@ -170,13 +147,16 @@ void IO2::initialize() {
     wallForceFile << "time n_walls x (FParticle_X FParticle_Y FParticle_Z FHydro_X FHydro_Y FHydro_Z)\n";
     wallForceFile.close();
 
+    // screen output
     lastScreenExp = 0;
+
+    // ParaView output
     lastFluidExp = 0;
     lastFluidLagrangianExp = 0;
-    lastFluid2DExp = 0;
     lastPartExp = 0;
     lastObjectExp = 0;
-    lastCylinderExp = 0;
+
+    // recycle output
     lastFluidRecycleExp = 0;
     lastPartRecycleExp = 0;
 
