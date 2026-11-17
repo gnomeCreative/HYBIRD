@@ -1128,6 +1128,87 @@ void IO2::exportRecycleFluid(const LB2& lb, const string& fluidRecycleFile) {
     recycleFluidFile.close();
 }
 */
+
+void IO2::exportParaviewObjects(const objectList& objects, const string& objectFile) {
+
+    const int one = 1;
+    const int Onumber = objects.size();
+
+    // file opening
+    ofstream paraviewObjectFile;
+    paraviewObjectFile.open(objectFile.c_str());
+    // writing on header file
+    paraviewObjectFile << "<?xml version=\"1.0\"?>\n";
+    paraviewObjectFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">\n";
+    paraviewObjectFile << " <UnstructuredGrid GhostLevel=\"0\">\n";
+    paraviewObjectFile << "  <Piece NumberOfPoints=\"" << Onumber << "\" NumberOfCells=\"" << Onumber << "\">\n";
+    paraviewObjectFile << "   <PointData>\n";
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"radius\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        paraviewObjectFile << objects[i].r << "\n";
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"objectIndex\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        paraviewObjectFile << objects[i].index << "\n";
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"v\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        objects[i].x1.printLine(paraviewObjectFile);
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"FParticle\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        objects[i].FParticle.printLine(paraviewObjectFile);
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"FHydro\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        objects[i].FHydro.printLine(paraviewObjectFile);
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"maxFParticle\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        objects[i].maxFParticle.printLine(paraviewObjectFile);
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"savedFParticle\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        objects[i].savedFParticle.printLine(paraviewObjectFile);
+    }
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"timeMaxFParticle\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        paraviewObjectFile << objects[i].timeMaxFParticle << "\n";
+    }
+    paraviewObjectFile << "   </PointData>\n";
+    paraviewObjectFile << "   <CellData>\n";
+    paraviewObjectFile << "   </CellData>\n";
+    paraviewObjectFile << "   <Points>\n";
+    paraviewObjectFile << "    <DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\"/>\n";
+    for (int i = 0; i < Onumber; ++i) {
+        objects[i].x0.printLine(paraviewObjectFile);
+    }
+    paraviewObjectFile << "   </Points>\n";
+    paraviewObjectFile << "   <Cells>\n";
+    paraviewObjectFile << "    <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n";
+    for (int i = 1; i < Onumber + 1; ++i) {
+        paraviewObjectFile << i - 1 << "\n";
+    }
+    paraviewObjectFile << "    </DataArray>\n";
+    paraviewObjectFile << "    <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n";
+    for (int i = 1; i < Onumber + 1; ++i) {
+        paraviewObjectFile << i << "\n";
+    }
+    paraviewObjectFile << "    </DataArray>\n";
+    paraviewObjectFile << "    <DataArray type=\"Int64\" Name=\"types\" format=\"ascii\">\n";
+    for (int i = 0; i < Onumber; ++i) {
+        paraviewObjectFile << one << "\n";
+    }
+    paraviewObjectFile << "    </DataArray>\n";
+    paraviewObjectFile << "   </Cells>\n";
+    paraviewObjectFile << "  </Piece>\n";
+    //    paraviewHeaderFile<<"  <Piece Source=\""<<pieceFile<<"\"/>\n";
+    paraviewObjectFile << " </UnstructuredGrid>\n";
+    paraviewObjectFile << "</VTKFile>";
+    // header file closing
+    paraviewObjectFile.close();
+}
+
 void IO2::exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile) {
 
     const Node2 nodes = lb.getNodes();
@@ -2048,6 +2129,60 @@ void IO2::exportEulerianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile)
     paraviewFluidFile << "</VTKFile>\n";
     // data file closing
     paraviewFluidFile.close();
+}
+
+// RESTART & RECYCLE
+
+void IO2::exportRecycleParticles(const elmtList& elmts, const pbcList& pbcs, const string& partRecycleFile) {
+    // exports a format readable by this code itself, allowing the re-use of computed particle data.
+    // needs further work...
+
+
+    unsigned int activeNumber = 0;
+    for (int i = 0; i < elmts.size(); ++i) {
+        if (elmts[i].active) {
+            ++activeNumber;
+        }
+    }
+
+    ofstream recycleParticleFile;
+    recycleParticleFile.open(partRecycleFile.c_str());
+    recycleParticleFile << std::setprecision(8);
+    recycleParticleFile << std::scientific;
+    // total number of element
+
+    recycleParticleFile << activeNumber << "\n";
+
+    unsigned int index = 0;
+    for (int i = 0; i < elmts.size(); ++i) {
+        if (elmts[i].active) {
+            // import variables
+            recycleParticleFile << index << "\t";
+            recycleParticleFile << elmts[i].size << "\t";
+            recycleParticleFile << elmts[i].radius << "\t";
+            // element center could be out of domain of there are periodic walls, fix this.
+            tVect printPosition = elmts[i].x0;
+            for (int b = 0; b < pbcs.size(); ++b) {
+                const tVect pbcVector = pbcs[b].v;
+                const double leftDist = pbcs[b].pl1.dist(elmts[i].x0);
+                const double rightDist = pbcs[b].pl2.dist(elmts[i].x0);
+                // first plane of couple (left)
+                if (leftDist < 0.0) {
+                    printPosition = printPosition + pbcVector;
+                }
+                if (rightDist < 0.0) {
+                    printPosition = printPosition - pbcVector;
+                }
+            }
+            printPosition.print(recycleParticleFile);
+            elmts[i].x1.print(recycleParticleFile);
+            elmts[i].w0.print(recycleParticleFile);
+            elmts[i].q0.print(recycleParticleFile);
+            elmts[i].q1.printLine(recycleParticleFile);
+            ++index;
+        }
+    }
+    recycleParticleFile.close();
 }
 
 // OTHER FILES - LBM /////////////////////////////////////////////////////////////////////////////////////////

@@ -22,7 +22,8 @@ class IO2 : public IO {
     void exportParaviewParticles(const elmtList& elmts, const particleList& particles, const string& particleFile);
     void exportParaviewParticles_binaryv3(const elmtList& elmts, const particleList& particles, const string& particleFile);
 
-    
+    void exportParaviewObjects(const objectList& particles, const string& objectFile);
+
     // Eulerian fluid paraview file
     // void exportEulerianParaviewFluid(LB2& lb, const string& fluidFile);
     // void exportEulerianParaviewFluid_binary(LB2& lb, const string& fluidFile);
@@ -32,6 +33,10 @@ class IO2 : public IO {
     // Lagrangian fluid paraview file
     void exportLagrangianParaviewFluid(LB2& lb, const string& fluidFile);
     void exportLagrangianParaviewFluid_binaryv3(LB2& lb, const string& fluidFile);
+    
+    // RESTART & RECYCLE /////////////////////////////////////////////////////////////////////////////////////////
+
+    void exportRecycleParticles(const elmtList& elmts, const pbcList& pbcs, const string& partRecycleFile);
 
     // OTHER FILES - LBM /////////////////////////////////////////////////////////////////////////////////////////
     
@@ -41,8 +46,6 @@ class IO2 : public IO {
     void exportFluidFlowRate(LB2& lb);
     void exportFluidMass(LB2& lb);
     void exportFluidCenterOfMass(LB2& lb);
-
-    // viscosity and plasticity
     void exportPlasticity(LB2& lb);
     void exportMeanViscosity(LB2& lb);
 
