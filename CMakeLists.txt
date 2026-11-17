@@ -39,7 +39,6 @@ set(HYBIRD_INCLUDE
     ${PROJECT_SOURCE_DIR}/src/DEM.h
     ${PROJECT_SOURCE_DIR}/src/elmt.h
     ${PROJECT_SOURCE_DIR}/src/getpot.h
-    ${PROJECT_SOURCE_DIR}/src/IO.h
     ${PROJECT_SOURCE_DIR}/src/lattice.h
     ${PROJECT_SOURCE_DIR}/src/LB.h
     ${PROJECT_SOURCE_DIR}/src/macros.h
@@ -70,7 +69,6 @@ set(HYBIRD_SRC
     # src/hybird.cu includes headers that require CUDA to parse correctly
     # with some work it could be resolved to build as .cpp
     ${PROJECT_SOURCE_DIR}/src/hybird.cu
-    ${PROJECT_SOURCE_DIR}/src/IO.cpp
     ${PROJECT_SOURCE_DIR}/src/LB.cpp
     ${PROJECT_SOURCE_DIR}/src/node.cpp
     ${PROJECT_SOURCE_DIR}/src/utils.cpp

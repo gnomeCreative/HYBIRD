@@ -1,11 +1,16 @@
 #ifndef IO2_H
 #define IO2_H
 
-#include "IO.h"
+//#include "IO.h"
+#include <string>
+#include <fstream>
+#include <ctime>
+
+#include "DEM.h"
 
 class LB2;
 
-class IO2 : public IO {
+class IO2 {
     
  public:
 
@@ -33,7 +38,9 @@ class IO2 : public IO {
      const unsigned int minimumIterations = 1000;
      bool energyExit = false;
 
+     double screenExpTime;
      double fluidLagrangianExpTime;
+     double fluidExpTime;
      double partExpTime;
      double objectExpTime;
      double partRecycleExpTime;
@@ -62,10 +69,11 @@ class IO2 : public IO {
 
  private:
 
-     // console and log output
-     string exportFileName;
-     ofstream exportFile;
-     unsigned int lastScreenExp;
+    // console and log output
+    string exportFileName;
+    ofstream exportFile;
+    unsigned int lastScreenExp;
+
 
     // function that groups file creations
     void createFiles(LB2& lb, const DEM& dem);

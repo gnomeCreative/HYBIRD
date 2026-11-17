@@ -1,6 +1,15 @@
-
 #include "IO2.h"
 #include "gpu/LB2.h"
+
+#include <iostream>
+#include <iomanip>
+#include <filesystem>
+#include <sstream>
+#include <cstring>
+#include <cstdio>
+#include <limits>
+#include <vector>
+#include <cmath>
 
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS

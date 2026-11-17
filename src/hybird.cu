@@ -11,7 +11,7 @@
 
 #include "getpot.h"
 
-#include "IO.h"
+//#include "IO.h"
 #include "DEM.h"
 #include "Problem.h"
 #include "gpu/IO2.h"
@@ -46,50 +46,7 @@ void print_help() {
     cout << "Usage: " << " [-c configFile] [-d datadir] [-n resultFolderName (opt. time)] [options}\n";
 }
 
-void goCycle(IO& io, DEM& dem, LB& lb) {
-
-    // advance one step in time
-    io.realTime += lb.unit.Time;
-    ++io.currentTimeStep;
-    ++lb.time;
-
-    dem.evolveBoundaries();
-//    dem.evolveObj();
-    //cout<<"1"<<endl;
-    if (io.demSolver) {
-
-        dem.discreteElementStep();
-    }
-
-    if (io.lbmSolver && dem.demTime >= dem.demInitialRepeat) {
-
-        if (io.demSolver) {
-
-            lb.latticeBoltzmannCouplingStep(dem.newNeighborList, dem.elmts, dem.particles);
-        }
-
-        lb.latticeBolzmannStep(dem.elmts, dem.particles, dem.walls, dem.objects);
-
-        // Lattice Boltzmann core steps
-
-        if (lb.freeSurface) {
-
-            lb.latticeBoltzmannFreeSurfaceStep();
-        }
-
-    } else if (io.lbmSolver && dem.demTime <= dem.demInitialRepeat) {
-        if (io.demSolver) {
-
-            lb.latticeBoltzmannCouplingStep(dem.newNeighborList, dem.elmts, dem.particles);
-        }
-    }
-
-    io.outputStep(lb, dem);
-
-
-}
-
-void parseCommandLine(IO& io, GetPot& commandLine) {
+void parseCommandLine(IO2& io, GetPot& commandLine) {
 
     //io.base_directory = command_line.follow("./", "--directory");
 
@@ -155,7 +112,7 @@ void parseCommandLine(IO& io, GetPot& commandLine) {
     configFile.close();
 }
 
-void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem &problem, GetPot& configFile, GetPot& commandLine) {
+void parseConfigFile(IO2& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem &problem, GetPot& configFile, GetPot& commandLine) {
 
     cout << "Parsing input file" << endl;
     // PROBLEM NAME //////////////
@@ -206,17 +163,16 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
         if (fluidLagrangianFormatString == "ascii"
          || fluidLagrangianFormatString == "text"
          || fluidLagrangianFormatString == "txt") {
-            io.fluidLagrangianFormat = IO::ParaviewFormat::Ascii;
+            io.fluidLagrangianFormat = IO2::ParaviewFormat::Ascii;
          } else if (fluidLagrangianFormatString == "binary_low_memory"
                  || fluidLagrangianFormatString == "binary_lowmem"
                  || fluidLagrangianFormatString == "low_memory"
                  || fluidLagrangianFormatString == "lowmem") {
-             io.fluidLagrangianFormat = IO::ParaviewFormat::BinaryLowMem;
+             io.fluidLagrangianFormat = IO2::ParaviewFormat::BinaryLowMem;
          } else { // "binary"
-                     io.fluidLagrangianFormat = IO::ParaviewFormat::Binary;
+                     io.fluidLagrangianFormat = IO2::ParaviewFormat::Binary;
          }
     }
-    PARSE_CLASS_MEMBER(configFile, io.fluid2DExpTime, "fluid2DExpTime", 0.0);
     PARSE_CLASS_MEMBER(configFile, io.partExpTime, "partExpTime", 0.0);
     if (io.partExpTime > 0.0) {
         string partExpFormatString;
@@ -225,15 +181,14 @@ void parseConfigFile(IO& io, DEM& dem, LBParams& lb, LBInitParams& lbi, Problem 
         if (partExpFormatString == "ascii"
          || partExpFormatString == "text"
          || partExpFormatString == "txt") {
-            io.partExpFormat = IO::ParaviewFormat::Ascii;
+            io.partExpFormat = IO2::ParaviewFormat::Ascii;
         } else { // "binary"
-            io.partExpFormat = IO::ParaviewFormat::Binary;
+            io.partExpFormat = IO2::ParaviewFormat::Binary;
         }
     }
     PARSE_CLASS_MEMBER(configFile, io.fluidRecycleExpTime, "fluidRecycleExpTime", 0.0);
     PARSE_CLASS_MEMBER(configFile, io.partRecycleExpTime, "partRecycleExpTime", 0.0);
     PARSE_CLASS_MEMBER(configFile, io.objectExpTime, "objectExpTime", 0.0);
-    PARSE_CLASS_MEMBER(configFile, io.cylinderExpTime, "cylinderExpTime", 0.0);
 
     // single objects
     unsigned int totSingleObjects = configFile.vector_variable_size("singleObjects");
