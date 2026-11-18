@@ -31,16 +31,8 @@ enum ExitCode {
     UNFINISHED = -1, SUCCESS = 0, TIME_LIMIT_REACHED, SIGNAL_CAUGHT, ERR
 };
 
-
-
-
 ExitCode exit_code = UNFINISHED;
 ProblemName problemName = NONE;
-
-//void catchSignal(int sig) {
-//    std::cout << "Received signal " << sig << ": " << strsignal(sig) << " " << std::endl;
-//    exit_code = (SIGNAL_CAUGHT > exit_code ? SIGNAL_CAUGHT : exit_code);
-//}
 
 void print_help() {
     cout << "Usage: " << " [-c configFile] [-d datadir] [-n resultFolderName (opt. time)] [options}\n";

@@ -2247,29 +2247,31 @@ void LB2::init(Problem &problem, cylinderList& cylinders, wallList& walls, parti
     // then the initial node type must be identified for every node (if not specified, it is already Fluid)
     initializeTypes(walls, cylinders, objects);
 
-    ifstream fluidFileID;
     if (h_PARAMS.lbRestart) {
-        // open fluid restart file
-        fluidFileID.open(init_params.lbRestartFile.c_str(), ios::in);
-        ASSERT(fluidFileID.is_open());
-        // check if the restart file size is ok
+
+        ifstream fluidFileID(init_params.lbRestartFile);
+
+        if (!fluidFileID.is_open()) {
+            throw std::runtime_error("Cannot open fluid restart file: " + init_params.lbRestartFile);
+        }
+
         unsigned int restartX, restartY, restartZ, restartNodes;
-        fluidFileID >> restartX;
-        fluidFileID >> restartY;
-        fluidFileID >> restartZ;
-        fluidFileID >> restartNodes;
-        ASSERT(restartX == h_PARAMS.lbSize[0]);
-        ASSERT(restartY == h_PARAMS.lbSize[1]);
-        ASSERT(restartZ == h_PARAMS.lbSize[2]);
-        // read active nodes from file and generate
-        // @todo
-        fprintf(stderr, "lbRestart is not yet supported.\n");
-        throw std::exception();
-        // restartInterface(fluidFileID, restartNodes);
-    } else {
-        // initialize interface
+        if (!(fluidFileID >> restartX >> restartY >> restartZ >> restartNodes)) {
+            throw std::runtime_error("Invalid fluid restart file header");
+        }
+
+        if (restartX != h_PARAMS.lbSize[0] || restartY != h_PARAMS.lbSize[1] || restartZ != h_PARAMS.lbSize[2]) {
+            throw std::runtime_error("Fluid restart dimensions do not match the lattice");
+        }
+
+        if (restartNodes > h_nodes.count) {
+            throw std::runtime_error("Invalid fluid restart node count");
+        }
+
+        restartInterface(fluidFileID, restartNodes);
+    }
+    else {
         initializeInterface(problem);
-        // initialize variables for active nodes
         initializeVariables();
     }
 
@@ -2645,6 +2647,98 @@ void LB2::initializeInterface(const Problem& problem) {
 		}
 	}
 	cout << ct << " of " << h_PARAMS.totPossibleNodes << " nodes were init as liquid." << endl;
+}
+
+void LB2::restartInterface(std::istream& fluidFile, unsigned int restartNodes) {
+
+    cout << "Restarting fluid from file" << endl;
+
+    // Detect duplicate node indices
+    std::vector<unsigned char> loaded(h_nodes.count, 0);
+
+    for (unsigned int i = 0; i < restartNodes; ++i) {
+
+        unsigned int index;
+        int typeValue;
+        double mass;
+
+        // Read index, type and mass
+        if (!(fluidFile >> index >> typeValue >> mass)) {
+            throw std::runtime_error(
+                "Invalid fluid restart file: cannot read node data"
+            );
+        }
+
+        // Check index
+        if (index >= h_nodes.count) {
+            throw std::runtime_error(
+                "Invalid fluid restart file: node index out of range"
+            );
+        }
+
+        if (loaded[index]) {
+            throw std::runtime_error(
+                "Invalid fluid restart file: duplicate node index"
+            );
+        }
+
+        loaded[index] = 1;
+
+        // The current list initialisation recognises
+        // LIQUID and INTERFACE nodes
+        if (typeValue != static_cast<int>(LIQUID) &&
+            typeValue != static_cast<int>(INTERFACE)) {
+            throw std::runtime_error(
+                "Unsupported node type in fluid restart file"
+            );
+        }
+
+        // Do not overwrite existing solid boundaries
+        if (h_nodes.isWall(index)) {
+            throw std::runtime_error(
+                "Fluid restart node overlaps a solid boundary"
+            );
+        }
+
+        const types typeHere = static_cast<types>(typeValue);
+
+        // Create node and initialise its lattice links
+        generateNode(index, typeHere);
+
+        // Restore mass
+        h_nodes.mass[index] = mass;
+        h_nodes.newMass[index] = mass;
+
+        // Restore distribution functions
+        for (unsigned int j = 0; j < lbmDirec; ++j) {
+
+            double fHere;
+
+            if (!(fluidFile >> fHere)) {
+                throw std::runtime_error(
+                    "Invalid fluid restart file: missing distributions"
+                );
+            }
+
+            const unsigned int offset = index * lbmDirec + j;
+
+            h_nodes.f[offset] = fHere;
+            h_nodes.fs[offset] = fHere;
+        }
+
+        // Reconstruct density and velocity from f
+        h_nodes.reconstruct(index);
+
+        // Initialise quantities not stored in the file
+        h_nodes.visc[index] =
+            PARAMS.fluidMaterial.initDynVisc;
+
+        h_nodes.age[index] = 1.0f;
+        h_nodes.friction[index] = 0.0;
+    }
+
+    cout << restartNodes
+        << " active fluid nodes restored" << endl;
 }
 
 void LB2::generateNode(unsigned int coord, types typeHere) {

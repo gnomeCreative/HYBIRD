@@ -115,6 +115,7 @@ class IO2 {
     // fluid recycle file
     unsigned int lastFluidRecycleExp;
     string fluidRecycleFileFormat;
+    void exportRecycleFluid(LB2& lb, const string& fluidRecycleFile);
 
     // OTHER FILES - LBM /////////////////////////////////////////////////////////////////////////////////////////
     

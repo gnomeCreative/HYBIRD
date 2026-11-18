@@ -423,14 +423,14 @@ void IO2::createFiles(LB2& lb, const DEM& dem) {
             //}
         }
 
-        //const unsigned int fluidRecycleExpCounter = (fluidRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / fluidRecycleExpTime) + 1 : 0);
-        //if (fluidRecycleExpCounter > lastFluidRecycleExp) {
-        //    lastFluidRecycleExp = fluidRecycleExpCounter;
-        //    char filePathBuffer [1024];
-        //    sprintf(filePathBuffer, fluidRecycleFileFormat.c_str(), currentTimeStep);
-        //    // requires the pbcShift, contained in the neighborList function
-        //    exportRecycleFluid(lb, filePathBuffer);
-        //}
+        const unsigned int fluidRecycleExpCounter = (fluidRecycleExpTime > 0 ? static_cast<unsigned int> (realTime / fluidRecycleExpTime) + 1 : 0);
+        if (fluidRecycleExpCounter > lastFluidRecycleExp) {
+            lastFluidRecycleExp = fluidRecycleExpCounter;
+            char filePathBuffer [1024];
+            sprintf(filePathBuffer, fluidRecycleFileFormat.c_str(), currentTimeStep);
+            // requires the pbcShift, contained in the neighborList function
+            exportRecycleFluid(lb, filePathBuffer);
+        }
 
     }
 
@@ -2172,6 +2172,73 @@ void IO2::exportRecycleParticles(const elmtList& elmts, const pbcList& pbcs, con
         }
     }
     recycleParticleFile.close();
+}
+
+void IO2::exportRecycleFluid(LB2& lb, const string& fluidRecycleFile) {
+
+    // Synchronise GPU node data to host memory.
+    // In CPU mode, this returns the existing host data.
+    const Node2& nodes = lb.getNodes();
+
+    // Open the recycle file
+    ofstream recycleFluidFile(fluidRecycleFile);
+
+    if (!recycleFluidFile.is_open()) {
+        throw std::runtime_error(
+            "Cannot open fluid recycle file: " + fluidRecycleFile
+        );
+    }
+
+    // Use sufficient precision to preserve double values
+    recycleFluidFile << std::scientific
+        << std::setprecision(17);
+
+    // Header:
+    // lattice dimensions and number of active nodes
+    recycleFluidFile
+        << PARAMS.lbSize[0] << " "
+        << PARAMS.lbSize[1] << " "
+        << PARAMS.lbSize[2] << " "
+        << nodes.activeCount << "\n";
+
+    // Export the state of every active node
+    for (unsigned int i = 0; i < nodes.activeCount; ++i) {
+
+        // Index within the full lattice
+        const unsigned int index = nodes.activeI[i];
+
+        // Node index, type and fluid mass
+        recycleFluidFile
+            << index << " "
+            << static_cast<int>(nodes.type[index]) << " "
+            << nodes.mass[index];
+
+        // Distribution functions, stored contiguously per node
+        for (unsigned int j = 0; j < lbmDirec; ++j) {
+            recycleFluidFile
+                << " "
+                << nodes.f[index * lbmDirec + j];
+        }
+
+        recycleFluidFile << "\n";
+    }
+
+    // Check whether writing succeeded
+    recycleFluidFile.flush();
+
+    if (!recycleFluidFile.good()) {
+        throw std::runtime_error(
+            "Error writing fluid recycle file: " + fluidRecycleFile
+        );
+    }
+
+    recycleFluidFile.close();
+
+    if (recycleFluidFile.fail()) {
+        throw std::runtime_error(
+            "Error closing fluid recycle file: " + fluidRecycleFile
+        );
+    }
 }
 
 // OTHER FILES - LBM /////////////////////////////////////////////////////////////////////////////////////////

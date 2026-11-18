@@ -43,6 +43,7 @@ class LB2 {
     void initializeCylinderBoundaries(const cylinderList &cylinders);
     void initializeTopography();
     void initializeInterface(const Problem& problem);
+    void restartInterface(std::istream& fluidFile, unsigned int restartNodes);
     void initializeVariables();
     void generateNode(unsigned int coord, types typeHere);
     void initializeWalls();
